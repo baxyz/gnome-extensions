@@ -18,6 +18,25 @@
 
 import GLib from 'gi://GLib';
 
+const FIREFOX_PATH = findFirefoxPath();
+
+/**
+ * Find the path to the Firefox executable.
+ * 
+ * @returns {string|null} The path to Firefox or null if not found.
+ */
+function findFirefoxPath() {
+    try {
+        let [success, stdout, stderr, exitStatus] = GLib.spawn_command_line_sync('which firefox');
+        if (success && exitStatus === 0) {
+            return stdout.toString().trim();
+        }
+    } catch (e) {
+        logError(e);
+    }
+    return null;
+}
+
 /**
  * Get Firefox profiles
  * @returns {Array} - Array of Firefox profiles
@@ -45,9 +64,14 @@ export function getFirefoxProfiles() {
  * @param {string} profile name of the profile
  */
 export function openFirefoxProfile(profile) {
+    if (FIREFOX_PATH === null) {
+        logError('Firefox executable not found.');
+        return;
+    }
+
     GLib.spawn_async(
         null,
-        ['firefox', '-P', profile, '-no-remote'],
+        [firefoxPath, '-P', profile, '-no-remote'],
         null,
         GLib.SpawnFlags.DO_NOT_REAP_CHILD,
         null
