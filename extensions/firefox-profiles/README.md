@@ -18,17 +18,26 @@ unzip firefox-profiles.zip -d ~/.local/share/gnome-shell/extensions/firefox-prof
 
 ## Testing Locally
 
-To test the extension locally, create a symbolic link to the extension directory:
+### Prerequisites
 
-```bash
-ln -s /path/to/your/extension ~/.local/share/gnome-shell/extensions/firefox-profiles@baxyz.tech
-```
+- [Node.js](https://nodejs.org/) 20 or later
+- [pnpm](https://pnpm.io/) 6 or later
 
-Replace /path/to/your/extension with the actual path to your extension directory.
+### Compilation
+
+Please have a look to the official documentation on [Build and packaging automation ](https://gjs.guide/extensions/development/typescript.html#build-and-packaging-automation) for more information.
+
+You can run `make` to compile your code and generate the file `extension.js` inside the dist folder. If needed, it will install the dependencies using pnpm install.
+
+`make pack` will generate a file `firefox-profiles.zip` which you can upload for review. It will compile the code and the schema, if needed, and copy the `schemas` folder and the `metadata.json` file into the `dest` folder before zipping it.
+
+`make install` will copy the files to the extensions folder. If you logout and back in it should appear in the Extension Manager app.
+
+Finally, `make clean` removes all generated files.
+
+### Test on Wayland
 
 Follow the official documentation on [testing the extension](https://gjs.guide/extensions/development/creating.html#testing-the-extension). It provides detailed instructions on how to set up and test the extension.
-
-### Wayland Sessions
 
 Wayland sessions support running GNOME Shell in window, so an extension can be tested without disrupting the current session.
 
