@@ -11,11 +11,7 @@ node_modules: package.json
 dist/extension.js: node_modules
 	pnpm exec tsc
 
-schemas/gschemas.compiled: schemas/org.gnome.shell.extensions.$(NAME).gschema.xml
-	glib-compile-schemas schemas
-
-$(NAME).zip: dist/extension.js schemas/gschemas.compiled
-	@cp -r schemas dist/
+$(NAME).zip: dist/extension.js
 	@cp metadata.json dist/
 	@(cd dist && zip ../$(NAME).zip -9r .)
 
