@@ -30,7 +30,7 @@ export default class FirefoxProfilesExtension extends Extension {
 
 class FirefoxProfilesIndicator extends PanelMenu.Button {
     constructor() {
-        // 0.0 est la valeur de menuAlignment
+        // 0.0 is the value of menuAlignment
         super(0.0, 'Firefox Profiles');
 
         // Shortcut to the menu
@@ -86,10 +86,11 @@ function openFirefoxProfile(profile: string): void {
         const success = GLib.spawn_command_line_async(command);
 
         if (!success) {
-            Main.notify(EXTENSION_TITLE, `[${profile}]: failed to start`);
+            Main.notify(EXTENSION_TITLE, `Failed to start Firefox with the "${profile}" profile.`);
         }
     } catch (e: unknown) {
-        logError(e as Object, `[${EXTENSION_TITLE}] [${profile}]: failed to start`);
-        Main.notify(EXTENSION_TITLE, `[${profile}]: An error occurred`);
+        const message = `An error occurred while launching Firefox with the "${profile}" profile.`;
+        logError(e as Object, `[${EXTENSION_TITLE}] ${message}`);
+        Main.notify(EXTENSION_TITLE, message);
     }
 }
