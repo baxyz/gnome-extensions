@@ -1,6 +1,6 @@
 {
     "name": "firefox-profiles",
-    "version": "0.0.1",
+    "version": "1.0.1",
     "description": "This GNOME extension streamlines launching Firefox profiles from the indicator menu.",
     "type": "module",
     "private": true,
@@ -15,7 +15,7 @@
     },
     "homepage": "https://github.com/baxyz/firefox-profiles#readme",
     "sideEffects": false,
-    "packageManager": "pnpm@9.7.0",
+    "packageManager": "pnpm@9.7.1",
     "devDependencies": {
         "eslint": "^9.8.0",
         "eslint-plugin-jsdoc": "^48.11.0",
