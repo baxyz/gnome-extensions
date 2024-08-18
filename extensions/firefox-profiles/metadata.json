@@ -1,9 +1,8 @@
 {
   "name": "Firefox Profiles",
-  "description": "This GNOME extension streamlines launching Firefox profiles from the indicator menu.",
-  "uuid": "firefox-profiles@baxyz.tech",
+  "description": "This GNOME extension makes it easy to launch Firefox with a specific profile from the indicator menu..\nThis extension is not affiliated, funded, or in any way associated with Mozilla and Firefox.",
+  "uuid": "firefox-profiles@arnaud.work",
   "url": "https://github.com/baxyz/firefox-profiles",
-  "settings-schema": "org.gnome.shell.extensions.firefox-profiles",
   "shell-version": [
     "46"
   ]
