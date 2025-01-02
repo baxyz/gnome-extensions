@@ -68,14 +68,14 @@ const GFirefoxProfilesIndicator = GObject.registerClass(FirefoxProfilesIndicator
  * @returns {Array} - Array of Firefox profiles
  */
 function getFirefoxProfiles(): string[] {
-    let filePath = GLib.get_home_dir() + '/.mozilla/firefox/profiles.ini';
-
-    // Handle edge case for Snap installation
-    if (!GLib.file_test(filePath, GLib.FileTest.EXISTS)) {
-        filePath = GLib.get_home_dir() + '/snap/firefox/common/.mozilla/firefox/profiles.ini';
-    }
-
-    if (!GLib.file_test(filePath, GLib.FileTest.EXISTS)) {
+    let filePaths = [
+        GLib.get_home_dir() + '/.mozilla/firefox/profiles.ini',
+        GLib.get_home_dir() + '/snap/firefox/common/.mozilla/firefox/profiles.ini' // Edge case for Snap installation
+    ];
+    
+    let filePath = filePaths.find(path => GLib.file_test(path, GLib.FileTest.EXISTS));
+    
+    if (!filePath) {
         Main.notify(EXTENSION_TITLE, 'Could not find the profiles.ini file.');
         return [];
     }
