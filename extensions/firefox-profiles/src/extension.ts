@@ -68,7 +68,7 @@ const GFirefoxProfilesIndicator = GObject.registerClass(FirefoxProfilesIndicator
  * @returns {Array} - Array of Firefox profiles
  */
 function getFirefoxProfiles(): string[] {
-    let filePath = GLib.get_home_dir() + '/.mozilla/firefox/profiles.ini';
+    let filePath = GLib.get_home_dir() + '/snap/firefox/common/.mozilla/firefox/profiles.ini';
     let fileContent = GLib.file_get_contents(filePath)[1];
     let content = fileContent.toString();
     let namePattern = /Name=(.*)/g;
