@@ -1,0 +1,50 @@
+{
+  "name": "@baxyz/browser-profiles",
+  "version": "4.0.0",
+  "private": true,
+  "description": "Launch any browser profile from the GNOME indicator.",
+  "homepage": "https://github.com/baxyz/gnome-extensions#readme",
+  "bugs": {
+    "url": "https://github.com/baxyz/gnome-extensions/issues"
+  },
+  "license": "AGPL-3.0-only",
+  "author": "baxyz <berenger@arnaud.work>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baxyz/gnome-extensions.git",
+    "directory": "extensions/browser-profiles"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "install:local": "pnpm build && cp metadata.json dist/ && rm -rf \"$HOME/.local/share/gnome-shell/extensions/browser-profiles@baxyz.is-a.dev\" && cp -r dist \"$HOME/.local/share/gnome-shell/extensions/browser-profiles@baxyz.is-a.dev\"",
+    "pack": "pnpm build && cp metadata.json dist/ && (cd dist && zip ../browser-profiles.zip -9r .)",
+    "shexli": "pnpm pack && (shexli browser-profiles.zip || (echo 'shexli not found — install with: pipx install shexli' && exit 1))"
+  },
+  "devDependencies": {
+    "@girs/gjs": "4.0.0-rc.15",
+    "@girs/gnome-shell": "^50.0.0",
+    "@girs/gnome-shell-46": "npm:@girs/gnome-shell@46",
+    "@girs/gnome-shell-47": "npm:@girs/gnome-shell@47",
+    "@girs/gnome-shell-48": "npm:@girs/gnome-shell@48",
+    "@girs/gnome-shell-49": "npm:@girs/gnome-shell@49",
+    "@girs/gnome-shell-50": "npm:@girs/gnome-shell@50",
+    "@types/node": "^25.6.2",
+    "@vitest/ui": "^4.1.5",
+    "esbuild": "^0.28.0",
+    "oxfmt": "^0.48.0",
+    "oxlint": "^1.63.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.11",
+    "vitest": "^4.1.5"
+  },
+  "packageManager": "pnpm@10.20.0"
+}
