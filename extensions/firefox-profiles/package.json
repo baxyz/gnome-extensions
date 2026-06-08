@@ -1,17 +1,18 @@
 {
-  "name": "firefox-profiles",
+  "name": "@baxyz/firefox-profiles",
   "version": "4.0.0",
   "private": true,
-  "description": "This GNOME extension streamlines launching Firefox profiles from the indicator menu.",
-  "homepage": "https://github.com/baxyz/firefox-profiles#readme",
+  "description": "Launch Firefox profiles from the GNOME indicator.",
+  "homepage": "https://github.com/baxyz/gnome-extensions#readme",
   "bugs": {
-    "url": "https://github.com/baxyz/firefox-profiles/issues"
+    "url": "https://github.com/baxyz/gnome-extensions/issues"
   },
   "license": "AGPL-3.0-only",
   "author": "baxyz <berenger@arnaud.work>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/baxyz/firefox-profiles.git"
+    "url": "git+https://github.com/baxyz/gnome-extensions.git",
+    "directory": "extensions/firefox-profiles"
   },
   "type": "module",
   "sideEffects": false,
@@ -24,7 +25,9 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "shexli": "pnpm build && cp metadata.json dist/ && (cd dist && zip ../firefox-profiles.zip -9r .) && (shexli firefox-profiles.zip || (echo 'shexli not found — install with: pipx install shexli' && exit 1))"
+    "install:local": "pnpm build && cp metadata.json dist/ && rm -rf \"$HOME/.local/share/gnome-shell/extensions/firefox-profiles@arnaud.work\" && cp -r dist \"$HOME/.local/share/gnome-shell/extensions/firefox-profiles@arnaud.work\"",
+    "pack": "pnpm build && cp metadata.json dist/ && (cd dist && zip ../firefox-profiles.zip -9r .)",
+    "shexli": "pnpm pack && (shexli firefox-profiles.zip || (echo 'shexli not found — install with: pipx install shexli' && exit 1))"
   },
   "devDependencies": {
     "@girs/gjs": "4.0.0-rc.15",
