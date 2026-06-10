@@ -1,0 +1,10 @@
+{
+  "name": "@baxyz/gnome-extensions-tooling",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}
