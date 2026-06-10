@@ -7,7 +7,7 @@ Monorepo for baxyz GNOME Shell extensions.
 | Extension | Description |
 |-----------|-------------|
 | [firefox-profiles](extensions/firefox-profiles) | Launch Firefox profiles from the GNOME indicator |
-| [browser-profiles](extensions/browser-profiles) | Launch any browser profile from the GNOME indicator |
+| [browser-hub](extensions/browser-hub) | Launch any browser profile from the GNOME indicator |
 
 ## Development
 
