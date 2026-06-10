@@ -33,15 +33,21 @@ Examples:
 - `ci(workspace): 🔧 adapt quality-check for monorepo`
 - `docs(agents): 🧾 update EGO submission guidelines`
 
-## Git Absorb (Clean History)
+## Git Workflow — Rebase Only
 
-Using **git absorb** is allowed (and encouraged) to keep a clean history.
+**No merge commits.** Always rebase, never merge.
+
+- Feature branches are rebased onto `main` before merging via PR.
+- When syncing a branch with upstream changes: `git rebase origin/main`, not `git merge main`.
+- Force-push after rebase: `git push --force-with-lease`.
+
+Using **git absorb** is allowed (and encouraged) to keep a clean history:
 
 ```bash
 git add -A
 git absorb
 git rebase -i --autosquash origin/main
-git push
+git push --force-with-lease
 ```
 
 > Install if needed: https://github.com/tummychow/git-absorb
