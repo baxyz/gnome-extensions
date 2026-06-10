@@ -23,12 +23,12 @@ This document defines the commit conventions, agent guidelines, and development 
 
 Root-level scopes: `workspace`, `tooling`, `ci`, `docs`, `agents`, `deps`.
 
-Per-extension scopes: use the extension name as prefix, e.g. `browser-profiles`, then optionally narrow with a slash: `browser-profiles/extension`, `browser-profiles/menu`, `browser-profiles/constants`, `browser-profiles/build`, `browser-profiles/tests`. Same pattern for `firefox-profiles`.
+Per-extension scopes: use the extension name as prefix, e.g. `browser-hub`, then optionally narrow with a slash: `browser-hub/extension`, `browser-hub/menu`, `browser-hub/constants`, `browser-hub/build`, `browser-hub/tests`. Same pattern for `firefox-profiles`.
 
 Examples:
 
-- `feat(browser-profiles): ✨ support Chromium profiles`
-- `fix(browser-profiles/runner): 🐛 handle flatpak path edge-case`
+- `feat(browser-hub): ✨ support Chromium profiles`
+- `fix(browser-hub/runner): 🐛 handle flatpak path edge-case`
 - `build(workspace): 🔧 add pnpm workspace filter script`
 - `ci(workspace): 🔧 adapt quality-check for monorepo`
 - `docs(agents): 🧾 update EGO submission guidelines`
@@ -77,7 +77,7 @@ Review guidelines: https://gjs.guide/extensions/review-guidelines/review-guideli
 gnome-extensions/
   extensions/
     firefox-profiles/   ← GNOME indicator for Firefox profile switching (legacy)
-    browser-profiles/   ← GNOME indicator for any browser profile switching
+    browser-hub/   ← GNOME indicator for any browser profile switching
   tooling/
     tsconfig.base.json  ← shared TypeScript base config
   .github/
@@ -93,8 +93,8 @@ gnome-extensions/
 ```bash
 pnpm install                                              # install all deps
 pnpm -r build                                             # build all extensions
-pnpm --filter @baxyz/browser-profiles build               # build one extension
-pnpm --filter @baxyz/browser-profiles install:local       # install locally for testing
+pnpm --filter @baxyz/browser-hub build               # build one extension
+pnpm --filter @baxyz/browser-hub install:local       # install locally for testing
 ```
 
 ### Quality checks
@@ -112,8 +112,8 @@ After `pnpm --filter @baxyz/<ext> install:local`, restart GNOME Shell (Wayland: 
 ### Packaging & EGO submission
 
 ```bash
-pnpm --filter @baxyz/browser-profiles pack     # produces browser-profiles.zip
-pnpm --filter @baxyz/browser-profiles shexli   # static analysis before submission
+pnpm --filter @baxyz/browser-hub pack     # produces browser-hub.zip
+pnpm --filter @baxyz/browser-hub shexli   # static analysis before submission
 ```
 
 ## GNOME Shell Compatibility Updates
