@@ -8,7 +8,7 @@ importers:
 
   .: {}
 
-  extensions/browser-profiles:
+  extensions/browser-hub:
     devDependencies:
       '@girs/gjs':
         specifier: 4.0.0-rc.15
