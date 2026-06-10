@@ -6,11 +6,11 @@ Thank you for your interest in contributing to **Firefox Profiles**! Here are so
 
 ### Reporting Bugs
 
-If you find a bug, please open an [issue](https://github.com/baxyz/firefox-profiles/issues) on GitHub. Provide as much detail as possible to help us reproduce the problem.
+If you find a bug, please open an [issue](https://github.com/baxyz/gnome-extensions/issues) on GitHub. Provide as much detail as possible to help us reproduce the problem.
 
 ### Requesting Features
 
-If you have an idea for a new feature, please open an [issue](https://github.com/baxyz/firefox-profiles/issues) and describe your proposal. We are happy to discuss new ideas!
+If you have an idea for a new feature, please open an [issue](https://github.com/baxyz/gnome-extensions/issues) and describe your proposal. We are happy to discuss new ideas!
 
 ### Submitting Changes
 
