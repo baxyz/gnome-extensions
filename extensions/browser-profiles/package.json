@@ -27,7 +27,7 @@
     "test:ui": "vitest --ui",
     "install:local": "pnpm build && cp metadata.json dist/ && rm -rf \"$HOME/.local/share/gnome-shell/extensions/browser-profiles@baxyz.etik.com\" && cp -r dist \"$HOME/.local/share/gnome-shell/extensions/browser-profiles@baxyz.etik.com\"",
     "pack": "pnpm build && cp metadata.json dist/ && (cd dist && zip ../browser-profiles.zip -9r .)",
-    "shexli": "pnpm build && cp metadata.json dist/ && (shexli dist/ || (echo 'shexli not found — install with: pipx install shexli' && exit 1))"
+    "shexli": "pnpm build && cp metadata.json dist/ && (shexli \"$PWD/dist\" || (echo 'shexli not found — install with: pipx install shexli' && exit 1))"
   },
   "devDependencies": {
     "@girs/gjs": "4.0.0-rc.15",
