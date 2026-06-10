@@ -1,0 +1,56 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: extension
+    attributes:
+      label: Extension
+      description: Which extension is affected?
+      options:
+        - browser-hub
+        - firefox-profiles
+    validations:
+      required: true
+
+  - type: input
+    id: gnome-version
+    attributes:
+      label: GNOME Shell version
+      placeholder: "e.g. 47"
+    validations:
+      required: true
+
+  - type: input
+    id: install-method
+    attributes:
+      label: Installation method
+      placeholder: "EGO / pnpm install:local / other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open indicator menu
+        2. Click on ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: "`journalctl /usr/bin/gnome-shell -f` output, if any"
+      render: shell
