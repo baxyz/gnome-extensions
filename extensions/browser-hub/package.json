@@ -1,6 +1,6 @@
 {
   "name": "@baxyz/browser-hub",
-  "version": "4.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Launch any browser profile from the GNOME indicator.",
   "homepage": "https://github.com/baxyz/gnome-extensions#readme",
