@@ -24,14 +24,12 @@ describe("GNOME Shell Package Compatibility", () => {
     });
   });
 
-  it("should have proper npm aliases configured", () => {
+  it("should reference GNOME Shell version aliases from catalog", () => {
     const packageJsonPath = resolve(process.cwd(), "package.json");
     const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
 
     versions.forEach((version) => {
-      expect(packageJson.devDependencies[`@girs/gnome-shell-${version}`]).toContain(
-        `npm:@girs/gnome-shell@${version}`,
-      );
+      expect(packageJson.devDependencies[`@girs/gnome-shell-${version}`]).toBe("catalog:");
     });
   });
 

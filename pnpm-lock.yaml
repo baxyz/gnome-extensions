@@ -4,6 +4,54 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@girs/gjs':
+      specifier: 4.0.0-rc.15
+      version: 4.0.0-rc.15
+    '@girs/gnome-shell':
+      specifier: ^50.0.0
+      version: 50.0.0
+    '@girs/gnome-shell-46':
+      specifier: npm:@girs/gnome-shell@46
+      version: 46.0.2
+    '@girs/gnome-shell-47':
+      specifier: npm:@girs/gnome-shell@47
+      version: 47.0.2
+    '@girs/gnome-shell-48':
+      specifier: npm:@girs/gnome-shell@48
+      version: 48.0.4
+    '@girs/gnome-shell-49':
+      specifier: npm:@girs/gnome-shell@49
+      version: 49.1.0
+    '@girs/gnome-shell-50':
+      specifier: npm:@girs/gnome-shell@50
+      version: 50.0.0
+    '@types/node':
+      specifier: ^25.6.2
+      version: 25.9.2
+    '@vitest/ui':
+      specifier: ^4.1.5
+      version: 4.1.8
+    esbuild:
+      specifier: ^0.28.0
+      version: 0.28.0
+    oxfmt:
+      specifier: ^0.48.0
+      version: 0.48.0
+    oxlint:
+      specifier: ^1.63.0
+      version: 1.69.0
+    typescript:
+      specifier: ^6.0.3
+      version: 6.0.3
+    vite:
+      specifier: ^8.0.11
+      version: 8.0.16
+    vitest:
+      specifier: ^4.1.5
+      version: 4.1.8
+
 importers:
 
   .: {}
@@ -11,97 +59,106 @@ importers:
   extensions/browser-hub:
     devDependencies:
       '@girs/gjs':
-        specifier: 4.0.0-rc.15
+        specifier: 'catalog:'
         version: 4.0.0-rc.15
       '@girs/gnome-shell':
-        specifier: ^50.0.0
+        specifier: 'catalog:'
         version: 50.0.0
       '@girs/gnome-shell-46':
-        specifier: npm:@girs/gnome-shell@46
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@46.0.2'
       '@girs/gnome-shell-47':
-        specifier: npm:@girs/gnome-shell@47
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@47.0.2'
       '@girs/gnome-shell-48':
-        specifier: npm:@girs/gnome-shell@48
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@48.0.4'
       '@girs/gnome-shell-49':
-        specifier: npm:@girs/gnome-shell@49
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@49.1.0'
       '@girs/gnome-shell-50':
-        specifier: npm:@girs/gnome-shell@50
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@50.0.0'
       '@types/node':
-        specifier: ^25.6.2
+        specifier: 'catalog:'
         version: 25.9.2
       '@vitest/ui':
-        specifier: ^4.1.5
+        specifier: 'catalog:'
         version: 4.1.8(vitest@4.1.8)
       esbuild:
-        specifier: ^0.28.0
+        specifier: 'catalog:'
         version: 0.28.0
       oxfmt:
-        specifier: ^0.48.0
+        specifier: 'catalog:'
         version: 0.48.0
       oxlint:
-        specifier: ^1.63.0
+        specifier: 'catalog:'
         version: 1.69.0
       typescript:
-        specifier: ^6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
       vite:
-        specifier: ^8.0.11
+        specifier: 'catalog:'
         version: 8.0.16(@types/node@25.9.2)(esbuild@0.28.0)
       vitest:
-        specifier: ^4.1.5
+        specifier: 'catalog:'
         version: 4.1.8(@types/node@25.9.2)(@vitest/ui@4.1.8)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.0))
 
   extensions/firefox-profiles:
     devDependencies:
       '@girs/gjs':
-        specifier: 4.0.0-rc.15
+        specifier: 'catalog:'
         version: 4.0.0-rc.15
       '@girs/gnome-shell':
-        specifier: ^50.0.0
+        specifier: 'catalog:'
         version: 50.0.0
       '@girs/gnome-shell-46':
-        specifier: npm:@girs/gnome-shell@46
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@46.0.2'
       '@girs/gnome-shell-47':
-        specifier: npm:@girs/gnome-shell@47
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@47.0.2'
       '@girs/gnome-shell-48':
-        specifier: npm:@girs/gnome-shell@48
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@48.0.4'
       '@girs/gnome-shell-49':
-        specifier: npm:@girs/gnome-shell@49
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@49.1.0'
       '@girs/gnome-shell-50':
-        specifier: npm:@girs/gnome-shell@50
+        specifier: 'catalog:'
         version: '@girs/gnome-shell@50.0.0'
       '@types/node':
-        specifier: ^25.6.2
+        specifier: 'catalog:'
         version: 25.9.2
       '@vitest/ui':
-        specifier: ^4.1.5
+        specifier: 'catalog:'
         version: 4.1.8(vitest@4.1.8)
       esbuild:
-        specifier: ^0.28.0
+        specifier: 'catalog:'
         version: 0.28.0
       oxfmt:
-        specifier: ^0.48.0
+        specifier: 'catalog:'
         version: 0.48.0
       oxlint:
-        specifier: ^1.63.0
+        specifier: 'catalog:'
         version: 1.69.0
       typescript:
-        specifier: ^6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
       vite:
-        specifier: ^8.0.11
+        specifier: 'catalog:'
         version: 8.0.16(@types/node@25.9.2)(esbuild@0.28.0)
       vitest:
-        specifier: ^4.1.5
+        specifier: 'catalog:'
+        version: 4.1.8(@types/node@25.9.2)(@vitest/ui@4.1.8)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.0))
+
+  tooling:
+    devDependencies:
+      vite:
+        specifier: 'catalog:'
+        version: 8.0.16(@types/node@25.9.2)(esbuild@0.28.0)
+      vitest:
+        specifier: 'catalog:'
         version: 4.1.8(@types/node@25.9.2)(@vitest/ui@4.1.8)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.0))
 
 packages:
@@ -1601,14 +1658,14 @@ snapshots:
   '@girs/accountsservice-1.0@1.0.0-4.0.0-beta.20':
     dependencies:
       '@girs/gio-2.0': 2.82.4-4.0.0-beta.20
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.4-4.0.0-beta.20
       '@girs/gobject-2.0': 2.82.4-4.0.0-beta.20
 
   '@girs/accountsservice-1.0@1.0.0-4.0.0-beta.34':
     dependencies:
       '@girs/gio-2.0': 2.84.4-4.0.0-beta.36
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.84.4-4.0.0-beta.36
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.84.4-4.0.0-beta.36
@@ -1654,7 +1711,7 @@ snapshots:
       '@girs/gdk-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gdkpixbuf-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.82.0-4.0.0-beta.16
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.0-4.0.0-beta.16
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.82.0-4.0.0-beta.16
@@ -1672,7 +1729,7 @@ snapshots:
       '@girs/gdk-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gdkpixbuf-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.83.3-4.0.0-beta.21
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.83.3-4.0.0-beta.21
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.83.3-4.0.0-beta.21
@@ -1721,13 +1778,13 @@ snapshots:
 
   '@girs/atk-1.0@2.52.0-4.0.0-beta.15':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.80.3-4.0.0-beta.15
       '@girs/gobject-2.0': 2.80.3-4.0.0-beta.15
 
   '@girs/atk-1.0@2.54.0-4.0.0-beta.20':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.4-4.0.0-beta.20
       '@girs/gobject-2.0': 2.82.4-4.0.0-beta.20
 
@@ -2038,7 +2095,7 @@ snapshots:
   '@girs/gck-2@4.3.0-4.0.0-beta.20':
     dependencies:
       '@girs/gio-2.0': 2.82.4-4.0.0-beta.20
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.4-4.0.0-beta.20
       '@girs/gobject-2.0': 2.82.4-4.0.0-beta.20
 
@@ -2054,7 +2111,7 @@ snapshots:
     dependencies:
       '@girs/gck-2': 4.3.0-4.0.0-beta.20
       '@girs/gio-2.0': 2.82.4-4.0.0-beta.20
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.4-4.0.0-beta.20
       '@girs/gobject-2.0': 2.82.4-4.0.0-beta.20
 
@@ -2192,26 +2249,26 @@ snapshots:
 
   '@girs/gio-2.0@2.80.3-4.0.0-beta.15':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.80.3-4.0.0-beta.15
       '@girs/gobject-2.0': 2.80.3-4.0.0-beta.15
 
   '@girs/gio-2.0@2.82.0-4.0.0-beta.16':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.0-4.0.0-beta.16
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.82.0-4.0.0-beta.16
 
   '@girs/gio-2.0@2.82.4-4.0.0-beta.20':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.4-4.0.0-beta.20
       '@girs/gobject-2.0': 2.82.4-4.0.0-beta.20
 
   '@girs/gio-2.0@2.83.3-4.0.0-beta.21':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.83.3-4.0.0-beta.21
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.83.3-4.0.0-beta.21
@@ -2315,27 +2372,27 @@ snapshots:
 
   '@girs/glib-2.0@2.80.3-4.0.0-beta.15':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/gobject-2.0': 2.80.3-4.0.0-beta.15
 
   '@girs/glib-2.0@2.82.0-4.0.0-beta.16':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/gobject-2.0': 2.82.0-4.0.0-beta.16
 
   '@girs/glib-2.0@2.82.4-4.0.0-beta.20':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/gobject-2.0': 2.82.4-4.0.0-beta.20
 
   '@girs/glib-2.0@2.83.3-4.0.0-beta.21':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/gobject-2.0': 2.83.3-4.0.0-beta.21
 
   '@girs/glib-2.0@2.84.0-4.0.0-beta.23':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/gobject-2.0': 2.84.0-4.0.0-beta.23
 
   '@girs/glib-2.0@2.84.4-4.0.0-beta.36':
@@ -2415,7 +2472,7 @@ snapshots:
       '@girs/gcr-4': 4.3.0-4.0.0-beta.20
       '@girs/gdm-1.0': 1.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.80.3-4.0.0-beta.15
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.80.3-4.0.0-beta.15
       '@girs/gnomebg-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gnomebluetooth-3.0': 3.0.0-4.0.0-rc.17
@@ -2442,7 +2499,7 @@ snapshots:
       '@girs/gcr-4': 4.3.0-4.0.0-beta.20
       '@girs/gdm-1.0': 1.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.82.4-4.0.0-beta.20
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.4-4.0.0-beta.20
       '@girs/gnomebg-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gnomebluetooth-3.0': 3.0.0-4.0.0-rc.17
@@ -2468,7 +2525,7 @@ snapshots:
       '@girs/gcr-4': 4.4.0-4.0.0-rc.17
       '@girs/gdm-1.0': 1.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.84.4-4.0.0-beta.36
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.84.4-4.0.0-beta.36
       '@girs/gnomebg-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gnomebluetooth-3.0': 3.0.0-4.0.0-rc.17
@@ -2495,7 +2552,7 @@ snapshots:
       '@girs/gdm-1.0': 1.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.86.0-4.0.0-beta.38
       '@girs/giounix-2.0': 2.0.0-4.0.0-rc.17
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.86.0-4.0.0-beta.38
       '@girs/gnomebg-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gnomebluetooth-3.0': 3.0.0-4.0.0-rc.17
@@ -2522,7 +2579,7 @@ snapshots:
       '@girs/gdm-1.0': 1.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.88.0-4.0.0-rc.17
       '@girs/giounix-2.0': 2.0.0-4.0.0-rc.17
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.88.0-4.0.0-rc.17
       '@girs/gnomebg-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gnomebluetooth-3.0': 3.0.0-4.0.0-rc.17
@@ -2575,27 +2632,27 @@ snapshots:
 
   '@girs/gobject-2.0@2.80.3-4.0.0-beta.15':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.80.3-4.0.0-beta.15
 
   '@girs/gobject-2.0@2.82.0-4.0.0-beta.16':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.0-4.0.0-beta.16
 
   '@girs/gobject-2.0@2.82.4-4.0.0-beta.20':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.4-4.0.0-beta.20
 
   '@girs/gobject-2.0@2.83.3-4.0.0-beta.21':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.83.3-4.0.0-beta.21
 
   '@girs/gobject-2.0@2.84.0-4.0.0-beta.23':
     dependencies:
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.84.0-4.0.0-beta.23
 
   '@girs/gobject-2.0@2.84.4-4.0.0-beta.36':
@@ -2745,7 +2802,7 @@ snapshots:
       '@girs/gdk-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gdkpixbuf-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.80.3-4.0.0-beta.15
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.80.3-4.0.0-beta.15
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.80.3-4.0.0-beta.15
@@ -2762,7 +2819,7 @@ snapshots:
       '@girs/gdk-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gdkpixbuf-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.82.0-4.0.0-beta.16
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.0-4.0.0-beta.16
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.82.0-4.0.0-beta.16
@@ -2779,7 +2836,7 @@ snapshots:
       '@girs/gdk-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gdkpixbuf-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.82.4-4.0.0-beta.20
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.4-4.0.0-beta.20
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.82.4-4.0.0-beta.20
@@ -2796,7 +2853,7 @@ snapshots:
       '@girs/gdk-4.0': 4.0.0-4.0.0-rc.17
       '@girs/gdkpixbuf-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.83.3-4.0.0-beta.21
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.83.3-4.0.0-beta.21
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.83.3-4.0.0-beta.21
@@ -2937,14 +2994,14 @@ snapshots:
   '@girs/harfbuzz-0.0@8.5.0-4.0.0-beta.15':
     dependencies:
       '@girs/freetype2-2.0': 2.0.0-4.0.0-rc.17
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.80.3-4.0.0-beta.15
       '@girs/gobject-2.0': 2.80.3-4.0.0-beta.15
 
   '@girs/harfbuzz-0.0@9.0.0-4.0.0-beta.23':
     dependencies:
       '@girs/freetype2-2.0': 2.0.0-4.0.0-rc.17
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.84.0-4.0.0-beta.23
       '@girs/gobject-2.0': 2.84.0-4.0.0-beta.23
 
@@ -3105,7 +3162,7 @@ snapshots:
       '@girs/cairo-1.0': 1.0.0-4.0.0-rc.17
       '@girs/freetype2-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.82.4-4.0.0-beta.20
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.82.4-4.0.0-beta.20
       '@girs/gobject-2.0': 2.82.4-4.0.0-beta.20
       '@girs/harfbuzz-0.0': 9.0.0-4.0.0-beta.23
@@ -3115,7 +3172,7 @@ snapshots:
       '@girs/cairo-1.0': 1.0.0-4.0.0-rc.17
       '@girs/freetype2-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gio-2.0': 2.83.3-4.0.0-beta.21
-      '@girs/gjs': 4.0.0-rc.15
+      '@girs/gjs': 4.0.0-rc.17
       '@girs/glib-2.0': 2.83.3-4.0.0-beta.21
       '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.17
       '@girs/gobject-2.0': 2.83.3-4.0.0-beta.21
