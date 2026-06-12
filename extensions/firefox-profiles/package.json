@@ -25,9 +25,9 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "install:local": "pnpm build && cp metadata.json dist/ && rm -rf \"$HOME/.local/share/gnome-shell/extensions/firefox-profiles@arnaud.work\" && cp -r dist \"$HOME/.local/share/gnome-shell/extensions/firefox-profiles@arnaud.work\"",
-    "pack": "pnpm build && cp metadata.json dist/ && (cd dist && zip ../firefox-profiles.zip -9r .)",
-    "shexli": "pnpm build && cp metadata.json dist/ && (shexli \"$PWD/dist\" || (echo 'shexli not found — install with: pipx install shexli' && exit 1))"
+    "install:local": "../../tooling/scripts/install-local.sh",
+    "pack": "../../tooling/scripts/pack.sh",
+    "shexli": "../../tooling/scripts/shexli.sh"
   },
   "devDependencies": {
     "@girs/gjs": "catalog:",
