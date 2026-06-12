@@ -21,10 +21,11 @@ function gnomeAssets(uuid: string): Plugin {
       console.log(`\n[gnome] installed → ${dest}`);
 
       try {
+        execSync(`gnome-extensions info ${uuid}`, { stdio: "ignore" });
         execSync(`gnome-extensions disable ${uuid} && gnome-extensions enable ${uuid}`, { stdio: "ignore" });
         console.log(`[gnome] reloaded ${uuid}`);
       } catch {
-        console.log(`[gnome] reload: gnome-extensions disable ${uuid} && gnome-extensions enable ${uuid}`);
+        console.log(`[gnome] restart GNOME Shell to discover the extension, then pnpm dev will reload automatically.`);
       }
     },
   };
