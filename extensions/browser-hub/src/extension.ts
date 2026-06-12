@@ -35,7 +35,7 @@ class BrowserProfilesIndicator extends Button {
 
     this.add_child(
       new St.Icon({
-        icon_name: "firefox-symbolic",
+        icon_name: "web-browser-symbolic",
         style_class: "system-status-icon",
       }),
     );
