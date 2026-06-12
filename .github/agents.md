@@ -50,7 +50,7 @@ git rebase -i --autosquash origin/main
 git push --force-with-lease
 ```
 
-> Install if needed: https://github.com/tummychow/git-absorb
+> Install if needed: [tummychow/git-absorb](https://github.com/tummychow/git-absorb)
 
 ## EGO (extensions.gnome.org) — AI Policy
 
@@ -59,6 +59,7 @@ git push --force-with-lease
 This is an explicit policy in force since December 2025, motivated by reviewer overload from unvetted AI output.
 
 **Rejected patterns:**
+
 - Large amounts of unnecessary code (e.g. redundant try-catch blocks)
 - Inconsistent code style
 - Calls to non-existent GNOME Shell APIs
@@ -68,12 +69,12 @@ This is an explicit policy in force since December 2025, motivated by reviewer o
 
 Every commit that touches extension source code must represent code the author understands and owns.
 
-Source: https://blogs.gnome.org/jrahmatzadeh/2025/12/06/ai-and-gnome-shell-extensions/
-Review guidelines: https://gjs.guide/extensions/review-guidelines/review-guidelines.html
+Source: [blogs.gnome.org — AI and GNOME Shell Extensions](https://blogs.gnome.org/jrahmatzadeh/2025/12/06/ai-and-gnome-shell-extensions/)
+Review guidelines: [gjs.guide — Review Guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html)
 
 ## Repository Structure
 
-```
+```text
 gnome-extensions/
   extensions/
     firefox-profiles/   ← GNOME indicator for Firefox profile switching (legacy)
@@ -92,10 +93,20 @@ gnome-extensions/
 
 ```bash
 pnpm install                                              # install all deps
-pnpm -r build                                             # build all extensions
+pnpm -r build                                             # build all extensions (dist/ includes metadata.json + stylesheet.css)
 pnpm --filter @baxyz/browser-hub build               # build one extension
-pnpm --filter @baxyz/browser-hub install:local       # install locally for testing
+pnpm --filter @baxyz/browser-hub install:local       # build + install locally
 ```
+
+### Continuous dev
+
+```bash
+pnpm --filter @baxyz/browser-hub dev
+```
+
+Watch mode: rebuilds on save, auto-installs to `~/.local/share/gnome-shell/extensions/<uuid>/`, and attempts `gnome-extensions disable/enable` to reload. Falls back to a manual reload hint if the CLI isn't available.
+
+First run: enable the extension once via GNOME Extensions app (or `gnome-extensions enable <uuid>`). Subsequent file saves auto-install without further intervention.
 
 ### Quality checks
 
@@ -107,7 +118,7 @@ pnpm -r test
 
 ### Local testing
 
-After `pnpm --filter @baxyz/<ext> install:local`, restart GNOME Shell (Wayland: log out/in) and enable via GNOME Extensions app.
+After `pnpm --filter @baxyz/<ext> install:local`, restart GNOME Shell (Wayland: log out/in) and enable via GNOME Extensions app. With `pnpm dev`, the reload is attempted automatically.
 
 ### Packaging & EGO submission
 
