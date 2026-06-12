@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-uuid=$(node -p "JSON.parse(require('fs').readFileSync('metadata.json','utf8'))['uuid']")
+uuid=$(jq -r '.uuid' metadata.json)
 dest="$HOME/.local/share/gnome-shell/extensions/$uuid"
 
 pnpm build
