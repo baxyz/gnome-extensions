@@ -76,6 +76,11 @@ export const CONFIG_PATHS: Array<BrowserInfo> = [
     path: HOME_DIR + "/.waterfox/profiles.ini",
     command: "waterfox",
   },
+  {
+    label: "Waterfox (flatpak)",
+    path: HOME_DIR + "/.var/app/net.waterfox.waterfox/.waterfox/profiles.ini",
+    command: "flatpak run net.waterfox.waterfox",
+  },
 
   // === LibreWolf (Privacy-focused Firefox) ===
   {
@@ -87,6 +92,24 @@ export const CONFIG_PATHS: Array<BrowserInfo> = [
     label: "LibreWolf (classic)",
     path: HOME_DIR + "/.librewolf/profiles.ini",
     command: "librewolf",
+  },
+  {
+    label: "LibreWolf (flatpak)",
+    path: HOME_DIR + "/.var/app/io.gitlab.librewolf-community/.librewolf/profiles.ini",
+    command: "flatpak run io.gitlab.librewolf-community",
+  },
+
+  // === Mullvad Browser (privacy-focused, based on Tor Browser + Firefox) ===
+  // No XDG support: issue #224 is Icebox (not planned).
+  {
+    label: "Mullvad Browser (classic)",
+    path: HOME_DIR + "/.mullvad-browser/profiles.ini",
+    command: "mullvad-browser",
+  },
+  {
+    label: "Mullvad Browser (flatpak)",
+    path: HOME_DIR + "/.var/app/net.mullvad.MullvadBrowser/.mullvad-browser/profiles.ini",
+    command: "flatpak run net.mullvad.MullvadBrowser",
   },
 
   // === Floorp (Firefox fork) ===
@@ -123,17 +146,41 @@ export const CONFIG_PATHS: Array<BrowserInfo> = [
     command: "flatpak run app.zen_browser.zen",
   },
 
+  // === Firedragon (Garuda Linux Firefox fork) ===
+  {
+    label: "Firedragon",
+    path: XDG_CONFIG_HOME + "/firedragon/profiles.ini",
+    command: "firedragon",
+  },
+  {
+    label: "Firedragon (classic)",
+    path: HOME_DIR + "/.firedragon/profiles.ini",
+    command: "firedragon",
+  },
+
   // === IceCat (GNU Firefox) ===
   {
     label: "IceCat",
+    path: XDG_CONFIG_HOME + "/icecat/profiles.ini",
+    command: "icecat",
+  },
+  {
+    label: "IceCat (classic)",
     path: HOME_DIR + "/.icecat/profiles.ini",
     command: "icecat",
   },
 
-  // === Palemoon (legacy fork) ===
+  // === Palemoon (Moonchild Productions, legacy Goanna engine) ===
   {
     label: "Palemoon",
     path: HOME_DIR + "/.moonchild productions/pale moon/profiles.ini",
     command: "palemoon",
+  },
+
+  // === Basilisk (Moonchild Productions, legacy Goanna engine) ===
+  {
+    label: "Basilisk",
+    path: HOME_DIR + "/.basilisk-dev/profiles.ini",
+    command: "basilisk",
   },
 ];
