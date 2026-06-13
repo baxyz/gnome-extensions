@@ -1,11 +1,12 @@
 import { BrowserType } from "../constants/browser-type.enum";
+import type { BrowserPkg } from "./browser-package.types";
 
 export type FirefoxBrowserConfig = {
   type: BrowserType.Firefox;
   label: string;
   /** Absolute path to profiles.ini */
   path: string;
-  command: string;
+  pkg: BrowserPkg;
 };
 
 export type ChromiumBrowserConfig = {
@@ -13,7 +14,7 @@ export type ChromiumBrowserConfig = {
   label: string;
   /** Absolute path to the "Local State" JSON file */
   path: string;
-  command: string;
+  pkg: BrowserPkg;
 };
 
 export type FalkonBrowserConfig = {
@@ -21,16 +22,11 @@ export type FalkonBrowserConfig = {
   label: string;
   /** Absolute path to the profiles directory */
   path: string;
-  command: string;
+  pkg: BrowserPkg;
 };
 
 export type SimpleBrowserConfig = {
   type: BrowserType.Simple;
   label: string;
-  command: string;
-  /**
-   * For flatpak apps: path to the app data directory used to check installation.
-   * If omitted, the command's binary is looked up in PATH instead.
-   */
-  checkPath?: string;
+  pkg: BrowserPkg;
 };
