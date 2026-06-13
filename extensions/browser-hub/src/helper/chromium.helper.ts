@@ -41,6 +41,7 @@ export async function resolveChromiumBrowsers(
 ): Promise<ResolvedBrowserEntry[]> {
   const entries = await Promise.all(
     browsers
+      .filter((b) => GLib.find_program_in_path(b.command.split(" ")[0]) !== null)
       .filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS))
       .map(async (b) => {
         const profiles = await readProfiles(b.path);
