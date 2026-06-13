@@ -33,6 +33,7 @@ export function resolveFalkonBrowsers(
   browsers: FalkonBrowserConfig[],
 ): ResolvedBrowserEntry[] {
   return browsers
+    .filter((b) => GLib.find_program_in_path(b.command.split(" ")[0]) !== null)
     .filter((b) => GLib.file_test(b.path, GLib.FileTest.IS_DIR))
     .map((b) => ({
       label: b.label,
