@@ -1,35 +1,22 @@
 import GLib from "gi://GLib";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 
-/**
- * Open a browser with a specific profile.
- *
- * It will call `<command> -P <profile> -no-remote`.
- *
- * @param {string} profile name of the profile
- */
-export function openBrowserProfile({
+export function launchBrowser({
   command,
-  profile,
   title,
   notify,
 }: {
   command: string;
-  profile: string;
   title: string;
   notify: typeof Main.notify;
 }): void {
-  const fullCommand = `${command} -P ${profile} -no-remote`;
-
   try {
-    const success = GLib.spawn_command_line_async(fullCommand);
-
+    const success = GLib.spawn_command_line_async(command);
     if (!success) {
-      notify(title, `Failed to start browser with the "${profile}" profile.`);
+      notify(title, "Failed to launch browser.");
     }
   } catch (e: unknown) {
-    const message = `An error occurred while launching browser with the "${profile}" profile.`;
-    logError(e as object, `[${title}] ${message}`);
-    notify(title, message);
+    logError(e as object, `[${title}] Failed to launch browser.`);
+    notify(title, "Failed to launch browser.");
   }
 }

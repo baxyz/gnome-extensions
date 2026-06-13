@@ -1,0 +1,21 @@
+import GLib from "gi://GLib";
+import { BrowserType } from "./browser-type.enum";
+import type { FalkonBrowserConfig } from "../types";
+
+const HOME_DIR = GLib.get_home_dir();
+const XDG_CONFIG_HOME = GLib.getenv("XDG_CONFIG_HOME") || HOME_DIR + "/.config";
+
+export const FALKON_BROWSERS: FalkonBrowserConfig[] = [
+  {
+    type: BrowserType.Falkon,
+    label: "Falkon",
+    path: XDG_CONFIG_HOME + "/falkon/profiles/",
+    command: "falkon",
+  },
+  {
+    type: BrowserType.Falkon,
+    label: "Falkon (flatpak)",
+    path: HOME_DIR + "/.var/app/org.kde.falkon/.config/falkon/profiles/",
+    command: "flatpak run org.kde.falkon",
+  },
+];
