@@ -1,6 +1,5 @@
 import GLib from "gi://GLib";
-import { BrowserType } from "./browser-type.enum";
-import { PackageManager } from "./package-manager.enum";
+import { BrowserType, PackageManager } from "../types";
 import type { FalkonBrowserConfig } from "../types";
 
 const HOME_DIR = GLib.get_home_dir();

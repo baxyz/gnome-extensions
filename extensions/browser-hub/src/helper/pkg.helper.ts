@@ -1,5 +1,5 @@
 import GLib from "gi://GLib";
-import { PackageManager } from "../constants/package-manager.enum";
+import { PackageManager } from "../types";
 import type { BrowserPkg } from "../types";
 
 const HOME_DIR = GLib.get_home_dir();

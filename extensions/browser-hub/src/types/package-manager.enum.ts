@@ -1,5 +1,5 @@
 export enum PackageManager {
-  Native  = "native",
+  Native = "native",
   Flatpak = "flatpak",
-  Snap    = "snap",
+  Snap = "snap",
 }
