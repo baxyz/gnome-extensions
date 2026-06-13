@@ -1,4 +1,4 @@
-import { BrowserType } from "../constants/browser-type.enum";
+import { BrowserType } from "./browser-type.enum";
 import type { BrowserPkg } from "./browser-package.types";
 
 export type FirefoxBrowserConfig = {

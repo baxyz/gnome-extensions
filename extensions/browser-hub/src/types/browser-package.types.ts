@@ -1,4 +1,4 @@
-import { PackageManager } from "../constants/package-manager.enum";
+import { PackageManager } from "./package-manager.enum";
 
 export type NativePkg  = { manager: PackageManager.Native;  binary: string };
 export type FlatpakPkg = { manager: PackageManager.Flatpak; appId: string  };
