@@ -29,6 +29,9 @@
     "pack": "../../tooling/scripts/pack.sh",
     "shexli": "../../tooling/scripts/shexli.sh"
   },
+  "dependencies": {
+    "@helpers4/object": "catalog:"
+  },
   "devDependencies": {
     "@girs/gjs": "catalog:",
     "@girs/gnome-shell": "catalog:",

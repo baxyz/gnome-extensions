@@ -27,6 +27,9 @@ catalogs:
     '@girs/gnome-shell-50':
       specifier: npm:@girs/gnome-shell@50
       version: 50.0.0
+    '@helpers4/object':
+      specifier: ^2.0.1
+      version: 2.0.1
     '@types/node':
       specifier: ^25.6.2
       version: 25.9.2
@@ -57,6 +60,10 @@ importers:
   .: {}
 
   extensions/browser-hub:
+    dependencies:
+      '@helpers4/object':
+        specifier: 'catalog:'
+        version: 2.0.1
     devDependencies:
       '@girs/gjs':
         specifier: 'catalog:'
@@ -858,6 +865,10 @@ packages:
 
   '@girs/xlib-2.0@2.0.0-4.0.0-rc.17':
     resolution: {integrity: sha512-LaECgnppICePEdVOYvXSvUFe8V8NUvDp0aNDRHCSA9VmqzPVNQWcik4UI/75wNOp4Mz5I8N6XkM0PGZzPgpObA==}
+
+  '@helpers4/object@2.0.1':
+    resolution: {integrity: sha512-DTha2PPJWwZfKh4PaEYn+buMNgwzL/mLobYZflSlIq57MToOGXAluCdFOcr+i+D0DKtaS3wVRYQ8QVEi8FTJXg==}
+    engines: {node: '>=18.0.0'}
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
@@ -3630,6 +3641,8 @@ snapshots:
     dependencies:
       '@girs/gjs': 4.0.0-rc.17
       '@girs/gobject-2.0': 2.88.0-4.0.0-rc.17
+
+  '@helpers4/object@2.0.1': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 

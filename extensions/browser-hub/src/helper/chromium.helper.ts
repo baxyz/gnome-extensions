@@ -1,21 +1,21 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
+import { safeJsonParse } from "@helpers4/object";
 import type { ChromiumBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { buildBaseCommand, resolvePkg } from "./pkg.helper";
+import { buildBaseCommand, filterAvailable } from "./pkg.helper";
+
+const decoder = new TextDecoder();
 
 type ChromiumProfile = { name: string; dir: string };
+type LocalState = { profile?: { info_cache?: Record<string, { name?: string }> } };
 
 function parseProfiles(content: string): ChromiumProfile[] {
-  try {
-    const json = JSON.parse(content);
-    const cache: Record<string, { name?: string }> = json?.profile?.info_cache ?? {};
-    return Object.entries(cache).map(([dir, info]) => ({
-      dir,
-      name: info.name ?? dir,
-    }));
-  } catch {
-    return [];
-  }
+  const json = safeJsonParse<LocalState>(content);
+  const cache = json?.profile?.info_cache ?? {};
+  return Object.entries(cache).map(([dir, info]) => ({
+    dir,
+    name: info.name ?? dir,
+  }));
 }
 
 function readProfiles(path: string): Promise<ChromiumProfile[]> {
@@ -24,7 +24,7 @@ function readProfiles(path: string): Promise<ChromiumProfile[]> {
     file.load_contents_async(null, (_source, result) => {
       try {
         const [, contents] = file.load_contents_finish(result);
-        resolve(parseProfiles(new TextDecoder().decode(contents)));
+        resolve(parseProfiles(decoder.decode(contents)));
       } catch {
         resolve([]);
       }
@@ -36,11 +36,7 @@ export async function resolveChromiumBrowsers(
   browsers: ChromiumBrowserConfig[],
 ): Promise<ResolvedBrowserEntry[]> {
   const entries = await Promise.all(
-    browsers
-      .flatMap((b) => {
-        const pkg = resolvePkg(b.pkg);
-        return pkg !== null ? [{ ...b, pkg }] : [];
-      })
+    filterAvailable(browsers)
       .filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS))
       .map(async (b) => {
         const profiles = await readProfiles(b.path);
