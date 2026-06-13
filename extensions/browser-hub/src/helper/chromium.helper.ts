@@ -1,7 +1,7 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { ChromiumBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { buildBaseCommand, isAvailable } from "./pkg.helper";
+import { buildBaseCommand, resolvePkg } from "./pkg.helper";
 
 type ChromiumProfile = { name: string; dir: string };
 
@@ -16,10 +16,6 @@ function parseProfiles(content: string): ChromiumProfile[] {
   } catch {
     return [];
   }
-}
-
-function buildCommand(config: ChromiumBrowserConfig, profile: ChromiumProfile): string {
-  return `${buildBaseCommand(config.pkg)} --profile-directory="${profile.dir}"`;
 }
 
 function readProfiles(path: string): Promise<ChromiumProfile[]> {
@@ -41,7 +37,10 @@ export async function resolveChromiumBrowsers(
 ): Promise<ResolvedBrowserEntry[]> {
   const entries = await Promise.all(
     browsers
-      .filter((b) => isAvailable(b.pkg))
+      .flatMap((b) => {
+        const pkg = resolvePkg(b.pkg);
+        return pkg !== null ? [{ ...b, pkg }] : [];
+      })
       .filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS))
       .map(async (b) => {
         const profiles = await readProfiles(b.path);
@@ -49,7 +48,7 @@ export async function resolveChromiumBrowsers(
           label: b.label,
           items: profiles.map((profile) => ({
             label: profile.name,
-            command: buildCommand(b, profile),
+            command: `${buildBaseCommand(b.pkg)} --profile-directory="${profile.dir}"`,
           })),
         };
       }),

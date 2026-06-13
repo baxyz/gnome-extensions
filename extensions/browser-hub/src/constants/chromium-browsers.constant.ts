@@ -27,7 +27,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     type: BrowserType.Chromium,
     label: "Chromium",
     path: CONFIG_DIR + "/chromium/Local State",
-    pkg: { manager: PackageManager.Native, binary: "chromium" },
+    pkg: { manager: PackageManager.Native, binary: ["chromium", "chromium-browser"] },
   },
   {
     type: BrowserType.Chromium,

@@ -1,13 +1,11 @@
 import type { SimpleBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { buildBaseCommand, isAvailable } from "./pkg.helper";
+import { buildBaseCommand, filterAvailable } from "./pkg.helper";
 
-export function resolveSimpleBrowsers(
+export async function resolveSimpleBrowsers(
   browsers: SimpleBrowserConfig[],
-): ResolvedBrowserEntry[] {
-  return browsers
-    .filter((b) => isAvailable(b.pkg))
-    .map((b) => ({
-      label: b.label,
-      items: [{ label: b.label, command: buildBaseCommand(b.pkg) }],
-    }));
+): Promise<ResolvedBrowserEntry[]> {
+  return filterAvailable(browsers).map((b) => ({
+    label: b.label,
+    items: [{ label: b.label, command: buildBaseCommand(b.pkg) }],
+  }));
 }
