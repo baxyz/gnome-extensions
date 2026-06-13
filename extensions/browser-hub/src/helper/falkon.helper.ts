@@ -1,46 +1,49 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { buildBaseCommand, isAvailable } from "./pkg.helper";
+import { buildBaseCommand, filterAvailable } from "./pkg.helper";
 
-function listProfileDirs(dirPath: string): string[] {
-  try {
+function listProfileDirs(dirPath: string): Promise<string[]> {
+  return new Promise((resolve) => {
     const dir = Gio.File.new_for_path(dirPath);
-    const enumerator = dir.enumerate_children(
+    dir.enumerate_children_async(
       "standard::name,standard::type",
       Gio.FileQueryInfoFlags.NONE,
+      GLib.PRIORITY_DEFAULT,
       null,
+      (_source, result) => {
+        try {
+          const enumerator = dir.enumerate_children_finish(result);
+          const profiles: string[] = [];
+          let info: Gio.FileInfo | null;
+          while ((info = enumerator.next_file(null)) !== null) {
+            if (info.get_file_type() === Gio.FileType.DIRECTORY) {
+              profiles.push(info.get_name());
+            }
+          }
+          enumerator.close(null);
+          resolve(profiles);
+        } catch {
+          resolve([]);
+        }
+      },
     );
-    const profiles: string[] = [];
-    let info: Gio.FileInfo | null;
-    while ((info = enumerator.next_file(null)) !== null) {
-      if (info.get_file_type() === Gio.FileType.DIRECTORY) {
-        profiles.push(info.get_name());
-      }
-    }
-    enumerator.close(null);
-    return profiles;
-  } catch {
-    return [];
-  }
+  });
 }
 
-function buildCommand(config: FalkonBrowserConfig, profileName: string): string {
-  return `${buildBaseCommand(config.pkg)} --profile "${profileName}"`;
-}
-
-export function resolveFalkonBrowsers(
+export async function resolveFalkonBrowsers(
   browsers: FalkonBrowserConfig[],
-): ResolvedBrowserEntry[] {
-  return browsers
-    .filter((b) => isAvailable(b.pkg))
-    .filter((b) => GLib.file_test(b.path, GLib.FileTest.IS_DIR))
-    .map((b) => ({
-      label: b.label,
-      items: listProfileDirs(b.path).map((name) => ({
-        label: name,
-        command: buildCommand(b, name),
+): Promise<ResolvedBrowserEntry[]> {
+  const entries = await Promise.all(
+    filterAvailable(browsers)
+      .filter((b) => GLib.file_test(b.path, GLib.FileTest.IS_DIR))
+      .map(async (b) => ({
+        label: b.label,
+        items: (await listProfileDirs(b.path)).map((name) => ({
+          label: name,
+          command: `${buildBaseCommand(b.pkg)} --profile "${name}"`,
+        })),
       })),
-    }))
-    .filter((e) => e.items.length > 0);
+  );
+  return entries.filter((e) => e.items.length > 0);
 }
