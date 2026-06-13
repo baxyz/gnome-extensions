@@ -1,5 +1,6 @@
 import GLib from "gi://GLib";
 import { BrowserType } from "./browser-type.enum";
+import { PackageManager } from "./package-manager.enum";
 import type { FirefoxBrowserConfig } from "../types";
 
 const HOME_DIR = GLib.get_home_dir();
@@ -12,25 +13,25 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     type: BrowserType.Firefox,
     label: "Firefox",
     path: XDG_CONFIG_HOME + "/mozilla/firefox/profiles.ini",
-    command: "firefox",
+    pkg: { manager: PackageManager.Native, binary: "firefox" },
   },
   {
     type: BrowserType.Firefox,
     label: "Firefox (classic)",
     path: HOME_DIR + "/.mozilla/firefox/profiles.ini",
-    command: "firefox",
+    pkg: { manager: PackageManager.Native, binary: "firefox" },
   },
   {
     type: BrowserType.Firefox,
     label: "Firefox (flatpak)",
     path: HOME_DIR + "/.var/app/org.mozilla.firefox/.mozilla/firefox/profiles.ini",
-    command: "flatpak run org.mozilla.firefox",
+    pkg: { manager: PackageManager.Flatpak, appId: "org.mozilla.firefox" },
   },
   {
     type: BrowserType.Firefox,
     label: "Firefox (snap)",
     path: HOME_DIR + "/snap/firefox/common/.mozilla/firefox/profiles.ini",
-    command: "snap run firefox",
+    pkg: { manager: PackageManager.Snap, name: "firefox" },
   },
 
   // === Waterfox ===
@@ -38,19 +39,19 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     type: BrowserType.Firefox,
     label: "Waterfox",
     path: XDG_CONFIG_HOME + "/waterfox/profiles.ini",
-    command: "waterfox",
+    pkg: { manager: PackageManager.Native, binary: "waterfox" },
   },
   {
     type: BrowserType.Firefox,
     label: "Waterfox (classic)",
     path: HOME_DIR + "/.waterfox/profiles.ini",
-    command: "waterfox",
+    pkg: { manager: PackageManager.Native, binary: "waterfox" },
   },
   {
     type: BrowserType.Firefox,
     label: "Waterfox (flatpak)",
     path: HOME_DIR + "/.var/app/net.waterfox.waterfox/.waterfox/profiles.ini",
-    command: "flatpak run net.waterfox.waterfox",
+    pkg: { manager: PackageManager.Flatpak, appId: "net.waterfox.waterfox" },
   },
 
   // === LibreWolf ===
@@ -58,19 +59,19 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     type: BrowserType.Firefox,
     label: "LibreWolf",
     path: XDG_CONFIG_HOME + "/librewolf/profiles.ini",
-    command: "librewolf",
+    pkg: { manager: PackageManager.Native, binary: "librewolf" },
   },
   {
     type: BrowserType.Firefox,
     label: "LibreWolf (classic)",
     path: HOME_DIR + "/.librewolf/profiles.ini",
-    command: "librewolf",
+    pkg: { manager: PackageManager.Native, binary: "librewolf" },
   },
   {
     type: BrowserType.Firefox,
     label: "LibreWolf (flatpak)",
     path: HOME_DIR + "/.var/app/io.gitlab.librewolf-community/.librewolf/profiles.ini",
-    command: "flatpak run io.gitlab.librewolf-community",
+    pkg: { manager: PackageManager.Flatpak, appId: "io.gitlab.librewolf-community" },
   },
 
   // === Mullvad Browser ===
@@ -79,13 +80,13 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     type: BrowserType.Firefox,
     label: "Mullvad Browser",
     path: HOME_DIR + "/.mullvad-browser/profiles.ini",
-    command: "mullvad-browser",
+    pkg: { manager: PackageManager.Native, binary: "mullvad-browser" },
   },
   {
     type: BrowserType.Firefox,
     label: "Mullvad Browser (flatpak)",
     path: HOME_DIR + "/.var/app/net.mullvad.MullvadBrowser/.mullvad-browser/profiles.ini",
-    command: "flatpak run net.mullvad.MullvadBrowser",
+    pkg: { manager: PackageManager.Flatpak, appId: "net.mullvad.MullvadBrowser" },
   },
 
   // === Floorp ===
@@ -93,19 +94,19 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     type: BrowserType.Firefox,
     label: "Floorp",
     path: XDG_CONFIG_HOME + "/floorp/profiles.ini",
-    command: "floorp",
+    pkg: { manager: PackageManager.Native, binary: "floorp" },
   },
   {
     type: BrowserType.Firefox,
     label: "Floorp (classic)",
     path: HOME_DIR + "/.floorp/profiles.ini",
-    command: "floorp",
+    pkg: { manager: PackageManager.Native, binary: "floorp" },
   },
   {
     type: BrowserType.Firefox,
     label: "Floorp (flatpak)",
     path: HOME_DIR + "/.var/app/one.ablaze.floorp/.floorp/profiles.ini",
-    command: "flatpak run one.ablaze.floorp",
+    pkg: { manager: PackageManager.Flatpak, appId: "one.ablaze.floorp" },
   },
 
   // === Zen Browser ===
@@ -113,33 +114,34 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     type: BrowserType.Firefox,
     label: "Zen",
     path: XDG_CONFIG_HOME + "/zen/profiles.ini",
-    command: "zen-browser",
+    pkg: { manager: PackageManager.Native, binary: "zen-browser" },
   },
   {
     type: BrowserType.Firefox,
     label: "Zen (classic)",
     path: HOME_DIR + "/.zen/profiles.ini",
-    command: "zen-browser",
+    pkg: { manager: PackageManager.Native, binary: "zen-browser" },
   },
   {
     type: BrowserType.Firefox,
     label: "Zen (flatpak)",
     path: HOME_DIR + "/.var/app/app.zen_browser.zen/.zen/profiles.ini",
-    command: "flatpak run app.zen_browser.zen",
+    pkg: { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" },
   },
 
   // === Firedragon (Garuda Linux) ===
+  // XDG support added in v13. Classic path covers pre-v13.
   {
     type: BrowserType.Firefox,
     label: "Firedragon",
     path: XDG_CONFIG_HOME + "/firedragon/profiles.ini",
-    command: "firedragon",
+    pkg: { manager: PackageManager.Native, binary: "firedragon" },
   },
   {
     type: BrowserType.Firefox,
     label: "Firedragon (classic)",
     path: HOME_DIR + "/.firedragon/profiles.ini",
-    command: "firedragon",
+    pkg: { manager: PackageManager.Native, binary: "firedragon" },
   },
 
   // === IceCat (GNU) ===
@@ -148,7 +150,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     type: BrowserType.Firefox,
     label: "IceCat (classic)",
     path: HOME_DIR + "/.icecat/profiles.ini",
-    command: "icecat",
+    pkg: { manager: PackageManager.Native, binary: "icecat" },
   },
 
   // === Pale Moon (Moonchild Productions, Goanna engine) ===
@@ -156,7 +158,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     type: BrowserType.Firefox,
     label: "Palemoon",
     path: HOME_DIR + "/.moonchild productions/pale moon/profiles.ini",
-    command: "palemoon",
+    pkg: { manager: PackageManager.Native, binary: "palemoon" },
   },
 
   // === Basilisk (Moonchild Productions, Goanna engine) ===
@@ -165,6 +167,6 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     type: BrowserType.Firefox,
     label: "Basilisk",
     path: HOME_DIR + "/.basilisk-dev/profiles.ini",
-    command: "basilisk",
+    pkg: { manager: PackageManager.Native, binary: "basilisk" },
   },
 ];

@@ -1,5 +1,6 @@
 import GLib from "gi://GLib";
 import { BrowserType } from "./browser-type.enum";
+import { PackageManager } from "./package-manager.enum";
 import type { SimpleBrowserConfig } from "../types";
 
 const HOME_DIR = GLib.get_home_dir();
@@ -9,33 +10,32 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "GNOME Web",
-    command: "epiphany",
+    pkg: { manager: PackageManager.Native, binary: "epiphany" },
   },
   {
     type: BrowserType.Simple,
     label: "GNOME Web (flatpak)",
-    command: "flatpak run org.gnome.Epiphany",
-    checkPath: HOME_DIR + "/.var/app/org.gnome.Epiphany",
+    pkg: { manager: PackageManager.Flatpak, appId: "org.gnome.Epiphany" },
   },
 
   // === qutebrowser ===
   {
     type: BrowserType.Simple,
     label: "qutebrowser",
-    command: "qutebrowser",
+    pkg: { manager: PackageManager.Native, binary: "qutebrowser" },
   },
 
   // === Midori ===
   {
     type: BrowserType.Simple,
     label: "Midori",
-    command: "midori",
+    pkg: { manager: PackageManager.Native, binary: "midori" },
   },
 
   // === Konqueror (KDE) ===
   {
     type: BrowserType.Simple,
     label: "Konqueror",
-    command: "konqueror",
+    pkg: { manager: PackageManager.Native, binary: "konqueror" },
   },
 ];
