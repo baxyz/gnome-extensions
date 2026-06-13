@@ -3,7 +3,7 @@ import St from "gi://St";
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { Button } from "resource:///org/gnome/shell/ui/panelMenu.js";
-import { fillMenu, getBrowserProfiles } from "./helper";
+import { fillMenu, getBrowserEntries } from "./helper";
 
 // -- Extension ----------------------------------------------------------------
 
@@ -40,15 +40,15 @@ class BrowserProfilesIndicator extends Button {
       }),
     );
 
-    this.refreshProfiles();
+    this.refreshEntries();
   }
 
-  private refreshProfiles(): void {
-    getBrowserProfiles().then((profiles) =>
+  private refreshEntries(): void {
+    getBrowserEntries().then((entries) =>
       fillMenu({
         title: this.title,
         menu: this.menu,
-        profiles,
+        entries,
         notify: Main.notify,
       }),
     );

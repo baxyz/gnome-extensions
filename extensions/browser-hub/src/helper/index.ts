@@ -1,2 +1,2 @@
-export { getBrowserProfiles } from "./digging.helper";
+export { getBrowserEntries } from "./digging.helper";
 export { fillMenu } from "./menu.helper";

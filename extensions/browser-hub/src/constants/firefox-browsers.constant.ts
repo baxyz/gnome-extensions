@@ -1,184 +1,168 @@
 import GLib from "gi://GLib";
+import { BrowserType } from "./browser-type.enum";
+import type { FirefoxBrowserConfig } from "../types";
 
-// Define a constant for the home directory
 const HOME_DIR = GLib.get_home_dir();
-
-// XDG Base Directory Specification support
 const XDG_CONFIG_HOME = GLib.getenv("XDG_CONFIG_HOME") || HOME_DIR + "/.config";
 
-/**
- * Type definition for the configuration paths.
- */
-export type BrowserInfo = {
-  /**
-   * Title of the browser.
-   * Used for the menu's section label.
-   */
-  label: string;
-
-  /**
-   * Path to the configuration file.
-   * This is used to find the profiles for the browser.
-   * This is an absolute path.
-   */
-  path: string;
-
-  /**
-   * Command to run the browser.
-   * This is used to launch the browser with a specific profile.
-   */
-  command: string;
-};
-
-/**
- * List of configuration paths for different browsers.
- * Each object contains the title of the browser, the path to its configuration file,
- * and the command to run it.
- *
- * The paths are checked in order, so the most specific paths should come first.
- * Supports standard XDG Base Directory locations since Firefox 147.
- */
-export const CONFIG_PATHS: Array<BrowserInfo> = [
-  // === Firefox (native installations) ===
+export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
+  // === Firefox ===
+  // XDG support since Firefox 147.
   {
+    type: BrowserType.Firefox,
     label: "Firefox",
     path: XDG_CONFIG_HOME + "/mozilla/firefox/profiles.ini",
     command: "firefox",
   },
   {
+    type: BrowserType.Firefox,
     label: "Firefox (classic)",
     path: HOME_DIR + "/.mozilla/firefox/profiles.ini",
     command: "firefox",
   },
-
-  // === Firefox (flatpak) ===
   {
+    type: BrowserType.Firefox,
     label: "Firefox (flatpak)",
     path: HOME_DIR + "/.var/app/org.mozilla.firefox/.mozilla/firefox/profiles.ini",
     command: "flatpak run org.mozilla.firefox",
   },
-
-  // === Firefox (snap) ===
   {
+    type: BrowserType.Firefox,
     label: "Firefox (snap)",
     path: HOME_DIR + "/snap/firefox/common/.mozilla/firefox/profiles.ini",
     command: "snap run firefox",
   },
 
-  // === Waterfox (Firefox fork) ===
+  // === Waterfox ===
   {
+    type: BrowserType.Firefox,
     label: "Waterfox",
     path: XDG_CONFIG_HOME + "/waterfox/profiles.ini",
     command: "waterfox",
   },
   {
+    type: BrowserType.Firefox,
     label: "Waterfox (classic)",
     path: HOME_DIR + "/.waterfox/profiles.ini",
     command: "waterfox",
   },
   {
+    type: BrowserType.Firefox,
     label: "Waterfox (flatpak)",
     path: HOME_DIR + "/.var/app/net.waterfox.waterfox/.waterfox/profiles.ini",
     command: "flatpak run net.waterfox.waterfox",
   },
 
-  // === LibreWolf (Privacy-focused Firefox) ===
+  // === LibreWolf ===
   {
+    type: BrowserType.Firefox,
     label: "LibreWolf",
     path: XDG_CONFIG_HOME + "/librewolf/profiles.ini",
     command: "librewolf",
   },
   {
+    type: BrowserType.Firefox,
     label: "LibreWolf (classic)",
     path: HOME_DIR + "/.librewolf/profiles.ini",
     command: "librewolf",
   },
   {
+    type: BrowserType.Firefox,
     label: "LibreWolf (flatpak)",
     path: HOME_DIR + "/.var/app/io.gitlab.librewolf-community/.librewolf/profiles.ini",
     command: "flatpak run io.gitlab.librewolf-community",
   },
 
-  // === Mullvad Browser (privacy-focused, based on Tor Browser + Firefox) ===
+  // === Mullvad Browser ===
   // No XDG support: issue #224 is Icebox (not planned).
   {
-    label: "Mullvad Browser (classic)",
+    type: BrowserType.Firefox,
+    label: "Mullvad Browser",
     path: HOME_DIR + "/.mullvad-browser/profiles.ini",
     command: "mullvad-browser",
   },
   {
+    type: BrowserType.Firefox,
     label: "Mullvad Browser (flatpak)",
     path: HOME_DIR + "/.var/app/net.mullvad.MullvadBrowser/.mullvad-browser/profiles.ini",
     command: "flatpak run net.mullvad.MullvadBrowser",
   },
 
-  // === Floorp (Firefox fork) ===
+  // === Floorp ===
   {
+    type: BrowserType.Firefox,
     label: "Floorp",
     path: XDG_CONFIG_HOME + "/floorp/profiles.ini",
     command: "floorp",
   },
   {
+    type: BrowserType.Firefox,
     label: "Floorp (classic)",
     path: HOME_DIR + "/.floorp/profiles.ini",
     command: "floorp",
   },
   {
+    type: BrowserType.Firefox,
     label: "Floorp (flatpak)",
     path: HOME_DIR + "/.var/app/one.ablaze.floorp/.floorp/profiles.ini",
     command: "flatpak run one.ablaze.floorp",
   },
 
-  // === Zen Browser (Gecko-based) ===
+  // === Zen Browser ===
   {
+    type: BrowserType.Firefox,
     label: "Zen",
     path: XDG_CONFIG_HOME + "/zen/profiles.ini",
     command: "zen-browser",
   },
   {
+    type: BrowserType.Firefox,
     label: "Zen (classic)",
     path: HOME_DIR + "/.zen/profiles.ini",
     command: "zen-browser",
   },
   {
+    type: BrowserType.Firefox,
     label: "Zen (flatpak)",
     path: HOME_DIR + "/.var/app/app.zen_browser.zen/.zen/profiles.ini",
     command: "flatpak run app.zen_browser.zen",
   },
 
-  // === Firedragon (Garuda Linux Firefox fork) ===
+  // === Firedragon (Garuda Linux) ===
   {
+    type: BrowserType.Firefox,
     label: "Firedragon",
     path: XDG_CONFIG_HOME + "/firedragon/profiles.ini",
     command: "firedragon",
   },
   {
+    type: BrowserType.Firefox,
     label: "Firedragon (classic)",
     path: HOME_DIR + "/.firedragon/profiles.ini",
     command: "firedragon",
   },
 
-  // === IceCat (GNU Firefox) ===
+  // === IceCat (GNU) ===
+  // Based on Firefox ESR 115; XDG landed upstream in Firefox 147, not yet inherited.
   {
-    label: "IceCat",
-    path: XDG_CONFIG_HOME + "/icecat/profiles.ini",
-    command: "icecat",
-  },
-  {
+    type: BrowserType.Firefox,
     label: "IceCat (classic)",
     path: HOME_DIR + "/.icecat/profiles.ini",
     command: "icecat",
   },
 
-  // === Palemoon (Moonchild Productions, legacy Goanna engine) ===
+  // === Pale Moon (Moonchild Productions, Goanna engine) ===
   {
+    type: BrowserType.Firefox,
     label: "Palemoon",
     path: HOME_DIR + "/.moonchild productions/pale moon/profiles.ini",
     command: "palemoon",
   },
 
-  // === Basilisk (Moonchild Productions, legacy Goanna engine) ===
+  // === Basilisk (Moonchild Productions, Goanna engine) ===
+  // No XDG support planned; uses non-standard .basilisk-dev directory.
   {
+    type: BrowserType.Firefox,
     label: "Basilisk",
     path: HOME_DIR + "/.basilisk-dev/profiles.ini",
     command: "basilisk",
