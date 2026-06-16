@@ -1,3 +1,3 @@
-import { createVitestConfig } from "../../tooling/vitest.config.base.ts";
+import { createVitestConfig } from "../../tooling/vitest-config.base.ts";
 
 export default createVitestConfig();
