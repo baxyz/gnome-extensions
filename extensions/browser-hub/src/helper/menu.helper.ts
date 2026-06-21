@@ -31,7 +31,11 @@ export function fillMenu({
   for (const entry of entries) {
     menu.addMenuItem(new PopupSeparatorMenuItem(entry.label));
     for (const item of entry.items) {
-      const menuItem = new PopupMenuItem(item.label);
+      // TODO: replace spaces suffix with a mini icon-button bar per workspace
+      const spacesSuffix = item.spaces && item.spaces.length > 0
+        ? `: ${item.spaces.map((s) => s.name).join(", ")}`
+        : "";
+      const menuItem = new PopupMenuItem(`${item.label}${spacesSuffix}`);
       menuItem.connect("activate", () =>
         launchBrowser({ command: item.command, title, notify }),
       );

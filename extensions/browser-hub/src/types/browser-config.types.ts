@@ -1,4 +1,5 @@
 import { BrowserType } from "./browser-type.enum";
+import type { SpaceType } from "./space-type.enum";
 import type { BrowserPkg } from "./browser-package.types";
 
 export type FirefoxBrowserConfig = {
@@ -7,6 +8,8 @@ export type FirefoxBrowserConfig = {
   /** Absolute path to profiles.ini */
   path: string;
   pkg: BrowserPkg;
+  /** Set when the browser supports in-profile spaces (e.g. Zen) */
+  spaceType?: SpaceType;
 };
 
 export type ChromiumBrowserConfig = {

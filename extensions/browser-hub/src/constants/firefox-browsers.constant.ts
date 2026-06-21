@@ -1,9 +1,6 @@
-import GLib from "gi://GLib";
-import { BrowserType, PackageManager } from "../types";
+import { BrowserType, PackageManager, SpaceType } from "../types";
 import type { FirefoxBrowserConfig } from "../types";
-
-const HOME_DIR = GLib.get_home_dir();
-const XDG_CONFIG_HOME = GLib.getenv("XDG_CONFIG_HOME") || HOME_DIR + "/.config";
+import { HOME_DIR, XDG_CONFIG_HOME } from "./paths.constant";
 
 export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
   // === Firefox ===
@@ -114,18 +111,21 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     label: "Zen",
     path: XDG_CONFIG_HOME + "/zen/profiles.ini",
     pkg: { manager: PackageManager.Native, binary: "zen-browser" },
+    spaceType: SpaceType.Zen,
   },
   {
     type: BrowserType.Firefox,
     label: "Zen (classic)",
     path: HOME_DIR + "/.zen/profiles.ini",
     pkg: { manager: PackageManager.Native, binary: "zen-browser" },
+    spaceType: SpaceType.Zen,
   },
   {
     type: BrowserType.Firefox,
     label: "Zen (flatpak)",
     path: HOME_DIR + "/.var/app/app.zen_browser.zen/.zen/profiles.ini",
     pkg: { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" },
+    spaceType: SpaceType.Zen,
   },
 
   // === Firedragon (Garuda Linux) ===
