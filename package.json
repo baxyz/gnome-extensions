@@ -9,5 +9,5 @@
     "format:check": "pnpm -r format:check",
     "test": "pnpm -r test"
   },
-  "packageManager": "pnpm@10.20.0"
+  "packageManager": "pnpm@11.8.0"
 }
