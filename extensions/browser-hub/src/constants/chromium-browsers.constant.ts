@@ -1,8 +1,6 @@
-import GLib from "gi://GLib";
 import { BrowserType, PackageManager } from "../types";
 import type { ChromiumBrowserConfig } from "../types";
-
-const HOME_DIR = GLib.get_home_dir();
+import { HOME_DIR } from "./paths.constant";
 
 // Chromium-based browsers do not honor $XDG_CONFIG_HOME — they hardcode ~/.config.
 const CONFIG_DIR = HOME_DIR + "/.config";
@@ -13,12 +11,12 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     type: BrowserType.Chromium,
     label: "Google Chrome",
     path: CONFIG_DIR + "/google-chrome/Local State",
-    pkg: { manager: PackageManager.Native, binary: "google-chrome" },
+    pkg: { manager: PackageManager.Native, binary: ["google-chrome", "google-chrome-stable"] },
   },
   {
     type: BrowserType.Chromium,
     label: "Google Chrome (flatpak)",
-    path: HOME_DIR + "/.var/app/com.google.Chrome/.config/google-chrome/Local State",
+    path: HOME_DIR + "/.var/app/com.google.Chrome/config/google-chrome/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "com.google.Chrome" },
   },
 
@@ -32,7 +30,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
   {
     type: BrowserType.Chromium,
     label: "Chromium (flatpak)",
-    path: HOME_DIR + "/.var/app/org.chromium.Chromium/.config/chromium/Local State",
+    path: HOME_DIR + "/.var/app/org.chromium.Chromium/config/chromium/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "org.chromium.Chromium" },
   },
 
@@ -46,7 +44,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
   {
     type: BrowserType.Chromium,
     label: "Brave (flatpak)",
-    path: HOME_DIR + "/.var/app/com.brave.Browser/.config/BraveSoftware/Brave-Browser/Local State",
+    path: HOME_DIR + "/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "com.brave.Browser" },
   },
 
@@ -60,7 +58,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
   {
     type: BrowserType.Chromium,
     label: "Microsoft Edge (flatpak)",
-    path: HOME_DIR + "/.var/app/com.microsoft.Edge/.config/microsoft-edge/Local State",
+    path: HOME_DIR + "/.var/app/com.microsoft.Edge/config/microsoft-edge/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "com.microsoft.Edge" },
   },
 
@@ -74,7 +72,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
   {
     type: BrowserType.Chromium,
     label: "Vivaldi (flatpak)",
-    path: HOME_DIR + "/.var/app/com.vivaldi.Vivaldi/.config/vivaldi/Local State",
+    path: HOME_DIR + "/.var/app/com.vivaldi.Vivaldi/config/vivaldi/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "com.vivaldi.Vivaldi" },
   },
 
@@ -88,7 +86,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
   {
     type: BrowserType.Chromium,
     label: "Opera (flatpak)",
-    path: HOME_DIR + "/.var/app/com.opera.Opera/.config/opera/Local State",
+    path: HOME_DIR + "/.var/app/com.opera.Opera/config/opera/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "com.opera.Opera" },
   },
 
