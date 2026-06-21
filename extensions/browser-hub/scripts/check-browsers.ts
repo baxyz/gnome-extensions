@@ -10,7 +10,11 @@ if (entries.length === 0) {
 for (const entry of entries) {
   console.log(`\n[${entry.label}]`);
   for (const item of entry.items) {
-    const spaces = item.spaces?.map((s) => s.name).join(", ");
-    console.log(`  - ${item.label}${spaces ? `: ${spaces}` : ""}`);
+    console.log(`  - ${item.label}`);
+    console.log(`    ${item.command}`);
+    for (const space of item.spaces ?? []) {
+      console.log(`    · ${space.name}`);
+      console.log(`      ${space.command}`);
+    }
   }
 }

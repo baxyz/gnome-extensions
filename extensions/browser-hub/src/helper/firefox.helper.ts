@@ -1,20 +1,25 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { buildBaseCommand, resolvePkg } from "./pkg.helper";
+import { buildBaseCommand, filterAvailable } from "./pkg.helper";
 import { readZenSpaces } from "./zen.helper";
+
+const decoder = new TextDecoder();
 
 type ProfileEntry = { name: string; dir: string };
 
 function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
-  return content.split(/^\[/m).slice(1).flatMap((section) => {
-    const name = section.match(/^Name=(.+)/m)?.[1];
-    const profilePath = section.match(/^Path=(.+)/m)?.[1];
-    const isRelative = /^IsRelative=1/m.test(section);
-    if (!name || !profilePath) return [];
-    const dir = isRelative ? `${iniDir}/${profilePath.trim()}` : profilePath.trim();
-    return [{ name: name.trim(), dir }];
-  });
+  return content
+    .split(/^\[/m)
+    .slice(1)
+    .flatMap((section) => {
+      const name = section.match(/^Name=(.+)/m)?.[1];
+      const profilePath = section.match(/^Path=(.+)/m)?.[1];
+      const isRelative = /^IsRelative=1/m.test(section);
+      if (!name || !profilePath) return [];
+      const dir = isRelative ? `${iniDir}/${profilePath.trim()}` : profilePath.trim();
+      return [{ name: name.trim(), dir }];
+    });
 }
 
 function readProfiles(path: string): Promise<ProfileEntry[]> {
@@ -24,7 +29,7 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
     file.load_contents_async(null, (_source, result) => {
       try {
         const [, contents] = file.load_contents_finish(result);
-        resolve(parseProfiles(new TextDecoder().decode(contents), iniDir));
+        resolve(parseProfiles(decoder.decode(contents), iniDir));
       } catch {
         resolve([]);
       }
@@ -36,20 +41,23 @@ export async function resolveFirefoxBrowsers(
   browsers: FirefoxBrowserConfig[],
 ): Promise<ResolvedBrowserEntry[]> {
   const entries = await Promise.all(
-    browsers
-      .flatMap((b) => {
-        const pkg = resolvePkg(b.pkg);
-        return pkg !== null ? [{ ...b, pkg }] : [];
-      })
+    filterAvailable(browsers)
       .filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS))
       .map(async (b) => {
         const profiles = await readProfiles(b.path);
         const items = await Promise.all(
           profiles.map(async ({ name, dir }) => {
-            const spaces = b.spaceType != null ? await readZenSpaces(dir) : [];
+            const baseCommand = buildBaseCommand(b.pkg);
+            const spaces =
+              b.spaceType != null
+                ? (await readZenSpaces(dir)).map((space) => ({
+                    ...space,
+                    command: `${baseCommand} -P "${name}" --zen-workspace "${space.name}" -no-remote`,
+                  }))
+                : [];
             return {
               label: name,
-              command: `${buildBaseCommand(b.pkg)} -P "${name}" -no-remote`,
+              command: `${baseCommand} -P "${name}" -no-remote`,
               ...(spaces.length > 0 && { spaces }),
             };
           }),
