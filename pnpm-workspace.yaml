@@ -2,6 +2,9 @@ packages:
   - 'extensions/*'
   - 'tooling'
 
+allowBuilds:
+  esbuild: true
+
 catalog:
   '@girs/gjs': 4.0.0-rc.15
   '@girs/gnome-shell': '^50.0.0'
