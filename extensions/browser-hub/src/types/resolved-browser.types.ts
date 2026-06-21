@@ -1,7 +1,11 @@
+import type { ZenSpace } from "./zen-space.types";
+
 export type ResolvedBrowserItem = {
   label: string;
   /** Fully built launch command, ready to pass to GLib.spawn_command_line_async */
   command: string;
+  /** Zen Browser spaces within this profile, for future workspace mini-buttons UI */
+  spaces?: ZenSpace[];
 };
 
 export type ResolvedBrowserEntry = {

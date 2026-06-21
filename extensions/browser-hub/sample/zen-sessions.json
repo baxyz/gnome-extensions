@@ -1,0 +1,109 @@
+{
+  "lastCollected": 1782067228536,
+  "spaces": [
+    {
+      "uuid": "{01234567-89ab-cdef-0123-456789abcdef}",
+      "name": "Bérenger",
+      "theme": {
+        "type": "gradient",
+        "gradientColors": [
+          {
+            "c": [29, 69, 98],
+            "isCustom": false,
+            "algorithm": "floating",
+            "isPrimary": true,
+            "lightness": "25",
+            "position": {
+              "x": 99,
+              "y": 142
+            },
+            "type": "explicit-lightness"
+          }
+        ],
+        "opacity": 0.5,
+        "texture": 0
+      },
+      "containerTabId": 6,
+      "icon": "chrome://browser/skin/zen-icons/selectable/shirt.svg",
+      "hasCollapsedPinnedTabs": false
+    },
+    {
+      "uuid": "{01234567-89ab-cdef-0123-456789abcdef}",
+      "icon": "chrome://browser/skin/zen-icons/selectable/flask.svg",
+      "name": "baxyz",
+      "theme": {
+        "type": "gradient",
+        "gradientColors": [
+          {
+            "c": [40, 113, 79],
+            "isCustom": false,
+            "algorithm": "floating",
+            "isPrimary": true,
+            "lightness": "30",
+            "position": {
+              "x": 91,
+              "y": 228
+            },
+            "type": "explicit-lightness"
+          }
+        ],
+        "opacity": 0.5,
+        "texture": 0
+      },
+      "containerTabId": 10,
+      "hasCollapsedPinnedTabs": false
+    },
+    {
+      "uuid": "{01234567-89ab-cdef-0123-456789abcdef}",
+      "icon": "chrome://browser/skin/zen-icons/selectable/game-controller.svg",
+      "name": "Ogdoxe",
+      "theme": {
+        "type": "gradient",
+        "gradientColors": [
+          {
+            "c": [146, 32, 38],
+            "isCustom": false,
+            "algorithm": "floating",
+            "isPrimary": true,
+            "lightness": "35",
+            "position": {
+              "x": 250,
+              "y": 176
+            },
+            "type": "explicit-lightness"
+          }
+        ],
+        "opacity": 0.5,
+        "texture": 0
+      },
+      "containerTabId": 8,
+      "hasCollapsedPinnedTabs": false
+    },
+    {
+      "uuid": "{01234567-89ab-cdef-0123-456789abcdef}",
+      "icon": "chrome://browser/skin/zen-icons/selectable/sun.svg",
+      "name": "Sunny Tech",
+      "theme": {
+        "type": "gradient",
+        "gradientColors": [
+          {
+            "c": [143, 145, 8],
+            "isCustom": false,
+            "algorithm": "floating",
+            "isPrimary": true,
+            "lightness": "30",
+            "position": {
+              "x": 190,
+              "y": 198
+            },
+            "type": "explicit-lightness"
+          }
+        ],
+        "opacity": 0.5,
+        "texture": 0
+      },
+      "containerTabId": 9,
+      "hasCollapsedPinnedTabs": false
+    }
+  ]
+}
