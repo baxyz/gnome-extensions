@@ -31,15 +31,25 @@ export function fillMenu({
   for (const entry of entries) {
     menu.addMenuItem(new PopupSeparatorMenuItem(entry.label));
     for (const item of entry.items) {
-      // TODO: replace spaces suffix with a mini icon-button bar per workspace
-      const spacesSuffix = item.spaces && item.spaces.length > 0
-        ? `: ${item.spaces.map((s) => s.name).join(", ")}`
-        : "";
-      const menuItem = new PopupMenuItem(`${item.label}${spacesSuffix}`);
-      menuItem.connect("activate", () =>
-        launchBrowser({ command: item.command, title, notify }),
-      );
-      menu.addMenuItem(menuItem);
+      if (item.spaces && item.spaces.length > 0) {
+        const profileItem = new PopupMenuItem(item.label);
+        profileItem.connect("activate", () =>
+          launchBrowser({ command: item.command, title, notify }),
+        );
+        menu.addMenuItem(profileItem);
+        // TODO: replace with a mini icon-button bar per workspace alongside the profile item
+        for (const space of item.spaces) {
+          const menuItem = new PopupMenuItem(`${item.label} · ${space.name}`);
+          menuItem.connect("activate", () =>
+            launchBrowser({ command: space.command, title, notify }),
+          );
+          menu.addMenuItem(menuItem);
+        }
+      } else {
+        const menuItem = new PopupMenuItem(item.label);
+        menuItem.connect("activate", () => launchBrowser({ command: item.command, title, notify }));
+        menu.addMenuItem(menuItem);
+      }
     }
   }
 }
