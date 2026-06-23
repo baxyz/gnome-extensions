@@ -6,11 +6,13 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "GNOME Web",
+    icon: "org.gnome.Epiphany",
     pkg: { manager: PackageManager.Native, binary: "epiphany" },
   },
   {
     type: BrowserType.Simple,
-    label: "GNOME Web (flatpak)",
+    label: "GNOME Web (Flatpak)",
+    icon: "org.gnome.Epiphany",
     pkg: { manager: PackageManager.Flatpak, appId: "org.gnome.Epiphany" },
   },
 
@@ -18,6 +20,7 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "qutebrowser",
+    icon: "qutebrowser",
     pkg: { manager: PackageManager.Native, binary: "qutebrowser" },
   },
 
@@ -25,6 +28,7 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "Midori",
+    icon: "midori",
     pkg: { manager: PackageManager.Native, binary: "midori" },
   },
 
@@ -32,6 +36,7 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "Konqueror",
+    icon: "konqueror",
     pkg: { manager: PackageManager.Native, binary: "konqueror" },
   },
 ];
