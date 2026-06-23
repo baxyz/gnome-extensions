@@ -39,7 +39,7 @@ export function fillMenu({
         const btn = new St.Button({
           can_focus: true,
           accessible_name: item.label,
-          style_class: "browser-hub-icon-btn",
+          style_class: "button",
         });
         btn.set_child(
           new St.Icon({ icon_name: item.icon ?? "web-browser-symbolic", icon_size: 24 }),
@@ -64,7 +64,7 @@ export function fillMenu({
             const btn = new St.Button({
               can_focus: true,
               accessible_name: space.name,
-              style_class: "browser-hub-icon-btn",
+              style_class: "button",
             });
             btn.set_child(new St.Icon({ icon_name: "media-record-symbolic", icon_size: 16 }));
             (btn as unknown as { tooltip_text: string }).tooltip_text = space.name;
