@@ -27,11 +27,16 @@ export default class BrowserProfilesExtension extends Extension {
 
 class BrowserProfilesIndicator extends Button {
   private title: string;
+  private _alive = true;
 
   constructor(title: string) {
     super(0.0, title);
 
     this.title = title;
+
+    this.connect("destroy", () => {
+      this._alive = false;
+    });
 
     this.add_child(
       new St.Icon({
@@ -44,14 +49,15 @@ class BrowserProfilesIndicator extends Button {
   }
 
   private refreshEntries(): void {
-    getBrowserEntries().then((entries) =>
+    getBrowserEntries().then((entries) => {
+      if (!this._alive) return;
       fillMenu({
         title: this.title,
         menu: this.menu,
         entries,
         notify: Main.notify,
-      }),
-    );
+      });
+    });
   }
 }
 

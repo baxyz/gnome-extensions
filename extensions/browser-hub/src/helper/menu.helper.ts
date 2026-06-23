@@ -5,6 +5,32 @@ import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/she
 import type { ResolvedBrowserEntry } from "../types";
 import { launchBrowser } from "./runner.helper";
 
+function makeIconButton(
+  label: string,
+  iconName: string,
+  iconSize: number,
+  onClick: () => void,
+): St.Button {
+  const btn = new St.Button({
+    can_focus: true,
+    accessible_name: label,
+    style_class: "button",
+  });
+  btn.set_child(new St.Icon({ icon_name: iconName, icon_size: iconSize }));
+  // tooltip_text is a registered GObject property only on GNOME Shell 47+
+  if ("tooltip_text" in btn) {
+    (btn as unknown as { tooltip_text: string }).tooltip_text = label;
+  }
+  btn.connect("clicked", onClick);
+  return btn;
+}
+
+function makeIconRow(): PopupMenuItem {
+  const row = new PopupMenuItem("", { reactive: false, can_focus: false });
+  row.label.hide();
+  return row;
+}
+
 export function fillMenu({
   title,
   menu,
@@ -33,51 +59,40 @@ export function fillMenu({
     menu.addMenuItem(new PopupSeparatorMenuItem(entry.label));
 
     if (entry.group === "simple") {
-      const row = new PopupMenuItem("", { reactive: false, can_focus: false });
-      row.label.hide();
+      const row = makeIconRow();
       for (const item of entry.items) {
-        const btn = new St.Button({
-          can_focus: true,
-          accessible_name: item.label,
-          style_class: "button",
-        });
-        btn.set_child(
-          new St.Icon({ icon_name: item.icon ?? "web-browser-symbolic", icon_size: 24 }),
+        const cmd = item.command;
+        row.add_child(
+          makeIconButton(item.label, item.icon ?? "web-browser-symbolic", 24, () =>
+            launchBrowser({ command: cmd, title, notify }),
+          ),
         );
-        // tooltip_text is available on GNOME Shell 47+
-        (btn as unknown as { tooltip_text: string }).tooltip_text = item.label;
-        btn.connect("clicked", () => launchBrowser({ command: item.command, title, notify }));
-        row.add_child(btn);
       }
       menu.addMenuItem(row);
     } else {
       for (const item of entry.items) {
         if (item.spaces && item.spaces.length > 0) {
           const profileItem = new PopupMenuItem(item.label);
+          const profileCmd = item.command;
           profileItem.connect("activate", () =>
-            launchBrowser({ command: item.command, title, notify }),
+            launchBrowser({ command: profileCmd, title, notify }),
           );
           menu.addMenuItem(profileItem);
-          const spacesRow = new PopupMenuItem("", { reactive: false, can_focus: false });
-          spacesRow.label.hide();
+          const spacesRow = makeIconRow();
           for (const space of item.spaces) {
-            const btn = new St.Button({
-              can_focus: true,
-              accessible_name: space.name,
-              style_class: "button",
-            });
-            btn.set_child(new St.Icon({ icon_name: "media-record-symbolic", icon_size: 16 }));
-            (btn as unknown as { tooltip_text: string }).tooltip_text = space.name;
-            btn.connect("clicked", () =>
-              launchBrowser({ command: space.command, title, notify }),
+            const spaceCmd = space.command;
+            spacesRow.add_child(
+              makeIconButton(space.name, "media-record-symbolic", 16, () =>
+                launchBrowser({ command: spaceCmd, title, notify }),
+              ),
             );
-            spacesRow.add_child(btn);
           }
           menu.addMenuItem(spacesRow);
         } else {
           const menuItem = new PopupMenuItem(item.label);
+          const cmd = item.command;
           menuItem.connect("activate", () =>
-            launchBrowser({ command: item.command, title, notify }),
+            launchBrowser({ command: cmd, title, notify }),
           );
           menu.addMenuItem(menuItem);
         }

@@ -1,4 +1,5 @@
 import { cpSync, existsSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { defineConfig, type Plugin } from "vite";
 import { createViteConfig } from "../../tooling/vite.config.base.ts";
 
@@ -7,7 +8,10 @@ function gnomeSchemas(): Plugin {
     name: "gnome-schemas",
     apply: "build",
     closeBundle() {
-      if (existsSync("schemas")) cpSync("schemas", "dist/schemas", { recursive: true });
+      if (existsSync("schemas")) {
+        cpSync("schemas", "dist/schemas", { recursive: true });
+        execSync("glib-compile-schemas dist/schemas/");
+      }
     },
   };
 }
@@ -16,7 +20,7 @@ const base = createViteConfig();
 
 export default defineConfig({
   ...base,
-  plugins: [...(Array.isArray(base.plugins) ? base.plugins : []), gnomeSchemas()],
+  plugins: [...(base.plugins as Plugin[]), gnomeSchemas()],
   build: {
     ...base.build,
     lib: {
@@ -25,7 +29,7 @@ export default defineConfig({
         prefs: "src/prefs.ts",
       },
       formats: ["es"],
-      fileName: (_: string, entryName: string) => `${entryName}.js`,
+      fileName: (_, entryName) => `${entryName}.js`,
     },
   },
 });
