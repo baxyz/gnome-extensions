@@ -58,14 +58,22 @@ export function fillMenu({
             launchBrowser({ command: item.command, title, notify }),
           );
           menu.addMenuItem(profileItem);
-          // TODO: replace with a mini icon-button bar per workspace alongside the profile item
+          const spacesRow = new PopupMenuItem("", { reactive: false, can_focus: false });
+          spacesRow.label.hide();
           for (const space of item.spaces) {
-            const menuItem = new PopupMenuItem(`${item.label} · ${space.name}`);
-            menuItem.connect("activate", () =>
+            const btn = new St.Button({
+              can_focus: true,
+              accessible_name: space.name,
+              style_class: "browser-hub-icon-btn",
+            });
+            btn.set_child(new St.Icon({ icon_name: "media-record-symbolic", icon_size: 16 }));
+            (btn as unknown as { tooltip_text: string }).tooltip_text = space.name;
+            btn.connect("clicked", () =>
               launchBrowser({ command: space.command, title, notify }),
             );
-            menu.addMenuItem(menuItem);
+            spacesRow.add_child(btn);
           }
+          menu.addMenuItem(spacesRow);
         } else {
           const menuItem = new PopupMenuItem(item.label);
           menuItem.connect("activate", () =>
