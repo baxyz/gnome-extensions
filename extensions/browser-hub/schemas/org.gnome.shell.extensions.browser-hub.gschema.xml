@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.browser-hub"
+          path="/org/gnome/shell/extensions/browser-hub/">
+
+    <key name="show-firefox-family" type="b">
+      <default>true</default>
+      <summary>Show Firefox family browsers</summary>
+      <description>Include Firefox, Zen, LibreWolf, Floorp and related browsers in the menu.</description>
+    </key>
+
+    <key name="show-chrome-family" type="b">
+      <default>true</default>
+      <summary>Show Chrome family browsers</summary>
+      <description>Include Chromium, Chrome, Edge, Brave and related browsers in the menu.</description>
+    </key>
+
+    <key name="show-simple-browsers" type="b">
+      <default>true</default>
+      <summary>Show profile-less browsers</summary>
+      <description>Include browsers without profile support (GNOME Web, qutebrowser, …) in the menu.</description>
+    </key>
+
+    <key name="show-zen-spaces" type="b">
+      <default>true</default>
+      <summary>Show Zen workspaces</summary>
+      <description>Display workspace buttons under each Zen Browser profile entry.</description>
+    </key>
+
+  </schema>
+</schemalist>
