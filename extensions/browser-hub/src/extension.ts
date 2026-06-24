@@ -11,7 +11,10 @@ export default class BrowserProfilesExtension extends Extension {
   private _indicator: BrowserProfilesIndicator | null = null;
 
   enable() {
-    this._indicator = new GBrowserProfilesIndicator(this.metadata.name);
+    this._indicator = new GBrowserProfilesIndicator(
+      this.metadata.name,
+      () => this.openPreferences(),
+    );
     Main.panel.addToStatusArea(this.uuid, this._indicator);
   }
 
@@ -28,11 +31,13 @@ export default class BrowserProfilesExtension extends Extension {
 class BrowserProfilesIndicator extends Button {
   private title: string;
   private _alive = true;
+  private _onSettings: () => void;
 
-  constructor(title: string) {
+  constructor(title: string, onSettings: () => void) {
     super(0.0, title);
 
     this.title = title;
+    this._onSettings = onSettings;
 
     this.connect("destroy", () => {
       this._alive = false;
@@ -56,6 +61,8 @@ class BrowserProfilesIndicator extends Button {
         menu: this.menu,
         entries,
         notify: Main.notify,
+        onSettings: this._onSettings,
+        onRefresh: () => this.refreshEntries(),
       });
     });
   }
