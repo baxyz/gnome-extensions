@@ -14,10 +14,24 @@ function makeIconButton(
   const btn = new St.Button({
     can_focus: true,
     accessible_name: label,
-    style_class: "button",
+    style_class: "button browser-hub-browser-btn",
   });
   btn.set_child(new St.Icon({ icon_name: iconName, icon_size: iconSize }));
   // tooltip_text is a registered GObject property only on GNOME Shell 47+
+  if ("tooltip_text" in btn) {
+    (btn as unknown as { tooltip_text: string }).tooltip_text = label;
+  }
+  btn.connect("clicked", onClick);
+  return btn;
+}
+
+function makeTextButton(label: string, onClick: () => void): St.Button {
+  const btn = new St.Button({
+    can_focus: true,
+    accessible_name: label,
+    label,
+    style_class: "button browser-hub-space-btn",
+  });
   if ("tooltip_text" in btn) {
     (btn as unknown as { tooltip_text: string }).tooltip_text = label;
   }
@@ -82,7 +96,7 @@ export function fillMenu({
           for (const space of item.spaces) {
             const spaceCmd = space.command;
             spacesRow.add_child(
-              makeIconButton(space.name, "media-record-symbolic", 16, () =>
+              makeTextButton(space.name, () =>
                 launchBrowser({ command: spaceCmd, title, notify }),
               ),
             );

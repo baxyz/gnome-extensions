@@ -1,0 +1,12 @@
+/* Square icon buttons for the "Others" section */
+.browser-hub-browser-btn {
+  padding: 8px;
+}
+
+/* Compact text-label buttons for Zen spaces */
+.browser-hub-space-btn {
+  /* Inspired by ClaudeCodeUsage extension */
+  font-size: 9pt;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
