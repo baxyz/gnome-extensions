@@ -10,11 +10,12 @@ function makeIconButton(
   iconName: string,
   iconSize: number,
   onClick: () => void,
+  styleClass = "button browser-hub-browser-btn",
 ): St.Button {
   const btn = new St.Button({
     can_focus: true,
     accessible_name: label,
-    style_class: "button browser-hub-browser-btn",
+    style_class: styleClass,
   });
   btn.set_child(new St.Icon({ icon_name: iconName, icon_size: iconSize }));
   // tooltip_text is a registered GObject property only on GNOME Shell 47+
@@ -50,11 +51,15 @@ export function fillMenu({
   menu,
   entries,
   notify,
+  onSettings,
+  onRefresh,
 }: {
   title: string;
   menu: PopupMenu | PopupDummyMenu;
   entries: ResolvedBrowserEntry[];
   notify: typeof Main.notify;
+  onSettings: () => void;
+  onRefresh: () => void;
 }): void {
   if ("removeAll" in menu) {
     menu.removeAll();
@@ -63,6 +68,16 @@ export function fillMenu({
   if (!("addMenuItem" in menu)) {
     return;
   }
+
+  // Top toolbar: refresh + settings, right-aligned
+  const toolbar = makeIconRow();
+  toolbar.add_child(new St.Widget({ x_expand: true }));
+  toolbar.add_child(makeIconButton("Refresh", "view-refresh-symbolic", 16, onRefresh, "button"));
+  toolbar.add_child(
+    makeIconButton("Settings", "preferences-system-symbolic", 16, onSettings, "button"),
+  );
+  menu.addMenuItem(toolbar);
+  menu.addMenuItem(new PopupSeparatorMenuItem());
 
   if (entries.length === 0) {
     menu.addMenuItem(new PopupMenuItem("No browsers found", { reactive: false }));
