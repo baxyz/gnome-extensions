@@ -1,0 +1,29 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directories:
+      - "/"
+      - "/extensions/browser-hub"
+      - "/extensions/firefox-profiles"
+      - "/tooling"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "build(deps)"
+    groups:
+      npm-all:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/"
+      - "/extensions/firefox-profiles"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "build(deps)"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
