@@ -3,6 +3,11 @@
   padding: 8px;
 }
 
+/* Square icon buttons for toolbar (refresh & settings) */
+.browser-hub-toolbar-btn {
+  padding: 0;
+}
+
 /* Compact text-label buttons for Zen spaces */
 .browser-hub-space-btn {
   /* Inspired by ClaudeCodeUsage extension */

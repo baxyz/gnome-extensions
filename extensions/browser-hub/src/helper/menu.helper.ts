@@ -72,9 +72,9 @@ export function fillMenu({
   // Top toolbar: refresh + settings, right-aligned
   const toolbar = makeIconRow();
   toolbar.add_child(new St.Widget({ x_expand: true }));
-  toolbar.add_child(makeIconButton("Refresh", "view-refresh-symbolic", 16, onRefresh, "button"));
+  toolbar.add_child(makeIconButton("Refresh", "view-refresh-symbolic", 16, onRefresh, "button browser-hub-toolbar-btn"));
   toolbar.add_child(
-    makeIconButton("Settings", "preferences-system-symbolic", 16, onSettings, "button"),
+    makeIconButton("Settings", "preferences-system-symbolic", 16, onSettings, "button browser-hub-toolbar-btn"),
   );
   menu.addMenuItem(toolbar);
   menu.addMenuItem(new PopupSeparatorMenuItem());
