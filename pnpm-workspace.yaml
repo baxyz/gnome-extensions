@@ -23,3 +23,6 @@ catalog:
   vitest: '^4.1.5'
   '@helpers4/object': '^2.0.1'
   tsx: '^4.22.4'
+
+minimumReleaseAgeExclude:
+  - mozlz4@0.1.0

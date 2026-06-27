@@ -2,7 +2,7 @@ import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
 import type { ZenSpaceData } from "../types";
-import { decodeMozLz4 } from "./mozlz4.helper";
+import { decodeMozLz4 } from "mozlz4";
 
 type ZenSessions = { spaces?: ZenSpaceData[] };
 
