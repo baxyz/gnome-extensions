@@ -1,7 +1,7 @@
 import { cpSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { defineConfig, type Plugin } from "vite";
-import { createViteConfig } from "../../tooling/vite.config.base.ts";
+import { createViteConfig } from "../../tooling/vite-config.helper.ts";
 
 function gnomeSchemas(): Plugin {
   return {
