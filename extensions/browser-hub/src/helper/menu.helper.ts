@@ -1,3 +1,4 @@
+import Clutter from "gi://Clutter";
 import St from "gi://St";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -33,6 +34,20 @@ function makeTextButton(label: string, onClick: () => void): St.Button {
     label,
     style_class: "button browser-hub-space-btn",
   });
+  if ("tooltip_text" in btn) {
+    (btn as unknown as { tooltip_text: string }).tooltip_text = label;
+  }
+  btn.connect("clicked", onClick);
+  return btn;
+}
+
+function makeSpaceIconButton(label: string, onClick: () => void): St.Button {
+  const btn = new St.Button({
+    can_focus: true,
+    accessible_name: label,
+    style_class: "button browser-hub-space-icon-btn",
+  });
+  btn.set_child(new St.Icon({ icon_name: "circle-symbolic", icon_size: 10 }));
   if ("tooltip_text" in btn) {
     (btn as unknown as { tooltip_text: string }).tooltip_text = label;
   }
@@ -101,22 +116,23 @@ export function fillMenu({
     } else {
       for (const item of entry.items) {
         if (item.spaces && item.spaces.length > 0) {
-          const profileItem = new PopupMenuItem(item.label);
-          const profileCmd = item.command;
-          profileItem.connect("activate", () =>
-            launchBrowser({ command: profileCmd, title, notify }),
+          const profileRow = makeIconRow();
+          profileRow.add_child(
+            new St.Label({ text: item.label, y_align: Clutter.ActorAlign.CENTER }),
           );
-          menu.addMenuItem(profileItem);
-          const spacesRow = makeIconRow();
+          profileRow.add_child(new St.Widget({ x_expand: true }));
           for (const space of item.spaces) {
             const spaceCmd = space.command;
-            spacesRow.add_child(
-              makeTextButton(space.name, () =>
+            profileRow.add_child(
+              makeSpaceIconButton(space.name, () =>
                 launchBrowser({ command: spaceCmd, title, notify }),
               ),
             );
           }
-          menu.addMenuItem(spacesRow);
+          profileRow.connect("activate", () =>
+            launchBrowser({ command: item.command, title, notify }),
+          );
+          menu.addMenuItem(profileRow);
         } else {
           const menuItem = new PopupMenuItem(item.label);
           const cmd = item.command;
