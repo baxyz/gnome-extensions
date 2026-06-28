@@ -3,10 +3,11 @@ import GLib from "gi://GLib";
 import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../types";
 import { buildBaseCommand, filterAvailable } from "./pkg.helper";
 import { readZenSpaces } from "./zen.helper";
+import { readFirefoxSelectableProfiles } from "./firefox-spaces.helper";
 
 const decoder = new TextDecoder();
 
-type ProfileEntry = { name: string; dir: string };
+type ProfileEntry = { name: string; dir: string; folderBasename: string };
 
 function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
   return content
@@ -18,7 +19,8 @@ function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
       const isRelative = /^IsRelative=1/m.test(section);
       if (!name || !profilePath) return [];
       const dir = isRelative ? `${iniDir}/${profilePath.trim()}` : profilePath.trim();
-      return [{ name: name.trim(), dir }];
+      const folderBasename = GLib.path_get_basename(dir);
+      return [{ name: name.trim(), dir, folderBasename }];
     });
 }
 
@@ -45,23 +47,42 @@ export async function resolveFirefoxBrowsers(
       .filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS))
       .map(async (b) => {
         const profiles = await readProfiles(b.path);
-        const items = await Promise.all(
-          profiles.map(async ({ name, dir }) => {
-            const baseCommand = buildBaseCommand(b.pkg);
-            const spaces =
-              b.spaceType != null
-                ? (await readZenSpaces(dir)).map((space) => ({
-                    ...space,
-                    command: `${baseCommand} -P "${name}" --zen-workspace "${space.name}" -no-remote`,
-                  }))
-                : [];
-            return {
-              label: name,
-              command: `${baseCommand} -P "${name}" -no-remote`,
-              ...(spaces.length > 0 && { spaces }),
-            };
-          }),
+        const firefoxRoot = GLib.path_get_dirname(b.path);
+        const selectableMap = await readFirefoxSelectableProfiles(
+          firefoxRoot,
+          profiles.map((p) => p.folderBasename),
         );
+
+        const items = (
+          await Promise.all(
+            profiles.map(async ({ name, dir, folderBasename }) => {
+              const baseCommand = buildBaseCommand(b.pkg);
+              const selectable = selectableMap.get(folderBasename);
+
+              if (selectable != null) {
+                return selectable.map((sp) => ({
+                  label: sp.name,
+                  command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
+                }));
+              }
+
+              const spaces =
+                b.spaceType != null
+                  ? (await readZenSpaces(dir)).map((space) => ({
+                      ...space,
+                      command: `${baseCommand} -P "${name}" --zen-workspace "${space.name}" -no-remote`,
+                    }))
+                  : [];
+              return [
+                {
+                  label: name,
+                  command: `${baseCommand} -P "${name}" -no-remote`,
+                  ...(spaces.length > 0 && { spaces }),
+                },
+              ];
+            }),
+          )
+        ).flat();
         return { label: b.label, items };
       }),
   );
