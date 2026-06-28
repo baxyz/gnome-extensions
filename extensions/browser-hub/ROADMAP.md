@@ -49,4 +49,4 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 - [x] Update icon from `firefox-symbolic` to a generic browser icon (`web-browser-symbolic`)
 - [ ] Update CI: add pnpm store caching to reduce job time
-- [ ] Evaluate `@nicolo-ribaudo/vite-plugin-gnome-shell` vs current manual Rollup config
+- [x] Evaluate `@nicolo-ribaudo/vite-plugin-gnome-shell` vs current manual Rollup config
