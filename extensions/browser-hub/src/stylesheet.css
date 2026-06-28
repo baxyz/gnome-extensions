@@ -5,7 +5,7 @@
 
 /* Square icon buttons for toolbar (refresh & settings) */
 .browser-hub-toolbar-btn {
-  padding: 0;
+  padding: 2px;
 }
 
 /* Compact text-label buttons for Zen spaces */
