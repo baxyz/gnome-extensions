@@ -26,7 +26,7 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 - [x] The default profile/space is shown in bold in the menu.
       Detected from `Default=1` in `profiles.ini` (Firefox) and `profile.last_used` in `Local State` (Chromium).
-- [ ] Click the browser name directly to open the default profile (no GSettings persistence needed — derived from the detected default).
+- [x] Click the browser name directly to open the default profile (no GSettings persistence needed — derived from the detected default).
 - [ ] Let the user pin a custom default profile (GSettings or `$XDG_CONFIG_HOME` JSON).
 
 ### Donut browser — isolated ephemeral profile
