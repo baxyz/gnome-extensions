@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
   <schema id="org.gnome.shell.extensions.browser-hub"
-          path="/org/gnome/shell/extensions/browser-hub/">
+    path="/org/gnome/shell/extensions/browser-hub/">
 
     <key name="show-firefox-family" type="b">
       <default>true</default>
@@ -19,6 +19,13 @@
       <default>true</default>
       <summary>Show profile-less browsers</summary>
       <description>Include browsers without profile support (GNOME Web, qutebrowser, …) in the menu.</description>
+    </key>
+
+    <key name="show-firefox-profile-groups" type="b">
+      <default>true</default>
+      <summary>Show Firefox profile groups</summary>
+      <description>Display profiles created via Firefox's new in-browser profile switcher (Firefox
+        128+). These are separate from the classic Profile Manager.</description>
     </key>
 
     <key name="show-zen-spaces" type="b">

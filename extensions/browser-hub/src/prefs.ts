@@ -26,6 +26,12 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     const spacesGroup = new Adw.PreferencesGroup({ title: "Spaces" });
     spacesGroup.add(
       new Adw.SwitchRow({
+        title: "Firefox profile groups",
+        subtitle: "Profiles from Firefox's new in-browser switcher (128+) — separate from the classic Profile Manager",
+      }),
+    );
+    spacesGroup.add(
+      new Adw.SwitchRow({
         title: "Zen workspaces",
         subtitle: "Workspace buttons under each Zen profile",
       }),
