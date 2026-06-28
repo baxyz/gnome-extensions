@@ -6,6 +6,11 @@ import type { ResolvedBrowserEntry } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./runner.helper";
 
+// tooltip_text is a registered GObject property only on GNOME Shell 47+
+function tooltip(btn: St.Button, text: string): void {
+  if ("tooltip_text" in btn) (btn as unknown as { tooltip_text: string }).tooltip_text = text;
+}
+
 function makeIconButton(
   label: string,
   iconName: string,
@@ -13,16 +18,9 @@ function makeIconButton(
   onClick: () => void,
   styleClass = "button browser-hub-browser-btn",
 ): St.Button {
-  const btn = new St.Button({
-    can_focus: true,
-    accessible_name: label,
-    style_class: styleClass,
-  });
+  const btn = new St.Button({ can_focus: true, accessible_name: label, style_class: styleClass });
   btn.set_child(new St.Icon({ icon_name: iconName, icon_size: iconSize }));
-  // tooltip_text is a registered GObject property only on GNOME Shell 47+
-  if ("tooltip_text" in btn) {
-    (btn as unknown as { tooltip_text: string }).tooltip_text = label;
-  }
+  tooltip(btn, label);
   btn.connect("clicked", onClick);
   return btn;
 }
@@ -34,9 +32,7 @@ function makeTextButton(label: string, onClick: () => void, isDefault = false): 
     label,
     style_class: `button browser-hub-space-btn${isDefault ? " browser-hub-default" : ""}`,
   });
-  if ("tooltip_text" in btn) {
-    (btn as unknown as { tooltip_text: string }).tooltip_text = label;
-  }
+  tooltip(btn, label);
   btn.connect("clicked", onClick);
   return btn;
 }
@@ -48,11 +44,39 @@ function makeSpaceIconButton(label: string, onClick: () => void): St.Button {
     style_class: "button browser-hub-space-icon-btn",
   });
   btn.set_child(new St.Icon({ icon_name: "circle-symbolic", icon_size: 10 }));
-  if ("tooltip_text" in btn) {
-    (btn as unknown as { tooltip_text: string }).tooltip_text = label;
-  }
+  tooltip(btn, label);
   btn.connect("clicked", onClick);
   return btn;
+}
+
+function makeDefaultBrowserGroup(
+  name: string,
+  onLaunch: () => void,
+  onChangeDefault: () => void,
+): St.BoxLayout {
+  const group = new St.BoxLayout({ style_class: "browser-hub-btn-group" });
+
+  const launchBtn = new St.Button({
+    can_focus: true,
+    accessible_name: name,
+    label: name,
+    style_class: "button browser-hub-default-browser-btn",
+  });
+  tooltip(launchBtn, name);
+  launchBtn.connect("clicked", onLaunch);
+
+  const changeBtn = new St.Button({
+    can_focus: true,
+    accessible_name: "Change default browser",
+    style_class: "button browser-hub-change-default-btn",
+  });
+  changeBtn.set_child(new St.Icon({ icon_name: "document-edit-symbolic", icon_size: 12 }));
+  tooltip(changeBtn, "Change default browser");
+  changeBtn.connect("clicked", onChangeDefault);
+
+  group.add_child(launchBtn);
+  group.add_child(changeBtn);
+  return group;
 }
 
 function makeIconRow(): PopupMenuItem {
@@ -91,7 +115,11 @@ export function fillMenu({
   if (defaultBrowser) {
     const cmd = defaultBrowser.command;
     toolbar.add_child(
-      makeTextButton(defaultBrowser.name, () => launchBrowser({ command: cmd, title, notify })),
+      makeDefaultBrowserGroup(
+        defaultBrowser.name,
+        () => launchBrowser({ command: cmd, title, notify }),
+        () => launchBrowser({ command: "gnome-control-center default-apps", title, notify }),
+      ),
     );
   }
   toolbar.add_child(new St.Widget({ x_expand: true }));

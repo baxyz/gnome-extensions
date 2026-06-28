@@ -3,6 +3,18 @@
   font-weight: bold;
 }
 
+/* Default browser button group in toolbar */
+.browser-hub-default-browser-btn {
+  font-size: 9pt;
+  padding: 2px 6px 2px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+.browser-hub-change-default-btn {
+  padding: 2px 5px;
+  border-radius: 0 6px 6px 0;
+}
+
 /* Panel indicator button — tighter horizontal padding to match system icons */
 .browser-hub-indicator {
   padding: 0 4px;
