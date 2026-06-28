@@ -24,6 +24,42 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
     pkg: { manager: PackageManager.Native, binary: "qutebrowser" },
   },
 
+  // === Luakit ===
+  {
+    type: BrowserType.Simple,
+    label: "Luakit",
+    icon: "luakit",
+    pkg: { manager: PackageManager.Native, binary: "luakit" },
+  },
+
+  // === Nyxt ===
+  {
+    type: BrowserType.Simple,
+    label: "Nyxt",
+    icon: "engineer.atlas.Nyxt",
+    pkg: { manager: PackageManager.Native, binary: "nyxt" },
+  },
+  {
+    type: BrowserType.Simple,
+    label: "Nyxt (flatpak)",
+    icon: "engineer.atlas.Nyxt",
+    pkg: { manager: PackageManager.Flatpak, appId: "engineer.atlas.Nyxt" },
+  },
+
+  // === Otter Browser ===
+  {
+    type: BrowserType.Simple,
+    label: "Otter Browser",
+    icon: "org.otter_browser.OtterBrowser",
+    pkg: { manager: PackageManager.Native, binary: "otter-browser" },
+  },
+  {
+    type: BrowserType.Simple,
+    label: "Otter Browser (flatpak)",
+    icon: "org.otter_browser.OtterBrowser",
+    pkg: { manager: PackageManager.Flatpak, appId: "org.otter_browser.OtterBrowser" },
+  },
+
   // === Midori ===
   {
     type: BrowserType.Simple,
@@ -38,5 +74,48 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
     label: "Konqueror",
     icon: "konqueror",
     pkg: { manager: PackageManager.Native, binary: "konqueror" },
+  },
+
+  // === NetSurf ===
+  {
+    type: BrowserType.Simple,
+    label: "NetSurf",
+    icon: "org.netsurf_browser.NetSurf",
+    pkg: { manager: PackageManager.Native, binary: "netsurf-gtk3" },
+  },
+  {
+    type: BrowserType.Simple,
+    label: "NetSurf (flatpak)",
+    icon: "org.netsurf_browser.NetSurf",
+    pkg: { manager: PackageManager.Flatpak, appId: "org.netsurf_browser.NetSurf" },
+  },
+
+  // === Dillo ===
+  {
+    type: BrowserType.Simple,
+    label: "Dillo",
+    icon: "dillo",
+    pkg: { manager: PackageManager.Native, binary: "dillo" },
+  },
+
+  // === Links2 ===
+  {
+    type: BrowserType.Simple,
+    label: "Links2",
+    pkg: { manager: PackageManager.Native, binary: "links2" },
+  },
+
+  // === ELinks ===
+  {
+    type: BrowserType.Simple,
+    label: "ELinks",
+    pkg: { manager: PackageManager.Native, binary: "elinks" },
+  },
+
+  // === w3m ===
+  {
+    type: BrowserType.Simple,
+    label: "w3m",
+    pkg: { manager: PackageManager.Native, binary: "w3m" },
   },
 ];

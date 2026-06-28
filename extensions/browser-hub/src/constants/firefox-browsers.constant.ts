@@ -30,6 +30,36 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     pkg: { manager: PackageManager.Snap, name: "firefox" },
   },
 
+  // === Firefox ESR ===
+  // No XDG support (ESR lags stable). Profile dir is shared with regular Firefox on Debian/Ubuntu
+  // (both use ~/.mozilla/firefox/), but the binary differs: firefox-esr vs firefox.
+  {
+    type: BrowserType.Firefox,
+    label: "Firefox ESR",
+    path: HOME_DIR + "/.mozilla/firefox/profiles.ini",
+    pkg: { manager: PackageManager.Native, binary: "firefox-esr" },
+  },
+
+  // === Tor Browser ===
+  // Installed via torbrowser-launcher. profiles.ini is buried inside the downloaded bundle,
+  // not in ~/.mozilla/ like standard Firefox.
+  {
+    type: BrowserType.Firefox,
+    label: "Tor Browser",
+    path:
+      HOME_DIR +
+      "/.local/share/torbrowser/tbb/x86_64/tor-browser/Browser/TorBrowser/Data/Browser/profiles.ini",
+    pkg: { manager: PackageManager.Native, binary: "torbrowser-launcher" },
+  },
+  {
+    type: BrowserType.Firefox,
+    label: "Tor Browser (flatpak)",
+    path:
+      HOME_DIR +
+      "/.var/app/org.torproject.torbrowser-launcher/data/torbrowser/tbb/x86_64/tor-browser/Browser/TorBrowser/Data/Browser/profiles.ini",
+    pkg: { manager: PackageManager.Flatpak, appId: "org.torproject.torbrowser-launcher" },
+  },
+
   // === Waterfox ===
   {
     type: BrowserType.Firefox,
@@ -103,6 +133,15 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     label: "Floorp (flatpak)",
     path: HOME_DIR + "/.var/app/one.ablaze.floorp/.floorp/profiles.ini",
     pkg: { manager: PackageManager.Flatpak, appId: "one.ablaze.floorp" },
+  },
+
+  // === Ghostery Dawn (discontinued 2024) ===
+  // Profile dir name contains a space.
+  {
+    type: BrowserType.Firefox,
+    label: "Ghostery Dawn",
+    path: HOME_DIR + "/.ghostery browser/profiles.ini",
+    pkg: { manager: PackageManager.Native, binary: "ghostery" },
   },
 
   // === Zen Browser ===

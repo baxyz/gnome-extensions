@@ -34,6 +34,16 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     pkg: { manager: PackageManager.Flatpak, appId: "org.chromium.Chromium" },
   },
 
+  // === Ungoogled Chromium ===
+  // Native binary is 'chromium', sharing ~/.config/chromium/ with stock Chromium — indistinguishable.
+  // Only the Flatpak ID reliably differentiates it.
+  {
+    type: BrowserType.Chromium,
+    label: "Ungoogled Chromium (flatpak)",
+    path: HOME_DIR + "/.var/app/com.github.Eloston.UngoogledChromium/config/chromium/Local State",
+    pkg: { manager: PackageManager.Flatpak, appId: "com.github.Eloston.UngoogledChromium" },
+  },
+
   // === Brave ===
   {
     type: BrowserType.Chromium,
@@ -88,6 +98,54 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     label: "Opera (flatpak)",
     path: HOME_DIR + "/.var/app/com.opera.Opera/config/opera/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "com.opera.Opera" },
+  },
+
+  // === Opera GX ===
+  // Linux support added March 2026.
+  {
+    type: BrowserType.Chromium,
+    label: "Opera GX",
+    path: CONFIG_DIR + "/opera-gx/Local State",
+    pkg: { manager: PackageManager.Native, binary: "opera-gx" },
+  },
+  {
+    type: BrowserType.Chromium,
+    label: "Opera GX (flatpak)",
+    path: HOME_DIR + "/.var/app/com.opera.opera-gx/config/opera-gx/Local State",
+    pkg: { manager: PackageManager.Flatpak, appId: "com.opera.opera-gx" },
+  },
+  {
+    type: BrowserType.Chromium,
+    label: "Opera GX (snap)",
+    path: HOME_DIR + "/snap/opera-gx/common/.config/opera-gx/Local State",
+    pkg: { manager: PackageManager.Snap, name: "opera-gx" },
+  },
+
+  // === Iridium Browser ===
+  // Distributed via iridiumbrowser.de's own repo; no flatpak.
+  {
+    type: BrowserType.Chromium,
+    label: "Iridium",
+    path: CONFIG_DIR + "/iridium/Local State",
+    pkg: { manager: PackageManager.Native, binary: "iridium-browser" },
+  },
+
+  // === SRWare Iron ===
+  // Distributed as direct download from srware.net; no flatpak.
+  {
+    type: BrowserType.Chromium,
+    label: "SRWare Iron",
+    path: CONFIG_DIR + "/iron/Local State",
+    pkg: { manager: PackageManager.Native, binary: "iron" },
+  },
+
+  // === Slimjet ===
+  // Distributed as direct download from slimjet.com; no flatpak.
+  {
+    type: BrowserType.Chromium,
+    label: "Slimjet",
+    path: CONFIG_DIR + "/slimjet/Local State",
+    pkg: { manager: PackageManager.Native, binary: "flashpeak-slimjet" },
   },
 
   // === Thorium ===
