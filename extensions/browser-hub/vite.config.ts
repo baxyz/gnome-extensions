@@ -31,5 +31,16 @@ export default defineConfig({
       formats: ["es"],
       fileName: (_, entryName) => `${entryName}.js`,
     },
+    rollupOptions: {
+      ...base.build?.rollupOptions,
+      output: {
+        ...base.build?.rollupOptions?.output,
+        manualChunks: (id) => {
+          if (id.includes("node_modules/mozlz4")) return "mozlz4";
+          if (id.includes("node_modules/sqlite-reader")) return "sqlite-reader";
+        },
+        chunkFileNames: "[name].js",
+      },
+    },
   },
 });
