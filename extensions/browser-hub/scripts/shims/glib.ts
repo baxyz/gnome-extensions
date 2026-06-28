@@ -40,5 +40,12 @@ export default {
     }
   },
 
+  path_get_basename: (path: string): string => path.split("/").at(-1) ?? path,
+
+  path_get_dirname: (path: string): string => {
+    const parts = path.split("/");
+    return parts.length > 1 ? parts.slice(0, -1).join("/") || "/" : ".";
+  },
+
   spawn_command_line_async: (_cmd: string): boolean => true,
 };

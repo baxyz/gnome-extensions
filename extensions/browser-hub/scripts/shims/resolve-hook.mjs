@@ -3,6 +3,7 @@ const SHIMS = new Map([
   ["gi://Gio", new URL("./gio.ts", import.meta.url).href],
   ["gi://GObject", new URL("./gnome-shell.ts", import.meta.url).href],
   ["gi://St", new URL("./gnome-shell.ts", import.meta.url).href],
+  ["gi://Clutter", new URL("./gnome-shell.ts", import.meta.url).href],
 ]);
 
 export function resolve(specifier, context, nextResolve) {
