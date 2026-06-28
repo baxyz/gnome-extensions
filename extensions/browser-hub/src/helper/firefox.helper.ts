@@ -60,10 +60,16 @@ export async function resolveFirefoxBrowsers(
               const selectable = selectableMap.get(folderBasename);
 
               if (selectable != null) {
-                return selectable.map((sp) => ({
-                  label: sp.name,
-                  command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
-                }));
+                return [
+                  {
+                    label: name,
+                    command: `${baseCommand} -P "${name}" -no-remote`,
+                    spaces: selectable.map((sp) => ({
+                      name: sp.name,
+                      command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
+                    })),
+                  },
+                ];
               }
 
               const spaces =

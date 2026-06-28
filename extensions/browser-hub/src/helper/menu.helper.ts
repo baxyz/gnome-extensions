@@ -1,4 +1,3 @@
-import Clutter from "gi://Clutter";
 import St from "gi://St";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -117,8 +116,9 @@ export function fillMenu({
       for (const item of entry.items) {
         if (item.spaces && item.spaces.length > 0) {
           const profileRow = makeIconRow();
+          const cmd = item.command;
           profileRow.add_child(
-            new St.Label({ text: item.label, y_align: Clutter.ActorAlign.CENTER }),
+            makeTextButton(item.label, () => launchBrowser({ command: cmd, title, notify })),
           );
           profileRow.add_child(new St.Widget({ x_expand: true }));
           for (const space of item.spaces) {
@@ -129,9 +129,6 @@ export function fillMenu({
               ),
             );
           }
-          profileRow.connect("activate", () =>
-            launchBrowser({ command: item.command, title, notify }),
-          );
           menu.addMenuItem(profileRow);
         } else {
           const menuItem = new PopupMenuItem(item.label);
