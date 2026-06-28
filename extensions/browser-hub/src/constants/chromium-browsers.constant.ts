@@ -58,6 +58,20 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     pkg: { manager: PackageManager.Flatpak, appId: "com.brave.Browser" },
   },
 
+  // === Brave Origin ===
+  {
+    type: BrowserType.Chromium,
+    label: "Brave Origin",
+    path: CONFIG_DIR + "/BraveSoftware/Brave-Origin/Local State",
+    pkg: { manager: PackageManager.Native, binary: "brave-origin" },
+  },
+  {
+    type: BrowserType.Chromium,
+    label: "Brave Origin Beta",
+    path: CONFIG_DIR + "/BraveSoftware/Brave-Origin-Beta/Local State",
+    pkg: { manager: PackageManager.Native, binary: "brave-origin-beta" },
+  },
+
   // === Microsoft Edge ===
   {
     type: BrowserType.Chromium,
