@@ -36,8 +36,9 @@ export default defineConfig({
       output: {
         ...base.build?.rollupOptions?.output,
         manualChunks: (id) => {
-          if (id.includes("node_modules/mozlz4")) return "mozlz4";
-          if (id.includes("node_modules/sqlite-reader")) return "sqlite-reader";
+          if (id.includes("node_modules/mozlz4")) return "vendor-mozlz4";
+          if (id.includes("node_modules/sqlite-reader")) return "vendor-sqlite-reader";
+          if (id.includes("@helpers4")) return "vendor-helpers4";
         },
         chunkFileNames: "[name].js",
       },
