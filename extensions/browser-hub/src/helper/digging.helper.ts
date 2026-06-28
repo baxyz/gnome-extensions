@@ -25,9 +25,13 @@ const ALL_ON: BrowserSettings = {
   enabledSpaces: new Set(Object.values(SpaceType)),
 };
 
-export function getBrowserEntries(settings: BrowserSettings = ALL_ON): Promise<ResolvedBrowserEntry[]> {
+export function getBrowserEntries(
+  settings: BrowserSettings = ALL_ON,
+): Promise<ResolvedBrowserEntry[]> {
   return Promise.all([
-    settings.showFirefoxFamily ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings.enabledSpaces) : [],
+    settings.showFirefoxFamily
+      ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings.enabledSpaces)
+      : [],
     settings.showChromeFamily ? resolveChromiumBrowsers(CHROMIUM_BROWSERS) : [],
     settings.showChromeFamily ? resolveFalkonBrowsers(FALKON_BROWSERS) : [],
     settings.showSimpleBrowsers ? resolveSimpleBrowsers(SIMPLE_BROWSERS) : [],

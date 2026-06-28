@@ -21,9 +21,7 @@ export default class BrowserProfilesExtension extends Extension {
       showFirefoxFamily: settings.get_boolean("show-firefox-family"),
       showChromeFamily: settings.get_boolean("show-chrome-family"),
       showSimpleBrowsers: settings.get_boolean("show-simple-browsers"),
-      enabledSpaces: new Set(
-        Object.values(SpaceType).filter((key) => settings.get_boolean(key)),
-      ),
+      enabledSpaces: new Set(Object.values(SpaceType).filter((key) => settings.get_boolean(key))),
     });
 
     this._indicator = new GBrowserProfilesIndicator(

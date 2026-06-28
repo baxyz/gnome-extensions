@@ -14,9 +14,13 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     };
 
     const profilesGroup = new Adw.PreferencesGroup({ title: "Profiles" });
-    profilesGroup.add(row("Firefox family", "Zen, Firefox, LibreWolf, Floorp…", "show-firefox-family"));
+    profilesGroup.add(
+      row("Firefox family", "Zen, Firefox, LibreWolf, Floorp…", "show-firefox-family"),
+    );
     profilesGroup.add(row("Chrome family", "Chromium, Edge, Brave…", "show-chrome-family"));
-    profilesGroup.add(row("Profile-less browsers", "GNOME Web, qutebrowser…", "show-simple-browsers"));
+    profilesGroup.add(
+      row("Profile-less browsers", "GNOME Web, qutebrowser…", "show-simple-browsers"),
+    );
 
     const spacesGroup = new Adw.PreferencesGroup({ title: "Spaces" });
     spacesGroup.add(
@@ -26,7 +30,9 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
         SpaceType.FirefoxProfileGroup,
       ),
     );
-    spacesGroup.add(row("Zen workspaces", "Workspace buttons under each Zen profile", SpaceType.ZenWorkspace));
+    spacesGroup.add(
+      row("Zen workspaces", "Workspace buttons under each Zen profile", SpaceType.ZenWorkspace),
+    );
 
     const page = new Adw.PreferencesPage();
     page.add(profilesGroup);

@@ -52,7 +52,10 @@ export async function resolveFirefoxBrowsers(
         const profiles = await readProfiles(b.path);
         const firefoxRoot = GLib.path_get_dirname(b.path);
         const selectableMap = enabledSpaces.has(SpaceType.FirefoxProfileGroup)
-          ? await readFirefoxSelectableProfiles(firefoxRoot, profiles.map((p) => p.folderBasename))
+          ? await readFirefoxSelectableProfiles(
+              firefoxRoot,
+              profiles.map((p) => p.folderBasename),
+            )
           : new Map<string, import("./firefox-spaces.helper").FirefoxSelectableProfile[]>();
 
         const items = (

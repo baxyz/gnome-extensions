@@ -123,9 +123,23 @@ export function fillMenu({
     );
   }
   toolbar.add_child(new St.Widget({ x_expand: true }));
-  toolbar.add_child(makeIconButton("Refresh", "view-refresh-symbolic", 16, onRefresh, "button browser-hub-toolbar-btn"));
   toolbar.add_child(
-    makeIconButton("Settings", "preferences-system-symbolic", 16, onSettings, "button browser-hub-toolbar-btn"),
+    makeIconButton(
+      "Refresh",
+      "view-refresh-symbolic",
+      16,
+      onRefresh,
+      "button browser-hub-toolbar-btn",
+    ),
+  );
+  toolbar.add_child(
+    makeIconButton(
+      "Settings",
+      "preferences-system-symbolic",
+      16,
+      onSettings,
+      "button browser-hub-toolbar-btn",
+    ),
   );
   menu.addMenuItem(toolbar);
   menu.addMenuItem(new PopupSeparatorMenuItem());
@@ -175,9 +189,7 @@ export function fillMenu({
           const menuItem = new PopupMenuItem(item.label);
           if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
           const cmd = item.command;
-          menuItem.connect("activate", () =>
-            launchBrowser({ command: cmd, title, notify }),
-          );
+          menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
           menu.addMenuItem(menuItem);
         }
       }
