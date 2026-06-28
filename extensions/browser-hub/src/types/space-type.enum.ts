@@ -1,3 +1,4 @@
 export enum SpaceType {
-  Zen = "zen",
+  ZenWorkspace = "show-zen-spaces",
+  FirefoxProfileGroup = "show-firefox-profile-groups",
 }
