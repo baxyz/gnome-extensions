@@ -1,6 +1,6 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
-import { readTable } from "./sqlite.helper";
+import { readTable } from "sqlite-reader";
 
 export interface FirefoxSelectableProfile {
   name: string;

@@ -26,3 +26,4 @@ catalog:
 
 minimumReleaseAgeExclude:
   - mozlz4@0.1.0
+  - sqlite-reader@0.1.0

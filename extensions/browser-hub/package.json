@@ -32,7 +32,8 @@
   },
   "dependencies": {
     "@helpers4/object": "catalog:",
-    "mozlz4": "^0.1.0"
+    "mozlz4": "^0.1.0",
+    "sqlite-reader": "^0.1.0"
   },
   "devDependencies": {
     "@girs/gjs": "catalog:",
