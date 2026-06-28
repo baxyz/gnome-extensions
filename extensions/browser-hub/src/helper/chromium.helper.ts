@@ -6,15 +6,19 @@ import { buildBaseCommand, filterAvailable } from "./pkg.helper";
 
 const decoder = new TextDecoder();
 
-type ChromiumProfile = { name: string; dir: string };
-type LocalState = { profile?: { info_cache?: Record<string, { name?: string }> } };
+type ChromiumProfile = { name: string; dir: string; isDefault: boolean };
+type LocalState = {
+  profile?: { info_cache?: Record<string, { name?: string }>; last_used?: string };
+};
 
 function parseProfiles(content: string): ChromiumProfile[] {
   const json = safeJsonParse<LocalState>(content);
   const cache = json?.profile?.info_cache ?? {};
+  const lastUsed = json?.profile?.last_used;
   return Object.entries(cache).map(([dir, info]) => ({
     dir,
     name: info.name ?? dir,
+    isDefault: dir === lastUsed,
   }));
 }
 
@@ -45,6 +49,7 @@ export async function resolveChromiumBrowsers(
           items: profiles.map((profile) => ({
             label: profile.name,
             command: `${buildBaseCommand(b.pkg)} --profile-directory="${profile.dir}"`,
+            isDefault: profile.isDefault,
           })),
         };
       }),

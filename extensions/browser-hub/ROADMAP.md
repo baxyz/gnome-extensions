@@ -14,8 +14,8 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 ### Zen workspace per profile
 
-- [ ] When launching a Zen Browser profile, also select the associated Zen workspace.
-      Requires reading Zen workspace config and passing the right argument at launch.
+- [x] Zen workspaces are read and listed per profile.
+      Workspace switching on launch is not supported (no CLI argument available). No further work planned.
 
 ### Default browser switcher
 
@@ -24,8 +24,10 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 ### Default profile per browser
 
-- [ ] Define a "default" profile per browser that opens when clicking the browser name directly (not a specific profile).
-      Requires local persistence (GSettings or a JSON file in `$XDG_CONFIG_HOME`).
+- [x] The default profile/space is shown in bold in the menu.
+      Detected from `Default=1` in `profiles.ini` (Firefox) and `profile.last_used` in `Local State` (Chromium).
+- [ ] Click the browser name directly to open the default profile (no GSettings persistence needed — derived from the detected default).
+- [ ] Let the user pin a custom default profile (GSettings or `$XDG_CONFIG_HOME` JSON).
 
 ### Donut browser — isolated ephemeral profile
 

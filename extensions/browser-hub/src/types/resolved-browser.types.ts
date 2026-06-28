@@ -2,6 +2,7 @@
 export type BrowserSpace = {
   name: string;
   command: string;
+  isDefault?: boolean;
 };
 
 export type ResolvedBrowserItem = {
@@ -12,6 +13,7 @@ export type ResolvedBrowserItem = {
   spaces?: BrowserSpace[];
   /** Desktop icon name for icon-button rendering (simple browsers) */
   icon?: string;
+  isDefault?: boolean;
 };
 
 export type ResolvedBrowserEntry = {

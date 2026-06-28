@@ -26,12 +26,12 @@ function makeIconButton(
   return btn;
 }
 
-function makeTextButton(label: string, onClick: () => void): St.Button {
+function makeTextButton(label: string, onClick: () => void, isDefault = false): St.Button {
   const btn = new St.Button({
     can_focus: true,
     accessible_name: label,
     label,
-    style_class: "button browser-hub-space-btn",
+    style_class: `button browser-hub-space-btn${isDefault ? " browser-hub-default" : ""}`,
   });
   if ("tooltip_text" in btn) {
     (btn as unknown as { tooltip_text: string }).tooltip_text = label;
@@ -118,7 +118,11 @@ export function fillMenu({
           const profileRow = makeIconRow();
           const cmd = item.command;
           profileRow.add_child(
-            makeTextButton(item.label, () => launchBrowser({ command: cmd, title, notify })),
+            makeTextButton(
+              item.label,
+              () => launchBrowser({ command: cmd, title, notify }),
+              item.isDefault,
+            ),
           );
           profileRow.add_child(new St.Widget({ x_expand: true }));
           for (const space of item.spaces) {
@@ -132,6 +136,7 @@ export function fillMenu({
           menu.addMenuItem(profileRow);
         } else {
           const menuItem = new PopupMenuItem(item.label);
+          if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
           const cmd = item.command;
           menuItem.connect("activate", () =>
             launchBrowser({ command: cmd, title, notify }),

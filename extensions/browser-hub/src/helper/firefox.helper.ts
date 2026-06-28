@@ -8,7 +8,7 @@ import { readFirefoxSelectableProfiles } from "./firefox-spaces.helper";
 
 const decoder = new TextDecoder();
 
-type ProfileEntry = { name: string; dir: string; folderBasename: string };
+type ProfileEntry = { name: string; dir: string; folderBasename: string; isDefault: boolean };
 
 function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
   return content
@@ -18,10 +18,11 @@ function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
       const name = section.match(/^Name=(.+)/m)?.[1];
       const profilePath = section.match(/^Path=(.+)/m)?.[1];
       const isRelative = /^IsRelative=1/m.test(section);
+      const isDefault = /^Default=1/m.test(section);
       if (!name || !profilePath) return [];
       const dir = isRelative ? `${iniDir}/${profilePath.trim()}` : profilePath.trim();
       const folderBasename = GLib.path_get_basename(dir);
-      return [{ name: name.trim(), dir, folderBasename }];
+      return [{ name: name.trim(), dir, folderBasename, isDefault }];
     });
 }
 
@@ -56,7 +57,7 @@ export async function resolveFirefoxBrowsers(
 
         const items = (
           await Promise.all(
-            profiles.map(async ({ name, dir, folderBasename }) => {
+            profiles.map(async ({ name, dir, folderBasename, isDefault }) => {
               const baseCommand = buildBaseCommand(b.pkg);
               const selectable = selectableMap.get(folderBasename);
 
@@ -65,6 +66,7 @@ export async function resolveFirefoxBrowsers(
                   {
                     label: name,
                     command: `${baseCommand} -P "${name}" -no-remote`,
+                    isDefault,
                     spaces: selectable.map((sp) => ({
                       name: sp.name,
                       command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
@@ -84,6 +86,7 @@ export async function resolveFirefoxBrowsers(
                 {
                   label: name,
                   command: `${baseCommand} -P "${name}" -no-remote`,
+                  isDefault,
                   ...(spaces.length > 0 && { spaces }),
                 },
               ];

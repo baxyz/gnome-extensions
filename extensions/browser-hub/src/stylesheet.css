@@ -1,3 +1,13 @@
+/* Default profile or space — shown in bold */
+.browser-hub-default {
+  font-weight: bold;
+}
+
+/* Panel indicator button — tighter horizontal padding to match system icons */
+.browser-hub-indicator {
+  padding: 0 4px;
+}
+
 /* Square icon buttons for the "Others" section */
 .browser-hub-browser-btn {
   padding: 8px;
