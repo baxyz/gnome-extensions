@@ -5,6 +5,7 @@ import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { Button } from "resource:///org/gnome/shell/ui/panelMenu.js";
 import { fillMenu, getBrowserEntries } from "./helper";
 import type { BrowserSettings } from "./helper/digging.helper";
+import { getDefaultBrowser } from "./helper/default-browser.helper";
 import { SpaceType } from "./types/space-type.enum";
 
 // -- Extension ----------------------------------------------------------------
@@ -90,6 +91,7 @@ class BrowserProfilesIndicator extends Button {
         notify: Main.notify,
         onSettings: this._onSettings,
         onRefresh: () => this.refreshEntries(),
+        defaultBrowser: getDefaultBrowser(),
       });
     });
   }

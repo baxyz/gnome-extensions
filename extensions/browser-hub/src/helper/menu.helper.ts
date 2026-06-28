@@ -3,6 +3,7 @@ import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import type { ResolvedBrowserEntry } from "../types";
+import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./runner.helper";
 
 function makeIconButton(
@@ -67,6 +68,7 @@ export function fillMenu({
   notify,
   onSettings,
   onRefresh,
+  defaultBrowser,
 }: {
   title: string;
   menu: PopupMenu | PopupDummyMenu;
@@ -74,6 +76,7 @@ export function fillMenu({
   notify: typeof Main.notify;
   onSettings: () => void;
   onRefresh: () => void;
+  defaultBrowser?: DefaultBrowserInfo | null;
 }): void {
   if ("removeAll" in menu) {
     menu.removeAll();
@@ -83,8 +86,14 @@ export function fillMenu({
     return;
   }
 
-  // Top toolbar: refresh + settings, right-aligned
+  // Top toolbar: [default browser?] — spacer — refresh — settings
   const toolbar = makeIconRow();
+  if (defaultBrowser) {
+    const cmd = defaultBrowser.command;
+    toolbar.add_child(
+      makeTextButton(defaultBrowser.name, () => launchBrowser({ command: cmd, title, notify })),
+    );
+  }
   toolbar.add_child(new St.Widget({ x_expand: true }));
   toolbar.add_child(makeIconButton("Refresh", "view-refresh-symbolic", 16, onRefresh, "button browser-hub-toolbar-btn"));
   toolbar.add_child(

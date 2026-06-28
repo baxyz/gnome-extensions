@@ -8,8 +8,37 @@ export enum FileTest {
   IS_REGULAR = 8,
 }
 
+class KeyFile {
+  private _groups: Record<string, Record<string, string>> = {};
+
+  load_from_file(path: string, _flags: number): void {
+    const content = fs.readFileSync(path, "utf8");
+    let group = "";
+    for (const raw of content.split("\n")) {
+      const line = raw.trim();
+      const grpMatch = line.match(/^\[(.+)\]$/);
+      if (grpMatch) {
+        group = grpMatch[1];
+        this._groups[group] ??= {};
+        continue;
+      }
+      const eq = line.indexOf("=");
+      if (eq === -1 || !group) continue;
+      this._groups[group][line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
+    }
+  }
+
+  get_string(group: string, key: string): string {
+    const val = this._groups[group]?.[key];
+    if (val === undefined) throw new Error(`[${group}] ${key}: not found`);
+    return val;
+  }
+}
+
 export default {
   FileTest,
+  KeyFile,
+  KeyFileFlags: { NONE: 0 },
   PRIORITY_DEFAULT: 0,
 
   get_home_dir: (): string => os.homedir(),
