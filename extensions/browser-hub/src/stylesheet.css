@@ -29,14 +29,23 @@
   padding: 4px;
 }
 
-/* Compact text-label buttons for Browser spaces */
-.browser-hub-space-btn {
-  font-size: 9pt;
+/* Dot buttons (●) for browser spaces — used as a button group */
+.browser-hub-space-dot-btn {
   padding: 2px 6px;
+}
+
+.browser-hub-space-dot-btn--solo {
   border-radius: 6px;
 }
 
-/* Square icon buttons for Browser spaces */
-.browser-hub-space-icon-btn {
-  padding: 2px 6px;
+.browser-hub-space-dot-btn--first {
+  border-radius: 6px 0 0 6px;
+}
+
+.browser-hub-space-dot-btn--mid {
+  border-radius: 0;
+}
+
+.browser-hub-space-dot-btn--last {
+  border-radius: 0 6px 6px 0;
 }

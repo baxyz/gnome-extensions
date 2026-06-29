@@ -25,28 +25,31 @@ function makeIconButton(
   return btn;
 }
 
-function makeTextButton(label: string, onClick: () => void, isDefault = false): St.Button {
-  const btn = new St.Button({
-    can_focus: true,
-    accessible_name: label,
-    label,
-    style_class: `button browser-hub-space-btn${isDefault ? " browser-hub-default" : ""}`,
+function makeSpaceGroup(
+  spaces: { name: string; command: string }[],
+  title: string,
+  notify: typeof Main.notify,
+): St.BoxLayout {
+  const group = new St.BoxLayout({ spacing: 1 });
+  const btns = spaces.map(({ name, command }) => {
+    const btn = new St.Button({
+      can_focus: true,
+      accessible_name: name,
+      label: "●",
+      style_class: "button browser-hub-space-dot-btn",
+    });
+    tooltip(btn, name);
+    const cmd = command;
+    btn.connect("clicked", () => launchBrowser({ command: cmd, title, notify }));
+    return btn;
   });
-  tooltip(btn, label);
-  btn.connect("clicked", onClick);
-  return btn;
-}
-
-function makeSpaceIconButton(label: string, onClick: () => void): St.Button {
-  const btn = new St.Button({
-    can_focus: true,
-    accessible_name: label,
-    style_class: "button browser-hub-space-icon-btn",
+  const n = btns.length;
+  btns.forEach((btn, i) => {
+    const mod = n === 1 ? "--solo" : i === 0 ? "--first" : i === n - 1 ? "--last" : "--mid";
+    btn.add_style_class_name(`browser-hub-space-dot-btn${mod}`);
+    group.add_child(btn);
   });
-  btn.set_child(new St.Icon({ icon_name: "circle-symbolic", icon_size: 10 }));
-  tooltip(btn, label);
-  btn.connect("clicked", onClick);
-  return btn;
+  return group;
 }
 
 function makeDefaultBrowserGroup(
@@ -174,25 +177,13 @@ export function fillMenu({
     } else {
       for (const item of entry.items) {
         if (item.spaces && item.spaces.length > 0) {
-          const profileRow = makeIconRow();
+          const menuItem = new PopupMenuItem(item.label);
+          if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
           const cmd = item.command;
-          profileRow.add_child(
-            makeTextButton(
-              item.label,
-              () => launchBrowser({ command: cmd, title, notify }),
-              item.isDefault,
-            ),
-          );
-          profileRow.add_child(new St.Widget({ x_expand: true }));
-          for (const space of item.spaces) {
-            const spaceCmd = space.command;
-            profileRow.add_child(
-              makeSpaceIconButton(space.name, () =>
-                launchBrowser({ command: spaceCmd, title, notify }),
-              ),
-            );
-          }
-          menu.addMenuItem(profileRow);
+          menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
+          menuItem.add_child(new St.Widget({ x_expand: true }));
+          menuItem.add_child(makeSpaceGroup(item.spaces, title, notify));
+          menu.addMenuItem(menuItem);
         } else {
           const menuItem = new PopupMenuItem(item.label);
           if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
