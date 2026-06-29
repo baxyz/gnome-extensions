@@ -54,7 +54,7 @@ function makeDefaultBrowserGroup(
   onLaunch: () => void,
   onChangeDefault: () => void,
 ): St.BoxLayout {
-  const group = new St.BoxLayout({ style_class: "browser-hub-btn-group" });
+  const group = new St.BoxLayout({ style_class: "browser-hub-btn-group", spacing: 1 });
 
   const launchBtn = new St.Button({
     can_focus: true,
