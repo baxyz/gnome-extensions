@@ -118,7 +118,7 @@ export function fillMenu({
       makeDefaultBrowserGroup(
         defaultBrowser.name,
         () => launchBrowser({ command: cmd, title, notify }),
-        () => launchBrowser({ command: "gnome-control-center default-apps", title, notify }),
+        () => launchBrowser({ command: "gio open settings:///default-apps", title, notify }),
       ),
     );
   }
