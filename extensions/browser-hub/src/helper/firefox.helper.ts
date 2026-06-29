@@ -96,6 +96,9 @@ export async function resolveFirefoxBrowsers(
             }),
           )
         ).flat();
+        items.sort(
+          (a, b) => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label),
+        );
         return { label: b.label, items };
       }),
   );

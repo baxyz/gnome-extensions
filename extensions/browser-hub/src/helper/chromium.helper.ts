@@ -44,14 +44,16 @@ export async function resolveChromiumBrowsers(
       .filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS))
       .map(async (b) => {
         const profiles = await readProfiles(b.path);
-        return {
-          label: b.label,
-          items: profiles.map((profile) => ({
+        const items = profiles
+          .map((profile) => ({
             label: profile.name,
             command: `${buildBaseCommand(b.pkg)} --profile-directory="${profile.dir}"`,
             isDefault: profile.isDefault,
-          })),
-        };
+          }))
+          .sort(
+            (a, b) => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label),
+          );
+        return { label: b.label, items };
       }),
   );
   return entries.filter((e) => e.items.length > 0);
