@@ -15,9 +15,8 @@
   border-radius: 0 6px 6px 0;
 }
 
-/* Panel indicator button — tighter horizontal padding to match system icons */
-.browser-hub-indicator {
-  padding: 0 4px;
+.browser-hub-default-browser-btn--solo {
+  border-radius: 6px;
 }
 
 /* Square icon buttons for the "Others" section */

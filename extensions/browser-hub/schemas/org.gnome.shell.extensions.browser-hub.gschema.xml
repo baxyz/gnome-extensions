@@ -34,5 +34,11 @@
       <description>Display workspace buttons under each Zen Browser profile entry.</description>
     </key>
 
+    <key name="show-default-browser-edit" type="b">
+      <default>true</default>
+      <summary>Show default browser edit button</summary>
+      <description>Display the pencil button next to the default browser name that opens Default Applications settings.</description>
+    </key>
+
   </schema>
 </schemalist>

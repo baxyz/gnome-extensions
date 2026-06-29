@@ -28,6 +28,7 @@ export default class BrowserProfilesExtension extends Extension {
       this.metadata.name,
       () => this.openPreferences(),
       readSettings,
+      () => settings.get_boolean("show-default-browser-edit"),
     );
 
     this._settingsChangedId = settings.connect("changed", () => {
@@ -56,13 +57,20 @@ class BrowserProfilesIndicator extends Button {
   private _alive = true;
   private _onSettings: () => void;
   private _readSettings: () => BrowserSettings;
+  private _readShowEditBtn: () => boolean;
 
-  constructor(title: string, onSettings: () => void, readSettings: () => BrowserSettings) {
+  constructor(
+    title: string,
+    onSettings: () => void,
+    readSettings: () => BrowserSettings,
+    readShowEditBtn: () => boolean,
+  ) {
     super(0.0, title);
 
     this._title = title;
     this._onSettings = onSettings;
     this._readSettings = readSettings;
+    this._readShowEditBtn = readShowEditBtn;
 
     this.connect("destroy", () => {
       this._alive = false;
@@ -90,6 +98,7 @@ class BrowserProfilesIndicator extends Button {
         onSettings: this._onSettings,
         onRefresh: () => this.refreshEntries(),
         defaultBrowser: getDefaultBrowser(),
+        showDefaultBrowserEdit: this._readShowEditBtn(),
       });
     });
   }

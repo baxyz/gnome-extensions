@@ -53,6 +53,7 @@ function makeDefaultBrowserGroup(
   name: string,
   onLaunch: () => void,
   onChangeDefault: () => void,
+  showEdit: boolean,
 ): St.BoxLayout {
   const group = new St.BoxLayout({ style_class: "browser-hub-btn-group", spacing: 1 });
 
@@ -60,22 +61,26 @@ function makeDefaultBrowserGroup(
     can_focus: true,
     accessible_name: name,
     label: name,
-    style_class: "button browser-hub-default-browser-btn",
+    style_class: showEdit
+      ? "button browser-hub-default-browser-btn"
+      : "button browser-hub-default-browser-btn browser-hub-default-browser-btn--solo",
   });
   tooltip(launchBtn, name);
   launchBtn.connect("clicked", onLaunch);
-
-  const changeBtn = new St.Button({
-    can_focus: true,
-    accessible_name: "Change default browser",
-    style_class: "button browser-hub-change-default-btn",
-  });
-  changeBtn.set_child(new St.Icon({ icon_name: "document-edit-symbolic", icon_size: 12 }));
-  tooltip(changeBtn, "Change default browser");
-  changeBtn.connect("clicked", onChangeDefault);
-
   group.add_child(launchBtn);
-  group.add_child(changeBtn);
+
+  if (showEdit) {
+    const changeBtn = new St.Button({
+      can_focus: true,
+      accessible_name: "Change default browser",
+      style_class: "button browser-hub-change-default-btn",
+    });
+    changeBtn.set_child(new St.Icon({ icon_name: "document-edit-symbolic", icon_size: 12 }));
+    tooltip(changeBtn, "Change default browser");
+    changeBtn.connect("clicked", onChangeDefault);
+    group.add_child(changeBtn);
+  }
+
   return group;
 }
 
@@ -93,6 +98,7 @@ export function fillMenu({
   onSettings,
   onRefresh,
   defaultBrowser,
+  showDefaultBrowserEdit = true,
 }: {
   title: string;
   menu: PopupMenu | PopupDummyMenu;
@@ -101,6 +107,7 @@ export function fillMenu({
   onSettings: () => void;
   onRefresh: () => void;
   defaultBrowser?: DefaultBrowserInfo | null;
+  showDefaultBrowserEdit?: boolean;
 }): void {
   if ("removeAll" in menu) {
     menu.removeAll();
@@ -119,6 +126,7 @@ export function fillMenu({
         defaultBrowser.name,
         () => launchBrowser({ command: cmd, title, notify }),
         () => launchBrowser({ command: "gio open settings:///default-apps", title, notify }),
+        showDefaultBrowserEdit,
       ),
     );
   }

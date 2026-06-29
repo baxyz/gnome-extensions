@@ -34,9 +34,19 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       row("Zen workspaces", "Workspace buttons under each Zen profile", SpaceType.ZenWorkspace),
     );
 
+    const toolbarGroup = new Adw.PreferencesGroup({ title: "Toolbar" });
+    toolbarGroup.add(
+      row(
+        "Show edit button",
+        "Display the pencil button next to the default browser name",
+        "show-default-browser-edit",
+      ),
+    );
+
     const page = new Adw.PreferencesPage();
     page.add(profilesGroup);
     page.add(spacesGroup);
+    page.add(toolbarGroup);
     window.add(page);
   }
 }
