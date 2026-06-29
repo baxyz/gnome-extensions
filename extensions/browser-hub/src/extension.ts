@@ -88,19 +88,21 @@ class BrowserProfilesIndicator extends Button {
 
   refreshEntries(): void {
     if (!this._alive) return;
-    getBrowserEntries(this._readSettings()).then((entries) => {
-      if (!this._alive) return;
-      fillMenu({
-        title: this._title,
-        menu: this.menu,
-        entries,
-        notify: Main.notify,
-        onSettings: this._onSettings,
-        onRefresh: () => this.refreshEntries(),
-        defaultBrowser: getDefaultBrowser(),
-        showDefaultBrowserEdit: this._readShowEditBtn(),
-      });
-    });
+    getBrowserEntries(this._readSettings())
+      .then((entries) => {
+        if (!this._alive) return;
+        fillMenu({
+          title: this._title,
+          menu: this.menu,
+          entries,
+          notify: Main.notify,
+          onSettings: this._onSettings,
+          onRefresh: () => this.refreshEntries(),
+          defaultBrowser: getDefaultBrowser(),
+          showDefaultBrowserEdit: this._readShowEditBtn(),
+        });
+      })
+      .catch((e: unknown) => logError(e as object, "[browser-hub] refreshEntries failed"));
   }
 }
 
