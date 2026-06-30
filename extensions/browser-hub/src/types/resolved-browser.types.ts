@@ -3,6 +3,12 @@ export type BrowserSpace = {
   name: string;
   command: string;
   isDefault?: boolean;
+  /** Emoji or short display character (e.g. Zen workspace emoji, Firefox profile avatar) */
+  icon?: string;
+  /** CSS foreground color string */
+  fgColor?: string;
+  /** CSS background color string */
+  bgColor?: string;
 };
 
 export type ResolvedBrowserItem = {
@@ -14,6 +20,10 @@ export type ResolvedBrowserItem = {
   /** Desktop icon name for icon-button rendering (simple browsers) */
   icon?: string;
   isDefault?: boolean;
+  /** CSS foreground color string */
+  fgColor?: string;
+  /** CSS background color string */
+  bgColor?: string;
 };
 
 export type ResolvedBrowserEntry = {

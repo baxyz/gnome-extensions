@@ -20,6 +20,14 @@
   border-radius: 6px;
 }
 
+/* Profile color indicator dot (e.g. Chromium profile background color) */
+.browser-hub-profile-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  margin-left: 6px;
+}
+
 /* Square icon buttons for the "Others" section */
 .browser-hub-browser-btn {
   padding: 8px;

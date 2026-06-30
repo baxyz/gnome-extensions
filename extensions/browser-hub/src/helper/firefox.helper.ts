@@ -73,6 +73,9 @@ export async function resolveFirefoxBrowsers(
                     spaces: selectable.map((sp) => ({
                       name: sp.name,
                       command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
+                      icon: sp.avatar,
+                      fgColor: sp.themeFg,
+                      bgColor: sp.themeBg,
                     })),
                   },
                 ];

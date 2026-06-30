@@ -2,7 +2,7 @@ import St from "gi://St";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
-import type { ResolvedBrowserEntry } from "../types";
+import type { BrowserSpace, ResolvedBrowserEntry } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./runner.helper";
 
@@ -26,20 +26,27 @@ function makeIconButton(
 }
 
 function makeSpaceGroup(
-  spaces: { name: string; command: string }[],
+  spaces: BrowserSpace[],
   title: string,
   notify: typeof Main.notify,
 ): St.BoxLayout {
   const group = new St.BoxLayout({});
-  const btns = spaces.map(({ name, command }) => {
+  const btns = spaces.map((space) => {
+    const displayIcon = space.icon && space.icon.length <= 4 ? space.icon : "●";
     const btn = new St.Button({
       can_focus: true,
-      accessible_name: name,
-      label: "●",
+      accessible_name: space.name,
+      label: displayIcon,
       style_class: "button browser-hub-space-dot-btn",
     });
-    tooltip(btn, name);
-    const cmd = command;
+    if (space.bgColor || space.fgColor) {
+      const parts: string[] = [];
+      if (space.bgColor) parts.push(`background-color: ${space.bgColor}`);
+      if (space.fgColor) parts.push(`color: ${space.fgColor}`);
+      btn.set_style(parts.join("; "));
+    }
+    tooltip(btn, space.name);
+    const cmd = space.command;
     btn.connect("clicked", () => launchBrowser({ command: cmd, title, notify }));
     return btn;
   });
@@ -187,6 +194,11 @@ export function fillMenu({
         } else {
           const menuItem = new PopupMenuItem(item.label);
           if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
+          if (item.bgColor) {
+            const dot = new St.Widget({ style_class: "browser-hub-profile-dot" });
+            dot.set_style(`background-color: ${item.bgColor};`);
+            menuItem.add_child(dot);
+          }
           const cmd = item.command;
           menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
           menu.addMenuItem(menuItem);

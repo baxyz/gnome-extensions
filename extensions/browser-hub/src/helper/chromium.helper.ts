@@ -6,10 +6,20 @@ import { buildBaseCommand, filterAvailable } from "./pkg.helper";
 
 const decoder = new TextDecoder();
 
-type ChromiumProfile = { name: string; dir: string; isDefault: boolean };
+type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
 type LocalState = {
-  profile?: { info_cache?: Record<string, { name?: string }>; last_used?: string };
+  profile?: {
+    info_cache?: Record<string, { name?: string; background_color?: number }>;
+    last_used?: string;
+  };
 };
+
+function argbToRgb(argb: number): string {
+  const r = (argb >>> 16) & 0xff;
+  const g = (argb >>> 8) & 0xff;
+  const b = argb & 0xff;
+  return `rgb(${r},${g},${b})`;
+}
 
 function parseProfiles(content: string): ChromiumProfile[] {
   const json = safeJsonParse<LocalState>(content);
@@ -19,6 +29,7 @@ function parseProfiles(content: string): ChromiumProfile[] {
     dir,
     name: info.name ?? dir,
     isDefault: dir === lastUsed,
+    bgColor: info.background_color != null ? argbToRgb(info.background_color) : undefined,
   }));
 }
 
@@ -49,6 +60,7 @@ export async function resolveChromiumBrowsers(
             label: profile.name,
             command: `${buildBaseCommand(b.pkg)} --profile-directory="${profile.dir}"`,
             isDefault: profile.isDefault,
+            bgColor: profile.bgColor,
           }))
           .sort(
             (a, b) => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label),

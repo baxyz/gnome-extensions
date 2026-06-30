@@ -5,6 +5,12 @@ import { readTable } from "sqlite-reader";
 export interface FirefoxSelectableProfile {
   name: string;
   dir: string;
+  /** Profile avatar identifier (e.g. "book", "briefcase") */
+  avatar?: string;
+  /** CSS foreground color from the profile theme (e.g. "#ffffff") */
+  themeFg?: string;
+  /** CSS background color from the profile theme (e.g. "#20123a") */
+  themeBg?: string;
 }
 
 function readFileAsync(path: string): Promise<Uint8Array> {
@@ -90,6 +96,9 @@ export async function readFirefoxSelectableProfiles(
             .map((row) => ({
               name: row.name as string,
               dir: `${firefoxRoot}/${row.path}`,
+              avatar: typeof row.avatar === "string" ? row.avatar : undefined,
+              themeFg: typeof row.themeFg === "string" ? row.themeFg : undefined,
+              themeBg: typeof row.themeBg === "string" ? row.themeBg : undefined,
             })),
         );
       } catch {
