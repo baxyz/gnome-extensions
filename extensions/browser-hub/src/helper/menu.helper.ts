@@ -30,7 +30,7 @@ function makeSpaceGroup(
   title: string,
   notify: typeof Main.notify,
 ): St.BoxLayout {
-  const group = new St.BoxLayout({ spacing: 1 });
+  const group = new St.BoxLayout({});
   const btns = spaces.map(({ name, command }) => {
     const btn = new St.Button({
       can_focus: true,
@@ -58,7 +58,7 @@ function makeDefaultBrowserGroup(
   onChangeDefault: () => void,
   showEdit: boolean,
 ): St.BoxLayout {
-  const group = new St.BoxLayout({ style_class: "browser-hub-btn-group", spacing: 1 });
+  const group = new St.BoxLayout({ style_class: "browser-hub-btn-group" });
 
   const launchBtn = new St.Button({
     can_focus: true,

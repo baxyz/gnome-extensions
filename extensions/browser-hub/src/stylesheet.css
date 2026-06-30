@@ -13,6 +13,7 @@
 .browser-hub-change-default-btn {
   padding: 2px 5px;
   border-radius: 0 6px 6px 0;
+  margin-left: 1px;
 }
 
 .browser-hub-default-browser-btn--solo {
@@ -26,7 +27,7 @@
 
 /* Square icon buttons for toolbar (refresh & settings) */
 .browser-hub-toolbar-btn {
-  padding: 4px;
+  padding: 4px 6px;
 }
 
 /* Dot buttons (●) for browser spaces — used as a button group */
@@ -44,8 +45,10 @@
 
 .browser-hub-space-dot-btn--mid {
   border-radius: 0;
+  margin-left: 1px;
 }
 
 .browser-hub-space-dot-btn--last {
   border-radius: 0 6px 6px 0;
+  margin-left: 1px;
 }
