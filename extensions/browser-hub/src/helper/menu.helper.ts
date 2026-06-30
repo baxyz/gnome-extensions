@@ -32,7 +32,7 @@ function makeSpaceGroup(
 ): St.BoxLayout {
   const group = new St.BoxLayout({});
   const btns = spaces.map((space) => {
-    const displayIcon = space.icon && space.icon.length <= 4 ? space.icon : "●";
+    const displayIcon = space.icon && space.icon.length <= 4 ? space.icon : "•";
     const btn = new St.Button({
       can_focus: true,
       accessible_name: space.name,
