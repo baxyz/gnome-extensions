@@ -4,7 +4,7 @@ import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { Button } from "resource:///org/gnome/shell/ui/panelMenu.js";
 import { fillMenu, getBrowserEntries } from "./helper";
-import type { BrowserSettings } from "./helper/digging.helper";
+import type { BrowserSettings, ProfileGroupsMode } from "./helper/digging.helper";
 import { getDefaultBrowser } from "./helper/default-browser.helper";
 import { SpaceType } from "./types/space-type.enum";
 
@@ -22,6 +22,7 @@ export default class BrowserProfilesExtension extends Extension {
       showChromeFamily: settings.get_boolean("show-chrome-family"),
       showSimpleBrowsers: settings.get_boolean("show-simple-browsers"),
       enabledSpaces: new Set(Object.values(SpaceType).filter((key) => settings.get_boolean(key))),
+      profileGroupsMode: settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
     });
 
     this._indicator = new GBrowserProfilesIndicator(

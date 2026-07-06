@@ -21,11 +21,15 @@
       <description>Include browsers without profile support (GNOME Web, qutebrowser, …) in the menu.</description>
     </key>
 
-    <key name="show-firefox-profile-groups" type="b">
-      <default>true</default>
-      <summary>Show Firefox profile groups</summary>
-      <description>Display profiles created via Firefox's new in-browser profile switcher (Firefox
-        128+). These are separate from the classic Profile Manager.</description>
+    <key name="firefox-profile-groups-mode" type="s">
+      <choices>
+        <choice value="spaces"/>
+        <choice value="profiles"/>
+        <choice value="off"/>
+      </choices>
+      <default>"spaces"</default>
+      <summary>Firefox profile groups display mode</summary>
+      <description>How to display Firefox Profile Groups (Firefox 128+, separate from the classic Profile Manager). "spaces": show as space buttons under the matched profile entry. "profiles": list each selectable profile as its own menu entry. "off": ignore them entirely.</description>
     </key>
 
     <key name="show-zen-spaces" type="b">

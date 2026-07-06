@@ -1,13 +1,18 @@
 import Adw from "gi://Adw";
 import Gio from "gi://Gio";
+import Gtk from "gi://Gtk";
 import { ExtensionPreferences } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 import { SpaceType } from "./types/space-type.enum";
+import type { ProfileGroupsMode } from "./helper/digging.helper";
+
+const PROFILE_GROUP_MODES: ProfileGroupsMode[] = ["spaces", "profiles", "off"];
+const PROFILE_GROUP_LABELS = ["Space buttons", "Individual profiles", "Off"];
 
 export default class BrowserHubPreferences extends ExtensionPreferences {
   async fillPreferencesWindow(window: Adw.PreferencesWindow): Promise<void> {
     const settings = this.getSettings();
 
-    const row = (title: string, subtitle: string, key: string): Adw.SwitchRow => {
+    const switchRow = (title: string, subtitle: string, key: string): Adw.SwitchRow => {
       const r = new Adw.SwitchRow({ title, subtitle });
       settings.bind(key, r, "active", Gio.SettingsBindFlags.DEFAULT);
       return r;
@@ -15,28 +20,46 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
 
     const profilesGroup = new Adw.PreferencesGroup({ title: "Profiles" });
     profilesGroup.add(
-      row("Firefox family", "Zen, Firefox, LibreWolf, Floorp…", "show-firefox-family"),
+      switchRow("Firefox family", "Zen, Firefox, LibreWolf, Floorp…", "show-firefox-family"),
     );
-    profilesGroup.add(row("Chrome family", "Chromium, Edge, Brave…", "show-chrome-family"));
+    profilesGroup.add(switchRow("Chrome family", "Chromium, Edge, Brave…", "show-chrome-family"));
     profilesGroup.add(
-      row("Profile-less browsers", "GNOME Web, qutebrowser…", "show-simple-browsers"),
+      switchRow("Profile-less browsers", "GNOME Web, qutebrowser…", "show-simple-browsers"),
     );
 
-    const spacesGroup = new Adw.PreferencesGroup({ title: "Spaces" });
-    spacesGroup.add(
-      row(
-        "Firefox profile groups",
+    const spacesGroup = new Adw.PreferencesGroup({ title: "Workspaces & Profile Groups" });
+
+    const profileGroupsRow = new Adw.ComboRow({
+      title: "Firefox profile groups",
+      subtitle:
         "Profiles from Firefox's new in-browser switcher (128+) — separate from the classic Profile Manager",
-        SpaceType.FirefoxProfileGroup,
+      model: Gtk.StringList.new(PROFILE_GROUP_LABELS),
+      selected: Math.max(
+        0,
+        PROFILE_GROUP_MODES.indexOf(
+          settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
+        ),
       ),
-    );
+    });
+    profileGroupsRow.connect("notify::selected", () => {
+      const mode = PROFILE_GROUP_MODES[profileGroupsRow.selected] ?? "spaces";
+      settings.set_string("firefox-profile-groups-mode", mode);
+    });
+    settings.connect("changed::firefox-profile-groups-mode", () => {
+      const idx = PROFILE_GROUP_MODES.indexOf(
+        settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
+      );
+      profileGroupsRow.selected = Math.max(0, idx);
+    });
+    spacesGroup.add(profileGroupsRow);
+
     spacesGroup.add(
-      row("Zen workspaces", "Workspace buttons under each Zen profile", SpaceType.ZenWorkspace),
+      switchRow("Zen workspaces", "Workspace buttons under each Zen profile", SpaceType.ZenWorkspace),
     );
 
     const toolbarGroup = new Adw.PreferencesGroup({ title: "Toolbar" });
     toolbarGroup.add(
-      row(
+      switchRow(
         "Show edit button",
         "Display the pencil button next to the default browser name",
         "show-default-browser-edit",

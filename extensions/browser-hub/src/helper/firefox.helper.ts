@@ -2,6 +2,7 @@ import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../types";
 import { SpaceType } from "../types/space-type.enum";
+import type { ProfileGroupsMode } from "./digging.helper";
 import { buildBaseCommand, filterAvailable } from "./pkg.helper";
 import { readZenSpaces } from "./zen.helper";
 import { readFirefoxSelectableProfiles } from "./firefox-spaces.helper";
@@ -44,6 +45,7 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
 export async function resolveFirefoxBrowsers(
   browsers: FirefoxBrowserConfig[],
   enabledSpaces: ReadonlySet<SpaceType> = new Set(Object.values(SpaceType)),
+  profileGroupsMode: ProfileGroupsMode = "spaces",
 ): Promise<ResolvedBrowserEntry[]> {
   const entries = await Promise.all(
     filterAvailable(browsers)
@@ -51,12 +53,13 @@ export async function resolveFirefoxBrowsers(
       .map(async (b) => {
         const profiles = await readProfiles(b.path);
         const firefoxRoot = GLib.path_get_dirname(b.path);
-        const selectableMap = enabledSpaces.has(SpaceType.FirefoxProfileGroup)
-          ? await readFirefoxSelectableProfiles(
-              firefoxRoot,
-              profiles.map((p) => p.folderBasename),
-            )
-          : new Map<string, import("./firefox-spaces.helper").FirefoxSelectableProfile[]>();
+        const selectableMap =
+          profileGroupsMode !== "off"
+            ? await readFirefoxSelectableProfiles(
+                firefoxRoot,
+                profiles.map((p) => p.folderBasename),
+              )
+            : new Map<string, import("./firefox-spaces.helper").FirefoxSelectableProfile[]>();
 
         const items = (
           await Promise.all(
@@ -65,6 +68,19 @@ export async function resolveFirefoxBrowsers(
               const selectable = selectableMap.get(folderBasename);
 
               if (selectable != null) {
+                if (profileGroupsMode === "profiles") {
+                  // Flatten: each selectable profile becomes its own top-level entry
+                  return selectable.map((sp) => ({
+                    label: sp.name,
+                    command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
+                    // Mark default only on the sp whose folder matches this toolkit profile
+                    isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
+                    icon: sp.avatar,
+                    fgColor: sp.themeFg,
+                    bgColor: sp.themeBg,
+                  }));
+                }
+                // "spaces" mode: nest selectable profiles as space buttons
                 return [
                   {
                     label: name,
