@@ -1,27 +1,21 @@
-import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
 import type { ZenSpaceData } from "../types";
 import { decodeMozLz4 } from "mozlz4";
+import { readFileAsync } from "./gio.helper";
 
 type ZenSessions = { spaces?: ZenSpaceData[] };
 
 const decoder = new TextDecoder();
 
 function readArchive(archivePath: string): Promise<ZenSpaceData[]> {
-  return new Promise((resolve) => {
-    const file = Gio.File.new_for_path(archivePath);
-    file.load_contents_async(null, (_source, result) => {
-      try {
-        const [, contents] = file.load_contents_finish(result);
-        const json = decoder.decode(decodeMozLz4(contents));
-        const data = safeJsonParse<ZenSessions>(json);
-        resolve(data?.spaces ?? []);
-      } catch {
-        resolve([]);
-      }
-    });
-  });
+  return readFileAsync(archivePath)
+    .then((contents) => {
+      const json = decoder.decode(decodeMozLz4(contents));
+      const data = safeJsonParse<ZenSessions>(json);
+      return data?.spaces ?? [];
+    })
+    .catch(() => []);
 }
 
 /** Reads the Zen spaces for a given profile directory. Returns [] if absent or unreadable. */

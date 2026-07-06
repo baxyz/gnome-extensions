@@ -183,26 +183,19 @@ export function fillMenu({
       menu.addMenuItem(row);
     } else {
       for (const item of entry.items) {
+        const menuItem = new PopupMenuItem(item.label);
+        if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
+        const cmd = item.command;
+        menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
         if (item.spaces && item.spaces.length > 0) {
-          const menuItem = new PopupMenuItem(item.label);
-          if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
-          const cmd = item.command;
-          menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
           menuItem.add_child(new St.Widget({ x_expand: true }));
           menuItem.add_child(makeSpaceGroup(item.spaces, title, notify));
-          menu.addMenuItem(menuItem);
-        } else {
-          const menuItem = new PopupMenuItem(item.label);
-          if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
-          if (item.bgColor) {
-            const dot = new St.Widget({ style_class: "browser-hub-profile-dot" });
-            dot.set_style(`background-color: ${item.bgColor};`);
-            menuItem.add_child(dot);
-          }
-          const cmd = item.command;
-          menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
-          menu.addMenuItem(menuItem);
+        } else if (item.bgColor) {
+          const dot = new St.Widget({ style_class: "browser-hub-profile-dot" });
+          dot.set_style(`background-color: ${item.bgColor};`);
+          menuItem.add_child(dot);
         }
+        menu.addMenuItem(menuItem);
       }
     }
   }

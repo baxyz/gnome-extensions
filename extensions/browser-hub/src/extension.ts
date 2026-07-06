@@ -9,6 +9,8 @@ import type { BrowserSettings, ProfileGroupsMode } from "./helper/digging.helper
 import { getDefaultBrowser } from "./helper/default-browser.helper";
 import { SpaceType } from "./types/space-type.enum";
 
+const SPACE_TYPE_VALUES = Object.values(SpaceType);
+
 // -- Extension ----------------------------------------------------------------
 
 export default class BrowserProfilesExtension extends Extension {
@@ -23,7 +25,7 @@ export default class BrowserProfilesExtension extends Extension {
       showFirefoxFamily: settings.get_boolean("show-firefox-family"),
       showChromeFamily: settings.get_boolean("show-chrome-family"),
       showSimpleBrowsers: settings.get_boolean("show-simple-browsers"),
-      enabledSpaces: new Set(Object.values(SpaceType).filter((key) => settings.get_boolean(key))),
+      enabledSpaces: new Set(SPACE_TYPE_VALUES.filter((key) => settings.get_boolean(key))),
       profileGroupsMode: settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
     });
 
@@ -103,8 +105,8 @@ class BrowserProfilesIndicator extends Button {
 
   refreshEntries(): void {
     if (!this._alive) return;
-    Promise.all([getBrowserEntries(this._readSettings()), getDefaultBrowser()])
-      .then(([entries, defaultBrowser]) => {
+    getBrowserEntries(this._readSettings())
+      .then((entries) => {
         if (!this._alive) return;
         fillMenu({
           title: this._title,
@@ -113,7 +115,7 @@ class BrowserProfilesIndicator extends Button {
           notify: Main.notify,
           onSettings: this._onSettings,
           onRefresh: () => this.refreshEntries(),
-          defaultBrowser,
+          defaultBrowser: getDefaultBrowser(),
           showDefaultBrowserEdit: this._readShowEditBtn(),
         });
       })

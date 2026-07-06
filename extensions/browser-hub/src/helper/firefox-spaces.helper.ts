@@ -1,6 +1,7 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import { readTable } from "sqlite-reader";
+import { readFileAsync } from "./gio.helper";
 
 export interface FirefoxSelectableProfile {
   name: string;
@@ -13,19 +14,7 @@ export interface FirefoxSelectableProfile {
   themeBg?: string;
 }
 
-function readFileAsync(path: string): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    const file = Gio.File.new_for_path(path);
-    file.load_contents_async(null, (_source, result) => {
-      try {
-        const [, contents] = file.load_contents_finish(result);
-        resolve(contents);
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
-}
+const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
 
 function listSqliteFiles(dirPath: string): Promise<string[]> {
   return new Promise((resolve) => {
@@ -70,6 +59,7 @@ export async function readFirefoxSelectableProfiles(
   const profileGroupsDir = `${firefoxRoot}/Profile Groups`;
   const dbFiles = await listSqliteFiles(profileGroupsDir);
   const result = new Map<string, FirefoxSelectableProfile[]>();
+  const toolkitSet = new Set(toolkitBasenames);
 
   await Promise.all(
     dbFiles.map(async (dbPath) => {
@@ -79,10 +69,15 @@ export async function readFirefoxSelectableProfiles(
 
         if (rows.length <= 1) return;
 
-        // Match any row's path basename against known toolkit folder basenames
-        const matchedBasename = toolkitBasenames.find((tb) =>
-          rows.some((row) => typeof row.path === "string" && GLib.path_get_basename(row.path) === tb),
-        );
+        let matchedBasename: string | undefined;
+        for (const row of rows) {
+          if (typeof row.path !== "string") continue;
+          const rb = GLib.path_get_basename(row.path);
+          if (toolkitSet.has(rb)) {
+            matchedBasename = rb;
+            break;
+          }
+        }
         if (!matchedBasename) return;
 
         result.set(
@@ -92,9 +87,9 @@ export async function readFirefoxSelectableProfiles(
             .map((row) => ({
               name: row.name as string,
               dir: `${firefoxRoot}/${row.path}`,
-              avatar: typeof row.avatar === "string" ? row.avatar : undefined,
-              themeFg: typeof row.themeFg === "string" ? row.themeFg : undefined,
-              themeBg: typeof row.themeBg === "string" ? row.themeBg : undefined,
+              avatar: str(row.avatar),
+              themeFg: str(row.themeFg),
+              themeBg: str(row.themeBg),
             })),
         );
       } catch {

@@ -1,9 +1,9 @@
-import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../types";
 import { SpaceType } from "../types/space-type.enum";
 import type { FirefoxOptions } from "./digging.helper";
 import { buildBaseCommand, filterAvailable } from "./pkg.helper";
+import { readFileAsync } from "./gio.helper";
 import { readZenSpaces } from "./zen.helper";
 import {
   readFirefoxSelectableProfiles,
@@ -31,19 +31,17 @@ function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
 }
 
 function readProfiles(path: string): Promise<ProfileEntry[]> {
-  return new Promise((resolve) => {
-    const file = Gio.File.new_for_path(path);
-    const iniDir = file.get_parent()?.get_path() ?? "";
-    file.load_contents_async(null, (_source, result) => {
-      try {
-        const [, contents] = file.load_contents_finish(result);
-        resolve(parseProfiles(decoder.decode(contents), iniDir));
-      } catch {
-        resolve([]);
-      }
-    });
-  });
+  const iniDir = GLib.path_get_dirname(path);
+  return readFileAsync(path)
+    .then((contents) => parseProfiles(decoder.decode(contents), iniDir))
+    .catch(() => []);
 }
+
+const spColors = (sp: FirefoxSelectableProfile) => ({
+  icon: sp.avatar,
+  fgColor: sp.themeFg,
+  bgColor: sp.themeBg,
+});
 
 const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
   enabledSpaces: new Set(Object.values(SpaceType)),
@@ -58,6 +56,7 @@ export async function resolveFirefoxBrowsers(
     filterAvailable(browsers)
       .filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS))
       .map(async (b) => {
+        const baseCommand = buildBaseCommand(b.pkg);
         const profiles = await readProfiles(b.path);
         const firefoxRoot = GLib.path_get_dirname(b.path);
         const selectableMap =
@@ -71,7 +70,6 @@ export async function resolveFirefoxBrowsers(
         const items = (
           await Promise.all(
             profiles.map(async ({ name, dir, folderBasename, isDefault }) => {
-              const baseCommand = buildBaseCommand(b.pkg);
               const selectable = selectableMap.get(folderBasename);
 
               if (selectable != null) {
@@ -82,9 +80,7 @@ export async function resolveFirefoxBrowsers(
                     command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
                     // Mark default only on the sp whose folder matches this toolkit profile
                     isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
-                    icon: sp.avatar,
-                    fgColor: sp.themeFg,
-                    bgColor: sp.themeBg,
+                    ...spColors(sp),
                   }));
                 }
                 // "spaces" mode: nest selectable profiles as space buttons
@@ -96,9 +92,7 @@ export async function resolveFirefoxBrowsers(
                     spaces: selectable.map((sp) => ({
                       name: sp.name,
                       command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
-                      icon: sp.avatar,
-                      fgColor: sp.themeFg,
-                      bgColor: sp.themeBg,
+                      ...spColors(sp),
                     })),
                   },
                 ];

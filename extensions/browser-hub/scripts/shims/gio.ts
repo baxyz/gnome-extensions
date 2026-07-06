@@ -106,6 +106,16 @@ export default {
   File: { new_for_path: newFile },
   FileQueryInfoFlags,
   FileType,
+  DesktopAppInfo: {
+    new: (desktopId: string) => {
+      const fields = parseDesktopFile(desktopId);
+      if (!fields) return null;
+      return {
+        get_string: (key: string): string | null => fields[key] ?? null,
+        has_key: (key: string): boolean => key in fields,
+      };
+    },
+  },
   AppInfo: {
     get_default_for_uri_scheme: (_scheme: string) => {
       try {

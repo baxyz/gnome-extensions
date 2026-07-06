@@ -1,8 +1,8 @@
-import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
 import type { ChromiumBrowserConfig, ResolvedBrowserEntry } from "../types";
 import { buildBaseCommand, filterAvailable } from "./pkg.helper";
+import { readFileAsync } from "./gio.helper";
 
 const decoder = new TextDecoder();
 
@@ -34,17 +34,9 @@ function parseProfiles(content: string): ChromiumProfile[] {
 }
 
 function readProfiles(path: string): Promise<ChromiumProfile[]> {
-  return new Promise((resolve) => {
-    const file = Gio.File.new_for_path(path);
-    file.load_contents_async(null, (_source, result) => {
-      try {
-        const [, contents] = file.load_contents_finish(result);
-        resolve(parseProfiles(decoder.decode(contents)));
-      } catch {
-        resolve([]);
-      }
-    });
-  });
+  return readFileAsync(path)
+    .then((contents) => parseProfiles(decoder.decode(contents)))
+    .catch(() => []);
 }
 
 export async function resolveChromiumBrowsers(
