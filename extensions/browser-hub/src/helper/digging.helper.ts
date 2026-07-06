@@ -13,13 +13,16 @@ import { resolveSimpleBrowsers } from "./simple.helper";
 
 export type ProfileGroupsMode = "spaces" | "profiles" | "off";
 
+export type FirefoxOptions = {
+  enabledSpaces: ReadonlySet<SpaceType>;
+  profileGroupsMode: ProfileGroupsMode;
+};
+
 export type BrowserSettings = {
   showFirefoxFamily: boolean;
   showChromeFamily: boolean;
   showSimpleBrowsers: boolean;
-  enabledSpaces: ReadonlySet<SpaceType>;
-  profileGroupsMode: ProfileGroupsMode;
-};
+} & FirefoxOptions;
 
 const ALL_ON: BrowserSettings = {
   showFirefoxFamily: true,
@@ -34,7 +37,7 @@ export function getBrowserEntries(
 ): Promise<ResolvedBrowserEntry[]> {
   return Promise.all([
     settings.showFirefoxFamily
-      ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings.enabledSpaces, settings.profileGroupsMode)
+      ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings)
       : [],
     settings.showChromeFamily ? resolveChromiumBrowsers(CHROMIUM_BROWSERS) : [],
     settings.showChromeFamily ? resolveFalkonBrowsers(FALKON_BROWSERS) : [],

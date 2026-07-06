@@ -55,10 +55,6 @@ function listSqliteFiles(dirPath: string): Promise<string[]> {
   });
 }
 
-function basename(p: string): string {
-  return p.split("/").at(-1) ?? p;
-}
-
 /**
  * For each Profile Groups SQLite that contains >1 selectable profile, find which
  * toolkit profile folder it belongs to (by matching one of its paths) and return
@@ -85,7 +81,7 @@ export async function readFirefoxSelectableProfiles(
 
         // Match any row's path basename against known toolkit folder basenames
         const matchedBasename = toolkitBasenames.find((tb) =>
-          rows.some((row) => typeof row.path === "string" && basename(row.path) === tb),
+          rows.some((row) => typeof row.path === "string" && GLib.path_get_basename(row.path) === tb),
         );
         if (!matchedBasename) return;
 

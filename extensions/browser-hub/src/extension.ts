@@ -1,3 +1,4 @@
+import GLib from "gi://GLib";
 import GObject from "gi://GObject";
 import St from "gi://St";
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
@@ -13,6 +14,7 @@ import { SpaceType } from "./types/space-type.enum";
 export default class BrowserProfilesExtension extends Extension {
   private _indicator: BrowserProfilesIndicator | null = null;
   private _settingsChangedId = 0;
+  private _refreshDebounceId = 0;
 
   enable() {
     const settings = this.getSettings();
@@ -33,13 +35,25 @@ export default class BrowserProfilesExtension extends Extension {
     );
 
     this._settingsChangedId = settings.connect("changed", () => {
-      this._indicator?.refreshEntries();
+      if (this._refreshDebounceId) {
+        GLib.source_remove(this._refreshDebounceId);
+        this._refreshDebounceId = 0;
+      }
+      this._refreshDebounceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+        this._refreshDebounceId = 0;
+        this._indicator?.refreshEntries();
+        return GLib.SOURCE_REMOVE;
+      });
     });
 
     Main.panel.addToStatusArea(this.uuid, this._indicator);
   }
 
   disable() {
+    if (this._refreshDebounceId) {
+      GLib.source_remove(this._refreshDebounceId);
+      this._refreshDebounceId = 0;
+    }
     if (this._settingsChangedId) {
       this.getSettings().disconnect(this._settingsChangedId);
       this._settingsChangedId = 0;
@@ -89,8 +103,8 @@ class BrowserProfilesIndicator extends Button {
 
   refreshEntries(): void {
     if (!this._alive) return;
-    getBrowserEntries(this._readSettings())
-      .then((entries) => {
+    Promise.all([getBrowserEntries(this._readSettings()), getDefaultBrowser()])
+      .then(([entries, defaultBrowser]) => {
         if (!this._alive) return;
         fillMenu({
           title: this._title,
@@ -99,7 +113,7 @@ class BrowserProfilesIndicator extends Button {
           notify: Main.notify,
           onSettings: this._onSettings,
           onRefresh: () => this.refreshEntries(),
-          defaultBrowser: getDefaultBrowser(),
+          defaultBrowser,
           showDefaultBrowserEdit: this._readShowEditBtn(),
         });
       })

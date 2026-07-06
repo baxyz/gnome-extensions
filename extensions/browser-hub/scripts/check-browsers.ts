@@ -1,7 +1,7 @@
 import { getBrowserEntries } from "../src/helper";
 import { getDefaultBrowser } from "../src/helper/default-browser.helper";
 
-const defaultBrowser = getDefaultBrowser();
+const defaultBrowser = await getDefaultBrowser();
 if (defaultBrowser) {
   console.log(`Default browser: ${defaultBrowser.name} (${defaultBrowser.command})`);
 } else {

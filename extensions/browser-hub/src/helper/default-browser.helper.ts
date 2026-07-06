@@ -26,14 +26,26 @@ function desktopField(kf: GLib.KeyFile, key: string): string | null {
   }
 }
 
-function detectPkg(desktopId: string, executable: string): ResolvedBrowserPkg {
+async function detectPkg(desktopId: string, executable: string): Promise<ResolvedBrowserPkg> {
   const path = DESKTOP_DIRS.map((d) => `${d}/${desktopId}`).find((p) =>
     GLib.file_test(p, GLib.FileTest.EXISTS),
   );
   if (path) {
     try {
+      const file = Gio.File.new_for_path(path);
+      const data = await new Promise<Uint8Array>((resolve, reject) => {
+        file.load_contents_async(null, (_source, result) => {
+          try {
+            const [, contents] = file.load_contents_finish(result);
+            resolve(contents);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      });
       const kf = new GLib.KeyFile();
-      kf.load_from_file(path, GLib.KeyFileFlags.NONE);
+      const text = new TextDecoder().decode(data);
+      kf.load_from_data(text, data.length, GLib.KeyFileFlags.NONE);
       const flatpakId = desktopField(kf, "X-Flatpak");
       if (flatpakId) return { manager: PackageManager.Flatpak, appId: flatpakId };
       const snapName = desktopField(kf, "X-SnapInstanceName");
@@ -45,13 +57,13 @@ function detectPkg(desktopId: string, executable: string): ResolvedBrowserPkg {
   return { manager: PackageManager.Native, binary: executable };
 }
 
-export function getDefaultBrowser(): DefaultBrowserInfo | null {
+export async function getDefaultBrowser(): Promise<DefaultBrowserInfo | null> {
   const appInfo = Gio.AppInfo.get_default_for_uri_scheme("http");
   if (!appInfo) return null;
   const name = appInfo.get_name();
   const desktopId = appInfo.get_id();
   const executable = appInfo.get_executable();
   if (!name || !desktopId || !executable) return null;
-  const command = buildBaseCommand(detectPkg(desktopId, executable));
+  const command = buildBaseCommand(await detectPkg(desktopId, executable));
   return { name, command };
 }

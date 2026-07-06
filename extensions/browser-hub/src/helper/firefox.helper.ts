@@ -2,7 +2,7 @@ import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../types";
 import { SpaceType } from "../types/space-type.enum";
-import type { ProfileGroupsMode } from "./digging.helper";
+import type { FirefoxOptions } from "./digging.helper";
 import { buildBaseCommand, filterAvailable } from "./pkg.helper";
 import { readZenSpaces } from "./zen.helper";
 import {
@@ -45,10 +45,14 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
   });
 }
 
+const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
+  enabledSpaces: new Set(Object.values(SpaceType)),
+  profileGroupsMode: "spaces",
+};
+
 export async function resolveFirefoxBrowsers(
   browsers: FirefoxBrowserConfig[],
-  enabledSpaces: ReadonlySet<SpaceType> = new Set(Object.values(SpaceType)),
-  profileGroupsMode: ProfileGroupsMode = "spaces",
+  { enabledSpaces, profileGroupsMode }: FirefoxOptions = DEFAULT_FIREFOX_OPTIONS,
 ): Promise<ResolvedBrowserEntry[]> {
   const entries = await Promise.all(
     filterAvailable(browsers)

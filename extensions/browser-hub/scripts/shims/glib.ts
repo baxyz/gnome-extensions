@@ -11,8 +11,7 @@ export enum FileTest {
 class KeyFile {
   private _groups: Record<string, Record<string, string>> = {};
 
-  load_from_file(path: string, _flags: number): void {
-    const content = fs.readFileSync(path, "utf8");
+  private _parse(content: string): void {
     let group = "";
     for (const raw of content.split("\n")) {
       const line = raw.trim();
@@ -26,6 +25,14 @@ class KeyFile {
       if (eq === -1 || !group) continue;
       this._groups[group][line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
     }
+  }
+
+  load_from_file(path: string, _flags: number): void {
+    this._parse(fs.readFileSync(path, "utf8"));
+  }
+
+  load_from_data(data: string, _length: number, _flags: number): void {
+    this._parse(data);
   }
 
   get_string(group: string, key: string): string {
