@@ -2,11 +2,9 @@ import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
 import type { ZenSpaceData } from "../types";
 import { decodeMozLz4 } from "mozlz4";
-import { readFileAsync } from "./gio.helper";
+import { decoder, readFileAsync } from "./gio.helper";
 
 type ZenSessions = { spaces?: ZenSpaceData[] };
-
-const decoder = new TextDecoder();
 
 function readArchive(archivePath: string): Promise<ZenSpaceData[]> {
   return readFileAsync(archivePath)

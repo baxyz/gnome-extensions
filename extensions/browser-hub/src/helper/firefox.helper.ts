@@ -2,15 +2,13 @@ import GLib from "gi://GLib";
 import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../types";
 import { SpaceType } from "../types/space-type.enum";
 import type { FirefoxOptions } from "./digging.helper";
-import { buildBaseCommand, filterAvailable } from "./pkg.helper";
-import { readFileAsync } from "./gio.helper";
+import { buildBaseCommand, compareByDefault, filterPresent } from "./pkg.helper";
+import { readTextFileAsync } from "./gio.helper";
 import { readZenSpaces } from "./zen.helper";
 import {
   readFirefoxSelectableProfiles,
   type FirefoxSelectableProfile,
 } from "./firefox-spaces.helper";
-
-const decoder = new TextDecoder();
 
 type ProfileEntry = { name: string; dir: string; folderBasename: string; isDefault: boolean };
 
@@ -32,8 +30,8 @@ function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
 
 function readProfiles(path: string): Promise<ProfileEntry[]> {
   const iniDir = GLib.path_get_dirname(path);
-  return readFileAsync(path)
-    .then((contents) => parseProfiles(decoder.decode(contents), iniDir))
+  return readTextFileAsync(path)
+    .then((text) => parseProfiles(text, iniDir))
     .catch(() => []);
 }
 
@@ -53,74 +51,70 @@ export async function resolveFirefoxBrowsers(
   { enabledSpaces, profileGroupsMode }: FirefoxOptions = DEFAULT_FIREFOX_OPTIONS,
 ): Promise<ResolvedBrowserEntry[]> {
   const entries = await Promise.all(
-    filterAvailable(browsers)
-      .filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS))
-      .map(async (b) => {
-        const baseCommand = buildBaseCommand(b.pkg);
-        const profiles = await readProfiles(b.path);
-        const firefoxRoot = GLib.path_get_dirname(b.path);
-        const selectableMap =
-          profileGroupsMode !== "off"
-            ? await readFirefoxSelectableProfiles(
-                firefoxRoot,
-                profiles.map((p) => p.folderBasename),
-              )
-            : new Map<string, FirefoxSelectableProfile[]>();
+    filterPresent(browsers).map(async (b) => {
+      const baseCommand = buildBaseCommand(b.pkg);
+      const profiles = await readProfiles(b.path);
+      const firefoxRoot = GLib.path_get_dirname(b.path);
+      const selectableMap =
+        profileGroupsMode !== "off"
+          ? await readFirefoxSelectableProfiles(
+              firefoxRoot,
+              profiles.map((p) => p.folderBasename),
+            )
+          : new Map<string, FirefoxSelectableProfile[]>();
 
-        const items = (
-          await Promise.all(
-            profiles.map(async ({ name, dir, folderBasename, isDefault }) => {
-              const selectable = selectableMap.get(folderBasename);
+      const items = (
+        await Promise.all(
+          profiles.map(async ({ name, dir, folderBasename, isDefault }) => {
+            const selectable = selectableMap.get(folderBasename);
 
-              if (selectable != null) {
-                if (profileGroupsMode === "profiles") {
-                  // Flatten: each selectable profile becomes its own top-level entry
-                  return selectable.map((sp) => ({
-                    label: sp.name,
-                    command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
-                    // Mark default only on the sp whose folder matches this toolkit profile
-                    isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
-                    ...spColors(sp),
-                  }));
-                }
-                // "spaces" mode: nest selectable profiles as space buttons
-                return [
-                  {
-                    label: name,
-                    command: `${baseCommand} -P "${name}" -no-remote`,
-                    isDefault,
-                    spaces: selectable.map((sp) => ({
-                      name: sp.name,
-                      command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
-                      ...spColors(sp),
-                    })),
-                  },
-                ];
+            if (selectable != null) {
+              if (profileGroupsMode === "profiles") {
+                // Flatten: each selectable profile becomes its own top-level entry
+                return selectable.map((sp) => ({
+                  label: sp.name,
+                  command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
+                  // Mark default only on the sp whose folder matches this toolkit profile
+                  isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
+                  ...spColors(sp),
+                }));
               }
-
-              const spaces =
-                b.spaceType === SpaceType.ZenWorkspace && enabledSpaces.has(SpaceType.ZenWorkspace)
-                  ? (await readZenSpaces(dir)).map((space) => ({
-                      ...space,
-                      command: `${baseCommand} -P "${name}" --zen-workspace "${space.name}" -no-remote`,
-                    }))
-                  : [];
+              // "spaces" mode: nest selectable profiles as space buttons
               return [
                 {
                   label: name,
                   command: `${baseCommand} -P "${name}" -no-remote`,
                   isDefault,
-                  ...(spaces.length > 0 && { spaces }),
+                  spaces: selectable.map((sp) => ({
+                    name: sp.name,
+                    command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
+                    ...spColors(sp),
+                  })),
                 },
               ];
-            }),
-          )
-        ).flat();
-        items.sort(
-          (a, b) => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label),
-        );
-        return { label: b.label, items };
-      }),
+            }
+
+            const spaces =
+              b.spaceType === SpaceType.ZenWorkspace && enabledSpaces.has(SpaceType.ZenWorkspace)
+                ? (await readZenSpaces(dir)).map((space) => ({
+                    ...space,
+                    command: `${baseCommand} -P "${name}" --zen-workspace "${space.name}" -no-remote`,
+                  }))
+                : [];
+            return [
+              {
+                label: name,
+                command: `${baseCommand} -P "${name}" -no-remote`,
+                isDefault,
+                ...(spaces.length > 0 && { spaces }),
+              },
+            ];
+          }),
+        )
+      ).flat();
+      items.sort(compareByDefault);
+      return { label: b.label, items };
+    }),
   );
   return entries.filter((e) => e.items.length > 0);
 }

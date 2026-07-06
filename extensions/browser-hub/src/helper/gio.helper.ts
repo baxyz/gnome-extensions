@@ -1,5 +1,7 @@
 import Gio from "gi://Gio";
 
+export const decoder = new TextDecoder();
+
 export function readFileAsync(path: string): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const file = Gio.File.new_for_path(path);
@@ -12,4 +14,8 @@ export function readFileAsync(path: string): Promise<Uint8Array> {
       }
     });
   });
+}
+
+export function readTextFileAsync(path: string): Promise<string> {
+  return readFileAsync(path).then((bytes) => decoder.decode(bytes));
 }

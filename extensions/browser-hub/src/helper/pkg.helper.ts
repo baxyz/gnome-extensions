@@ -3,6 +3,11 @@ import { PackageManager } from "../types";
 import type { BrowserPkg, ResolvedBrowserPkg } from "../types";
 import { HOME_DIR } from "../constants/paths.constant";
 
+export const compareByDefault = <T extends { isDefault?: boolean; label: string }>(
+  a: T,
+  b: T,
+): number => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label);
+
 /**
  * Resolves a BrowserPkg to a single usable package, or null if unavailable.
  * For Native packages, selects the first binary found in PATH.
@@ -30,6 +35,12 @@ export function filterAvailable<T extends { pkg: BrowserPkg }>(
     const pkg = resolvePkg(b.pkg);
     return pkg !== null ? [{ ...b, pkg }] : [];
   });
+}
+
+export function filterPresent<T extends { pkg: BrowserPkg; path: string }>(
+  browsers: T[],
+): (Omit<T, "pkg"> & { pkg: ResolvedBrowserPkg })[] {
+  return filterAvailable(browsers).filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS));
 }
 
 export function buildBaseCommand(pkg: ResolvedBrowserPkg): string {

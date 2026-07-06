@@ -1,10 +1,8 @@
 import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
 import type { ChromiumBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { buildBaseCommand, filterAvailable } from "./pkg.helper";
-import { readFileAsync } from "./gio.helper";
-
-const decoder = new TextDecoder();
+import { buildBaseCommand, compareByDefault, filterPresent } from "./pkg.helper";
+import { readTextFileAsync } from "./gio.helper";
 
 type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
 type LocalState = {
@@ -34,8 +32,8 @@ function parseProfiles(content: string): ChromiumProfile[] {
 }
 
 function readProfiles(path: string): Promise<ChromiumProfile[]> {
-  return readFileAsync(path)
-    .then((contents) => parseProfiles(decoder.decode(contents)))
+  return readTextFileAsync(path)
+    .then((text) => parseProfiles(text))
     .catch(() => []);
 }
 
@@ -43,22 +41,18 @@ export async function resolveChromiumBrowsers(
   browsers: ChromiumBrowserConfig[],
 ): Promise<ResolvedBrowserEntry[]> {
   const entries = await Promise.all(
-    filterAvailable(browsers)
-      .filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS))
-      .map(async (b) => {
-        const profiles = await readProfiles(b.path);
-        const items = profiles
-          .map((profile) => ({
-            label: profile.name,
-            command: `${buildBaseCommand(b.pkg)} --profile-directory="${profile.dir}"`,
-            isDefault: profile.isDefault,
-            bgColor: profile.bgColor,
-          }))
-          .sort(
-            (a, b) => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label),
-          );
-        return { label: b.label, items };
-      }),
+    filterPresent(browsers).map(async (b) => {
+      const profiles = await readProfiles(b.path);
+      const items = profiles
+        .map((profile) => ({
+          label: profile.name,
+          command: `${buildBaseCommand(b.pkg)} --profile-directory="${profile.dir}"`,
+          isDefault: profile.isDefault,
+          bgColor: profile.bgColor,
+        }))
+        .sort(compareByDefault);
+      return { label: b.label, items };
+    }),
   );
   return entries.filter((e) => e.items.length > 0);
 }
