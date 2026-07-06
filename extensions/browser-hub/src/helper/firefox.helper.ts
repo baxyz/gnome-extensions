@@ -5,7 +5,10 @@ import { SpaceType } from "../types/space-type.enum";
 import type { ProfileGroupsMode } from "./digging.helper";
 import { buildBaseCommand, filterAvailable } from "./pkg.helper";
 import { readZenSpaces } from "./zen.helper";
-import { readFirefoxSelectableProfiles } from "./firefox-spaces.helper";
+import {
+  readFirefoxSelectableProfiles,
+  type FirefoxSelectableProfile,
+} from "./firefox-spaces.helper";
 
 const decoder = new TextDecoder();
 
@@ -59,7 +62,7 @@ export async function resolveFirefoxBrowsers(
                 firefoxRoot,
                 profiles.map((p) => p.folderBasename),
               )
-            : new Map<string, import("./firefox-spaces.helper").FirefoxSelectableProfile[]>();
+            : new Map<string, FirefoxSelectableProfile[]>();
 
         const items = (
           await Promise.all(
