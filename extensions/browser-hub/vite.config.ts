@@ -39,6 +39,8 @@ export default defineConfig({
           if (id.includes("node_modules/mozlz4")) return "vendor-mozlz4";
           if (id.includes("node_modules/sqlite-reader")) return "vendor-sqlite-reader";
           if (id.includes("@helpers4")) return "vendor-helpers4";
+          if (id.includes("/helper/browser/")) return "browser";
+          if (id.includes("/helper/internal/")) return "internal";
         },
         chunkFileNames: "[name].js",
       },

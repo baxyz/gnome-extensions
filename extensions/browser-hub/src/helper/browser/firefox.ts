@@ -1,14 +1,10 @@
 import GLib from "gi://GLib";
-import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { SpaceType } from "../types/space-type.enum";
-import type { FirefoxOptions } from "./digging.helper";
-import { buildBaseCommand, compareByDefault, filterPresent } from "./pkg.helper";
-import { readTextFileAsync } from "./gio.helper";
-import { readZenSpaces } from "./zen.helper";
-import {
-  readFirefoxSelectableProfiles,
-  type FirefoxSelectableProfile,
-} from "./firefox-spaces.helper";
+import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../../types";
+import type { FirefoxOptions } from "../../types";
+import { SpaceType } from "../../types/space-type.enum";
+import { buildBaseCommand, compareByDefault, filterPresent, readTextFileAsync } from "../internal";
+import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
+import { readZenSpaces } from "./zen";
 
 type ProfileEntry = { name: string; dir: string; folderBasename: string; isDefault: boolean };
 

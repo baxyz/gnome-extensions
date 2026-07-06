@@ -1,17 +1,13 @@
 import GLib from "gi://GLib";
-import { PackageManager } from "../types";
-import type { BrowserPkg, ResolvedBrowserPkg } from "../types";
-import { HOME_DIR } from "../constants/paths.constant";
+import { PackageManager } from "../../types";
+import type { BrowserPkg, ResolvedBrowserPkg } from "../../types";
+import { HOME_DIR } from "../../constants/paths.constant";
 
 export const compareByDefault = <T extends { isDefault?: boolean; label: string }>(
   a: T,
   b: T,
 ): number => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label);
 
-/**
- * Resolves a BrowserPkg to a single usable package, or null if unavailable.
- * For Native packages, selects the first binary found in PATH.
- */
 export function resolvePkg(pkg: BrowserPkg): ResolvedBrowserPkg | null {
   switch (pkg.manager) {
     case PackageManager.Native: {

@@ -1,5 +1,5 @@
-import type { SimpleBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { buildBaseCommand, filterAvailable } from "./pkg.helper";
+import type { SimpleBrowserConfig, ResolvedBrowserEntry } from "../../types";
+import { buildBaseCommand, filterAvailable } from "../internal";
 
 export async function resolveSimpleBrowsers(
   browsers: SimpleBrowserConfig[],

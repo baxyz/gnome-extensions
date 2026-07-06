@@ -1,7 +1,7 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import { readTable } from "sqlite-reader";
-import { readFileAsync } from "./gio.helper";
+import { readFileAsync } from "../internal";
 
 export interface FirefoxSelectableProfile {
   name: string;

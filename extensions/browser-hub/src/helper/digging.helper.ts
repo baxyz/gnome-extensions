@@ -5,18 +5,16 @@ import {
   SIMPLE_BROWSERS,
 } from "../constants";
 import type { ResolvedBrowserEntry } from "../types";
+import type { FirefoxOptions } from "../types";
 import { SpaceType } from "../types/space-type.enum";
-import { resolveChromiumBrowsers } from "./chromium.helper";
-import { resolveFalkonBrowsers } from "./falkon.helper";
-import { resolveFirefoxBrowsers } from "./firefox.helper";
-import { resolveSimpleBrowsers } from "./simple.helper";
+import {
+  resolveChromiumBrowsers,
+  resolveFalkonBrowsers,
+  resolveFirefoxBrowsers,
+  resolveSimpleBrowsers,
+} from "./browser";
 
-export type ProfileGroupsMode = "spaces" | "profiles" | "off";
-
-export type FirefoxOptions = {
-  enabledSpaces: ReadonlySet<SpaceType>;
-  profileGroupsMode: ProfileGroupsMode;
-};
+export type { FirefoxOptions, ProfileGroupsMode } from "../types";
 
 export type BrowserSettings = {
   showFirefoxFamily: boolean;

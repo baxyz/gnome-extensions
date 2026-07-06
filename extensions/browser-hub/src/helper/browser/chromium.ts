@@ -1,8 +1,7 @@
 import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
-import type { ChromiumBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { buildBaseCommand, compareByDefault, filterPresent } from "./pkg.helper";
-import { readTextFileAsync } from "./gio.helper";
+import type { ChromiumBrowserConfig, ResolvedBrowserEntry } from "../../types";
+import { buildBaseCommand, compareByDefault, filterPresent, readTextFileAsync } from "../internal";
 
 type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
 type LocalState = {

@@ -1,7 +1,7 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
-import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../types";
-import { buildBaseCommand, filterAvailable } from "./pkg.helper";
+import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../../types";
+import { buildBaseCommand, filterAvailable } from "../internal";
 
 function listProfileDirs(dirPath: string): Promise<string[]> {
   return new Promise((resolve) => {

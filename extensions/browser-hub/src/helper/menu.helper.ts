@@ -4,7 +4,7 @@ import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/p
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import type { BrowserSpace, ResolvedBrowserEntry } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
-import { launchBrowser } from "./runner.helper";
+import { launchBrowser } from "./internal";
 
 // tooltip_text is a registered GObject property only on GNOME Shell 47+
 function tooltip(btn: St.Button, text: string): void {

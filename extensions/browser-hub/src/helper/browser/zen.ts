@@ -1,8 +1,8 @@
 import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
-import type { ZenSpaceData } from "../types";
+import type { ZenSpaceData } from "../../types";
 import { decodeMozLz4 } from "mozlz4";
-import { decoder, readFileAsync } from "./gio.helper";
+import { decoder, readFileAsync } from "../internal";
 
 type ZenSessions = { spaces?: ZenSpaceData[] };
 
