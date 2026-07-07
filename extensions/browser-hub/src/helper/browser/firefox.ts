@@ -39,7 +39,7 @@ const spColors = (sp: FirefoxSelectableProfile) => ({
 
 const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
   enabledSpaces: new Set(Object.values(SpaceType)),
-  profileGroupsMode: "spaces",
+  profileGroupsMode: "profiles",
 };
 
 export async function resolveFirefoxBrowsers(

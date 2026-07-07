@@ -27,7 +27,7 @@
         <choice value="profiles"/>
         <choice value="off"/>
       </choices>
-      <default>"spaces"</default>
+      <default>"profiles"</default>
       <summary>Firefox profile groups display mode</summary>
       <description>How to display Firefox Profile Groups (Firefox 128+, separate from the classic Profile Manager). "spaces": show as space buttons under the matched profile entry. "profiles": list each selectable profile as its own menu entry. "off": ignore them entirely.</description>
     </key>

@@ -27,7 +27,7 @@ const ALL_ON: BrowserSettings = {
   showChromeFamily: true,
   showSimpleBrowsers: true,
   enabledSpaces: new Set(Object.values(SpaceType)),
-  profileGroupsMode: "spaces",
+  profileGroupsMode: "profiles",
 };
 
 export function getBrowserEntries(
