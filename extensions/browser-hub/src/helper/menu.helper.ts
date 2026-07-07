@@ -126,6 +126,8 @@ export function fillMenu({
     return;
   }
 
+  const closeMenu = () => (menu as { close(): void }).close();
+
   // Top toolbar: [default browser?] — spacer — refresh — settings
   const toolbar = makeIconRow();
   if (defaultBrowser) {
@@ -133,8 +135,8 @@ export function fillMenu({
     toolbar.add_child(
       makeDefaultBrowserGroup(
         defaultBrowser.name,
-        () => launchBrowser({ command: cmd, title, notify }),
-        () => launchBrowser({ command: "gnome-control-center applications", title, notify }),
+        () => { launchBrowser({ command: cmd, title, notify }); closeMenu(); },
+        () => { launchBrowser({ command: "gnome-control-center applications", title, notify }); closeMenu(); },
         showDefaultBrowserEdit,
       ),
     );
@@ -159,9 +161,9 @@ export function fillMenu({
     ),
   );
   menu.addMenuItem(toolbar);
-  menu.addMenuItem(new PopupSeparatorMenuItem());
 
   if (entries.length === 0) {
+    menu.addMenuItem(new PopupSeparatorMenuItem());
     menu.addMenuItem(new PopupMenuItem("No browsers found", { reactive: false }));
     return;
   }
@@ -174,9 +176,10 @@ export function fillMenu({
       for (const item of entry.items) {
         const cmd = item.command;
         row.add_child(
-          makeIconButton(item.label, item.icon ?? "web-browser-symbolic", 24, () =>
-            launchBrowser({ command: cmd, title, notify }),
-          ),
+          makeIconButton(item.label, item.icon ?? "web-browser-symbolic", 24, () => {
+            launchBrowser({ command: cmd, title, notify });
+            closeMenu();
+          }),
         );
       }
       menu.addMenuItem(row);
