@@ -3,6 +3,12 @@
   font-weight: bold;
 }
 
+/* Fixed-width icon slot left of profile label — keeps labels aligned across entries */
+.browser-hub-profile-icon {
+  min-width: 1.5em;
+  text-align: center;
+}
+
 /* Default browser button group in toolbar */
 .browser-hub-default-browser-btn {
   font-size: 9pt;
