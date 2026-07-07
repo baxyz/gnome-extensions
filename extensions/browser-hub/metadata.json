@@ -1,7 +1,7 @@
 {
   "name": "Browser Hub",
   "description": "Launch any browser profile from the GNOME indicator — Firefox (native, Snap, Flatpak), Floorp, LibreWolf, Waterfox, Zen, IceCat, Palemoon, and more.\n\nNot affiliated with any browser vendor.",
-  "uuid": "browser-hub@baxyz.etik.com",
+  "uuid": "browser-hub@baxyz.dev",
   "url": "https://github.com/baxyz/gnome-extensions",
   "shell-version": ["50"],
   "settings-schema": "org.gnome.shell.extensions.browser-hub"

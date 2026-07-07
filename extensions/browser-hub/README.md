@@ -25,7 +25,7 @@ pnpm --filter @baxyz/browser-hub test
 ```bash
 pnpm --filter @baxyz/browser-hub install:local
 # In the nested session:
-gnome-extensions enable browser-hub@baxyz.etik.com
+gnome-extensions enable browser-hub@baxyz.dev
 ```
 
 See the root [agents.md](../../.github/agents.md) for full development workflow.
