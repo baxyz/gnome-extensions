@@ -43,6 +43,12 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     path: HOME_DIR + "/.var/app/com.github.Eloston.UngoogledChromium/config/chromium/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "com.github.Eloston.UngoogledChromium" },
   },
+  {
+    type: BrowserType.Chromium,
+    label: "Chromium (snap)",
+    path: HOME_DIR + "/snap/chromium/current/.config/chromium/Local State",
+    pkg: { manager: PackageManager.Snap, name: "chromium" },
+  },
 
   // === Brave ===
   {
@@ -56,6 +62,12 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     label: "Brave (flatpak)",
     path: HOME_DIR + "/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "com.brave.Browser" },
+  },
+  {
+    type: BrowserType.Chromium,
+    label: "Brave (snap)",
+    path: HOME_DIR + "/snap/brave/current/.config/BraveSoftware/Brave-Browser/Local State",
+    pkg: { manager: PackageManager.Snap, name: "brave" },
   },
 
   // === Brave Origin ===
