@@ -38,10 +38,6 @@
   "devDependencies": {
     "@girs/gjs": "catalog:",
     "@girs/gnome-shell": "catalog:",
-    "@girs/gnome-shell-46": "catalog:",
-    "@girs/gnome-shell-47": "catalog:",
-    "@girs/gnome-shell-48": "catalog:",
-    "@girs/gnome-shell-49": "catalog:",
     "@girs/gnome-shell-50": "catalog:",
     "@types/node": "catalog:",
     "@vitest/ui": "catalog:",

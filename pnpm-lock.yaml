@@ -80,18 +80,6 @@ importers:
       '@girs/gnome-shell':
         specifier: 'catalog:'
         version: 50.0.0
-      '@girs/gnome-shell-46':
-        specifier: 'catalog:'
-        version: '@girs/gnome-shell@46.0.2'
-      '@girs/gnome-shell-47':
-        specifier: 'catalog:'
-        version: '@girs/gnome-shell@47.0.2'
-      '@girs/gnome-shell-48':
-        specifier: 'catalog:'
-        version: '@girs/gnome-shell@48.0.4'
-      '@girs/gnome-shell-49':
-        specifier: 'catalog:'
-        version: '@girs/gnome-shell@49.1.0'
       '@girs/gnome-shell-50':
         specifier: 'catalog:'
         version: '@girs/gnome-shell@50.0.0'
