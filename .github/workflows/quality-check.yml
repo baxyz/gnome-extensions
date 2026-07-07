@@ -65,6 +65,11 @@ jobs:
   analyze:
     name: Analyze (shexli)
     runs-on: ubuntu-latest
+    # shexli 0.2.1 segfaults deterministically on extensions with multiple
+    # locally-imported JS files (use-after-free in its tree-sitter usage —
+    # a Node outlives the Tree it came from). Not blocking until upstream
+    # ships a fix; findings still show up in the job log when it doesn't crash.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

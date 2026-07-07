@@ -54,7 +54,11 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     spacesGroup.add(profileGroupsRow);
 
     spacesGroup.add(
-      switchRow("Zen workspaces", "Workspace buttons under each Zen profile", SpaceType.ZenWorkspace),
+      switchRow(
+        "Zen workspaces",
+        "Workspace buttons under each Zen profile",
+        SpaceType.ZenWorkspace,
+      ),
     );
 
     const toolbarGroup = new Adw.PreferencesGroup({ title: "Toolbar" });

@@ -135,8 +135,14 @@ export function fillMenu({
     toolbar.add_child(
       makeDefaultBrowserGroup(
         defaultBrowser.name,
-        () => { launchBrowser({ command: cmd, title, notify }); closeMenu(); },
-        () => { launchBrowser({ command: "gnome-control-center applications", title, notify }); closeMenu(); },
+        () => {
+          launchBrowser({ command: cmd, title, notify });
+          closeMenu();
+        },
+        () => {
+          launchBrowser({ command: "gnome-control-center applications", title, notify });
+          closeMenu();
+        },
         showDefaultBrowserEdit,
       ),
     );
@@ -187,7 +193,10 @@ export function fillMenu({
       for (const item of entry.items) {
         const menuItem = new PopupMenuItem(item.label);
         if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
-        const iconSlot = new St.Label({ text: item.icon ?? "", style_class: "browser-hub-profile-icon" });
+        const iconSlot = new St.Label({
+          text: item.icon ?? "",
+          style_class: "browser-hub-profile-icon",
+        });
         menuItem.insert_child_below(iconSlot, menuItem.label);
         const cmd = item.command;
         menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));

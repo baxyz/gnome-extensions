@@ -10,9 +10,11 @@ export type DefaultBrowserInfo = {
 
 // Gio.DesktopAppInfo is Linux-specific (gio-unix-2.0) — present in GJS but absent from @girs types
 type _DesktopInfo = { get_string(key: string): string | null };
-const _DesktopAppInfo = (Gio as unknown as {
-  DesktopAppInfo: { new: (id: string) => _DesktopInfo | null };
-}).DesktopAppInfo;
+const _DesktopAppInfo = (
+  Gio as unknown as {
+    DesktopAppInfo: { new: (id: string) => _DesktopInfo | null };
+  }
+).DesktopAppInfo;
 
 function desktopField(info: _DesktopInfo, key: string): string | null {
   try {

@@ -34,9 +34,7 @@ export function getBrowserEntries(
   settings: BrowserSettings = ALL_ON,
 ): Promise<ResolvedBrowserEntry[]> {
   return Promise.all([
-    settings.showFirefoxFamily
-      ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings)
-      : [],
+    settings.showFirefoxFamily ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings) : [],
     settings.showChromeFamily ? resolveChromiumBrowsers(CHROMIUM_BROWSERS) : [],
     settings.showChromeFamily ? resolveFalkonBrowsers(FALKON_BROWSERS) : [],
     settings.showSimpleBrowsers ? resolveSimpleBrowsers(SIMPLE_BROWSERS) : [],
