@@ -6,8 +6,17 @@ import type { BrowserSpace, ResolvedBrowserEntry } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./internal";
 
+// St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
 function tooltip(btn: St.Button, text: string): void {
   (btn as unknown as { tooltip_text: string }).tooltip_text = text;
+}
+
+// Firefox profile theme colors come straight from a SQLite column (see
+// firefox-spaces.ts) with no format guarantee. St's CSS engine can't execute
+// anything, but a stray `;` could still smuggle in an extra declaration —
+// reject anything that isn't a plain color token before it reaches set_style().
+function safeCssColor(color: string | undefined): string | undefined {
+  return color && /^[^;{}\\\n\r]+$/.test(color) ? color : undefined;
 }
 
 function makeIconButton(
@@ -38,10 +47,12 @@ function makeSpaceGroup(
       label: displayIcon,
       style_class: "button browser-hub-space-dot-btn",
     });
-    if (space.bgColor || space.fgColor) {
+    const bgColor = safeCssColor(space.bgColor);
+    const fgColor = safeCssColor(space.fgColor);
+    if (bgColor || fgColor) {
       const parts: string[] = [];
-      if (space.bgColor) parts.push(`background-color: ${space.bgColor}`);
-      if (space.fgColor) parts.push(`color: ${space.fgColor}`);
+      if (bgColor) parts.push(`background-color: ${bgColor}`);
+      if (fgColor) parts.push(`color: ${fgColor}`);
       btn.set_style(parts.join("; "));
     }
     tooltip(btn, space.name);
@@ -203,7 +214,7 @@ export function fillMenu({
         if (item.spaces && item.spaces.length > 0) {
           menuItem.add_child(new St.Widget({ x_expand: true }));
           menuItem.add_child(makeSpaceGroup(item.spaces, title, notify));
-        } else if (item.bgColor) {
+        } else if (safeCssColor(item.bgColor)) {
           const dot = new St.Widget({ style_class: "browser-hub-profile-dot" });
           dot.set_style(`background-color: ${item.bgColor};`);
           menuItem.add_child(dot);
