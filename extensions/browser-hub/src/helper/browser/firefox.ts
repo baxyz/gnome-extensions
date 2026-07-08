@@ -12,9 +12,14 @@ import {
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces } from "./zen";
 
-type ProfileEntry = { name: string; dir: string; folderBasename: string; isDefault: boolean };
+export type ProfileEntry = {
+  name: string;
+  dir: string;
+  folderBasename: string;
+  isDefault: boolean;
+};
 
-function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
+export function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
   const sections = content.split(/^\[/m).slice(1);
 
   // Firefox 67+ (profile-per-install) tracks each installation's default profile

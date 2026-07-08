@@ -8,7 +8,7 @@ import {
   readTextFileAsync,
 } from "../internal";
 
-type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
+export type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
 type LocalState = {
   profile?: {
     info_cache?: Record<string, { name?: string; background_color?: number }>;
@@ -16,14 +16,14 @@ type LocalState = {
   };
 };
 
-function argbToRgb(argb: number): string {
+export function argbToRgb(argb: number): string {
   const r = (argb >>> 16) & 0xff;
   const g = (argb >>> 8) & 0xff;
   const b = argb & 0xff;
   return `rgb(${r},${g},${b})`;
 }
 
-function parseProfiles(content: string): ChromiumProfile[] {
+export function parseProfiles(content: string): ChromiumProfile[] {
   const json = safeJsonParse<LocalState>(content);
   const cache = json?.profile?.info_cache ?? {};
   const lastUsed = json?.profile?.last_used;
