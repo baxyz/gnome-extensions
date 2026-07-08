@@ -68,11 +68,11 @@ importers:
         specifier: 'catalog:'
         version: 2.0.1
       mozlz4:
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.2.2
+        version: 0.2.2
       sqlite-reader:
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.2.1
+        version: 0.2.1
     devDependencies:
       '@girs/gjs':
         specifier: 'catalog:'
@@ -1526,8 +1526,8 @@ packages:
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
-  mozlz4@0.1.0:
-    resolution: {integrity: sha512-CqWQlGHvPZggOjGmwiOqO7u0KOjg9a+KDErwUWU61qT/aJ/1iaC4tCsZwdhFGAngctMTI9vY5RTGlpDpybUZvg==}
+  mozlz4@0.2.2:
+    resolution: {integrity: sha512-5NnpOBsEcygLLou9/5rHWBVlQ2QEi5wThXk5zdobmTfIMQ4PAgTdQyDywcvtmpHqkXYlMoqv4KaXTsRzaB2oxQ==}
     engines: {node: '>=18'}
 
   mrmime@2.0.1:
@@ -1591,9 +1591,9 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
-  sqlite-reader@0.1.0:
-    resolution: {integrity: sha512-G1tk31gHGD4YzbdJ/Sgd4/4VcMn4MW9fT0wgLGCaqt4oIFIXOjq2bLil7B/cVn1/Jkt51njgmP7lXl6iozg6Iw==}
-    engines: {node: '>=18'}
+  sqlite-reader@0.2.1:
+    resolution: {integrity: sha512-Quw3Hg0RUCUwSAMgO63IdhKRHZxitn8C7PdhjDr/HRBF7nqQ5GYZD1Lany9royo47MYhBKHpfeyMUaoPWXpc5Q==}
+    engines: {node: '>=22'}
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
@@ -4222,7 +4222,7 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  mozlz4@0.1.0: {}
+  mozlz4@0.2.2: {}
 
   mrmime@2.0.1: {}
 
@@ -4319,7 +4319,7 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
-  sqlite-reader@0.1.0: {}
+  sqlite-reader@0.2.1: {}
 
   stackback@0.0.2: {}
 
