@@ -8,7 +8,7 @@ export const compareByDefault = <T extends { isDefault?: boolean; label: string 
   b: T,
 ): number => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label);
 
-export function resolvePkg(pkg: BrowserPkg): ResolvedBrowserPkg | null {
+function resolvePkgUncached(pkg: BrowserPkg): ResolvedBrowserPkg | null {
   switch (pkg.manager) {
     case PackageManager.Native: {
       const binary = [pkg.binary].flat().find((b) => GLib.find_program_in_path(b) !== null);
@@ -22,6 +22,26 @@ export function resolvePkg(pkg: BrowserPkg): ResolvedBrowserPkg | null {
     case PackageManager.Snap:
       return GLib.file_test(`/snap/${pkg.name}`, GLib.FileTest.IS_DIR) ? pkg : null;
   }
+}
+
+// Package/binary presence rarely changes mid-session, but `resolvePkgUncached` runs
+// several synchronous `find_program_in_path`/`file_test` syscalls per browser, on
+// GNOME Shell's main thread, on *every* settings-triggered refresh (~50 browsers).
+// Cache it for the extension's lifetime; the Refresh button (see extension.ts)
+// explicitly busts this cache so newly-installed browsers are still picked up.
+let pkgResolutionCache = new WeakMap<BrowserPkg, ResolvedBrowserPkg | null>();
+
+export function clearPkgResolutionCache(): void {
+  pkgResolutionCache = new WeakMap();
+}
+
+export function resolvePkg(pkg: BrowserPkg): ResolvedBrowserPkg | null {
+  if (pkgResolutionCache.has(pkg)) {
+    return pkgResolutionCache.get(pkg) ?? null;
+  }
+  const resolved = resolvePkgUncached(pkg);
+  pkgResolutionCache.set(pkg, resolved);
+  return resolved;
 }
 
 export function filterAvailable<T extends { pkg: BrowserPkg }>(
