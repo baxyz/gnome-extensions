@@ -2,7 +2,7 @@ import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
 import type { ZenSpaceData } from "../../types";
 import { decodeMozLz4 } from "mozlz4";
-import { decoder, readFileAsync } from "../internal";
+import { decoder, logIfUnexpected, readFileAsync } from "../internal";
 
 type ZenSessions = { spaces?: ZenSpaceData[] };
 
@@ -13,7 +13,10 @@ function readArchive(archivePath: string): Promise<ZenSpaceData[]> {
       const data = safeJsonParse<ZenSessions>(json);
       return data?.spaces ?? [];
     })
-    .catch(() => []);
+    .catch((e: unknown) => {
+      logIfUnexpected(e, `[browser-hub] failed to read Zen session archive at ${archivePath}`);
+      return [];
+    });
 }
 
 /** Reads the Zen spaces for a given profile directory. Returns [] if absent or unreadable. */

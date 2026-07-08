@@ -1,7 +1,12 @@
-import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
 import type { ChromiumBrowserConfig, ResolvedBrowserEntry } from "../../types";
-import { buildBaseCommand, compareByDefault, filterPresent, readTextFileAsync } from "../internal";
+import {
+  buildBaseCommand,
+  compareByDefault,
+  filterPresent,
+  logIfUnexpected,
+  readTextFileAsync,
+} from "../internal";
 
 type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
 type LocalState = {
@@ -33,7 +38,10 @@ function parseProfiles(content: string): ChromiumProfile[] {
 function readProfiles(path: string): Promise<ChromiumProfile[]> {
   return readTextFileAsync(path)
     .then((text) => parseProfiles(text))
-    .catch(() => []);
+    .catch((e: unknown) => {
+      logIfUnexpected(e, `[browser-hub] failed to read Local State at ${path}`);
+      return [];
+    });
 }
 
 export async function resolveChromiumBrowsers(

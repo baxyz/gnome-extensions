@@ -2,7 +2,13 @@ import GLib from "gi://GLib";
 import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../../types";
 import type { FirefoxOptions } from "../../types";
 import { SpaceType } from "../../types/space-type.enum";
-import { buildBaseCommand, compareByDefault, filterPresent, readTextFileAsync } from "../internal";
+import {
+  buildBaseCommand,
+  compareByDefault,
+  filterPresent,
+  logIfUnexpected,
+  readTextFileAsync,
+} from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces } from "./zen";
 
@@ -44,7 +50,10 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
   const iniDir = GLib.path_get_dirname(path);
   return readTextFileAsync(path)
     .then((text) => parseProfiles(text, iniDir))
-    .catch(() => []);
+    .catch((e: unknown) => {
+      logIfUnexpected(e, `[browser-hub] failed to read profiles.ini at ${path}`);
+      return [];
+    });
 }
 
 const spColors = (sp: FirefoxSelectableProfile) => ({

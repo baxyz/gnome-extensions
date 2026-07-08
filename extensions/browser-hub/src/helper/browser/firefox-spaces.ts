@@ -1,7 +1,7 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import { readTable } from "sqlite-reader";
-import { readFileAsync } from "../internal";
+import { logIfUnexpected, readFileAsync } from "../internal";
 
 export interface FirefoxSelectableProfile {
   name: string;
@@ -92,8 +92,8 @@ export async function readFirefoxSelectableProfiles(
               themeBg: str(row.themeBg),
             })),
         );
-      } catch {
-        // Unreadable or malformed database — skip silently
+      } catch (e: unknown) {
+        logIfUnexpected(e, `[browser-hub] failed to read Profile Groups database at ${dbPath}`);
       }
     }),
   );
