@@ -1,7 +1,7 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../../types";
-import { buildBaseCommand, filterAvailable } from "../internal";
+import { buildBaseCommand, filterPresent } from "../internal";
 
 function listProfileDirs(dirPath: string): Promise<string[]> {
   return new Promise((resolve) => {
@@ -35,15 +35,13 @@ export async function resolveFalkonBrowsers(
   browsers: FalkonBrowserConfig[],
 ): Promise<ResolvedBrowserEntry[]> {
   const entries = await Promise.all(
-    filterAvailable(browsers)
-      .filter((b) => GLib.file_test(b.path, GLib.FileTest.IS_DIR))
-      .map(async (b) => ({
-        label: b.label,
-        items: (await listProfileDirs(b.path)).map((name) => ({
-          label: name,
-          command: `${buildBaseCommand(b.pkg)} --profile "${name}"`,
-        })),
+    filterPresent(browsers, GLib.FileTest.IS_DIR).map(async (b) => ({
+      label: b.label,
+      items: (await listProfileDirs(b.path)).map((name) => ({
+        label: name,
+        command: [...buildBaseCommand(b.pkg), "--profile", name],
       })),
+    })),
   );
   return entries.filter((e) => e.items.length > 0);
 }

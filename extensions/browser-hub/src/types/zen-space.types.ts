@@ -6,7 +6,7 @@ export type ZenSpaceData = {
   icon: string;
 };
 
-/** Space with a fully built launch command, ready for the menu */
+/** Space with a fully built launch command (argv), ready for the menu */
 export type ZenSpace = ZenSpaceData & {
-  command: string;
+  command: string[];
 };

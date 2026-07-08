@@ -45,7 +45,7 @@ export async function resolveChromiumBrowsers(
       const items = profiles
         .map((profile) => ({
           label: profile.name,
-          command: `${buildBaseCommand(b.pkg)} --profile-directory="${profile.dir}"`,
+          command: [...buildBaseCommand(b.pkg), `--profile-directory=${profile.dir}`],
           isDefault: profile.isDefault,
           bgColor: profile.bgColor,
         }))

@@ -35,17 +35,19 @@ export function filterAvailable<T extends { pkg: BrowserPkg }>(
 
 export function filterPresent<T extends { pkg: BrowserPkg; path: string }>(
   browsers: T[],
+  test: number = GLib.FileTest.EXISTS,
 ): (Omit<T, "pkg"> & { pkg: ResolvedBrowserPkg })[] {
-  return filterAvailable(browsers).filter((b) => GLib.file_test(b.path, GLib.FileTest.EXISTS));
+  return filterAvailable(browsers).filter((b) => GLib.file_test(b.path, test));
 }
 
-export function buildBaseCommand(pkg: ResolvedBrowserPkg): string {
+/** Returns the base argv for launching this package — append extra args, never string-concatenate. */
+export function buildBaseCommand(pkg: ResolvedBrowserPkg): string[] {
   switch (pkg.manager) {
     case PackageManager.Native:
-      return pkg.binary;
+      return [pkg.binary];
     case PackageManager.Flatpak:
-      return `flatpak run ${pkg.appId}`;
+      return ["flatpak", "run", pkg.appId];
     case PackageManager.Snap:
-      return `snap run ${pkg.name}`;
+      return ["snap", "run", pkg.name];
   }
 }

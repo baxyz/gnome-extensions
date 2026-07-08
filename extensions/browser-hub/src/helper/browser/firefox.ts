@@ -69,7 +69,7 @@ export async function resolveFirefoxBrowsers(
                 // Flatten: each selectable profile becomes its own top-level entry
                 return selectable.map((sp) => ({
                   label: sp.name,
-                  command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
+                  command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
                   // Mark default only on the sp whose folder matches this toolkit profile
                   isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
                   ...spColors(sp),
@@ -79,11 +79,11 @@ export async function resolveFirefoxBrowsers(
               return [
                 {
                   label: name,
-                  command: `${baseCommand} -P "${name}" -no-remote`,
+                  command: [...baseCommand, "-P", name, "-no-remote"],
                   isDefault,
                   spaces: selectable.map((sp) => ({
                     name: sp.name,
-                    command: `${baseCommand} --profile "${sp.dir}" -no-remote`,
+                    command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
                     ...spColors(sp),
                   })),
                 },
@@ -94,13 +94,20 @@ export async function resolveFirefoxBrowsers(
               b.spaceType === SpaceType.ZenWorkspace && enabledSpaces.has(SpaceType.ZenWorkspace)
                 ? (await readZenSpaces(dir)).map((space) => ({
                     ...space,
-                    command: `${baseCommand} -P "${name}" --zen-workspace "${space.name}" -no-remote`,
+                    command: [
+                      ...baseCommand,
+                      "-P",
+                      name,
+                      "--zen-workspace",
+                      space.name,
+                      "-no-remote",
+                    ],
                   }))
                 : [];
             return [
               {
                 label: name,
-                command: `${baseCommand} -P "${name}" -no-remote`,
+                command: [...baseCommand, "-P", name, "-no-remote"],
                 isDefault,
                 ...(spaces.length > 0 && { spaces }),
               },

@@ -5,7 +5,7 @@ import { buildBaseCommand } from "./internal";
 
 export type DefaultBrowserInfo = {
   name: string;
-  command: string;
+  command: string[];
 };
 
 // Gio.DesktopAppInfo is Linux-specific (gio-unix-2.0) — present in GJS but absent from @girs types

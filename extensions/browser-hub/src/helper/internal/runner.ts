@@ -1,4 +1,4 @@
-import GLib from "gi://GLib";
+import Gio from "gi://Gio";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 
 export function launchBrowser({
@@ -6,15 +6,13 @@ export function launchBrowser({
   title,
   notify,
 }: {
-  command: string;
+  command: string[];
   title: string;
   notify: typeof Main.notify;
 }): void {
   try {
-    const success = GLib.spawn_command_line_async(command);
-    if (!success) {
-      notify(title, "Failed to launch browser.");
-    }
+    // argv form — no shell involved, so profile names/paths never need escaping.
+    Gio.Subprocess.new(command, Gio.SubprocessFlags.NONE);
   } catch (e: unknown) {
     logError(e as object, `[${title}] Failed to launch browser.`);
     notify(title, "Failed to launch browser.");
