@@ -30,13 +30,23 @@ const ALL_ON: BrowserSettings = {
   profileGroupsMode: "profiles",
 };
 
-export function getBrowserEntries(
+export async function getBrowserEntries(
   settings: BrowserSettings = ALL_ON,
 ): Promise<ResolvedBrowserEntry[]> {
-  return Promise.all([
+  // allSettled, not all: one family throwing (a bug, not a missing-file case —
+  // every resolver already swallows its own I/O errors) shouldn't blank out
+  // every other family's entries too.
+  const results = await Promise.allSettled([
     settings.showFirefoxFamily ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings) : [],
     settings.showChromeFamily ? resolveChromiumBrowsers(CHROMIUM_BROWSERS) : [],
     settings.showChromeFamily ? resolveFalkonBrowsers(FALKON_BROWSERS) : [],
     settings.showSimpleBrowsers ? resolveSimpleBrowsers(SIMPLE_BROWSERS) : [],
-  ]).then((results) => results.flat());
+  ]);
+  return results.flatMap((result) => {
+    if (result.status === "rejected") {
+      logError(result.reason as object, "[browser-hub] a browser family failed to resolve");
+      return [];
+    }
+    return result.value;
+  });
 }
