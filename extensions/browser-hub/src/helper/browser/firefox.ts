@@ -9,19 +9,35 @@ import { readZenSpaces } from "./zen";
 type ProfileEntry = { name: string; dir: string; folderBasename: string; isDefault: boolean };
 
 function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
-  return content
-    .split(/^\[/m)
-    .slice(1)
-    .flatMap((section) => {
-      const name = section.match(/^Name=(.+)/m)?.[1];
-      const profilePath = section.match(/^Path=(.+)/m)?.[1];
-      const isRelative = /^IsRelative=1/m.test(section);
-      const isDefault = /^Default=1/m.test(section);
-      if (!name || !profilePath) return [];
-      const dir = isRelative ? `${iniDir}/${profilePath.trim()}` : profilePath.trim();
-      const folderBasename = GLib.path_get_basename(dir);
-      return [{ name: name.trim(), dir, folderBasename, isDefault }];
-    });
+  const sections = content.split(/^\[/m).slice(1);
+
+  // Firefox 67+ (profile-per-install) tracks each installation's default profile
+  // in a separate [InstallXXXXXXXX] section (Default=<relative path>), since
+  // several installs (release/beta/ESR) can share one profiles.ini. When present,
+  // this is the source of truth; the legacy per-profile Default=1 flag can be
+  // stale or absent on those installs.
+  const installDefaultPaths = new Set(
+    sections
+      .filter((section) => section.startsWith("Install"))
+      .map((section) => section.match(/^Default=(.+)/m)?.[1]?.trim())
+      .filter((path): path is string => path !== undefined),
+  );
+
+  return sections.flatMap((section) => {
+    if (section.startsWith("Install")) return [];
+    const name = section.match(/^Name=(.+)/m)?.[1];
+    const profilePath = section.match(/^Path=(.+)/m)?.[1];
+    const isRelative = /^IsRelative=1/m.test(section);
+    if (!name || !profilePath) return [];
+    const trimmedPath = profilePath.trim();
+    const isDefault =
+      installDefaultPaths.size > 0
+        ? installDefaultPaths.has(trimmedPath)
+        : /^Default=1/m.test(section);
+    const dir = isRelative ? `${iniDir}/${trimmedPath}` : trimmedPath;
+    const folderBasename = GLib.path_get_basename(dir);
+    return [{ name: name.trim(), dir, folderBasename, isDefault }];
+  });
 }
 
 function readProfiles(path: string): Promise<ProfileEntry[]> {
