@@ -45,12 +45,20 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       const mode = PROFILE_GROUP_MODES[profileGroupsRow.selected] ?? "spaces";
       settings.set_string("firefox-profile-groups-mode", mode);
     });
-    settings.connect("changed::firefox-profile-groups-mode", () => {
-      const idx = PROFILE_GROUP_MODES.indexOf(
-        settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
-      );
-      profileGroupsRow.selected = Math.max(0, idx);
-    });
+    // ExtensionPreferences.getSettings() returns a cached, extension-lifetime
+    // Gio.Settings instance shared across every time this window is opened —
+    // without an explicit disconnect, reopening Preferences repeatedly piles
+    // up listeners that each close over a since-disposed profileGroupsRow.
+    const profileGroupsModeChangedId = settings.connect(
+      "changed::firefox-profile-groups-mode",
+      () => {
+        const idx = PROFILE_GROUP_MODES.indexOf(
+          settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
+        );
+        profileGroupsRow.selected = Math.max(0, idx);
+      },
+    );
+    window.connect("destroy", () => settings.disconnect(profileGroupsModeChangedId));
     spacesGroup.add(profileGroupsRow);
 
     spacesGroup.add(
