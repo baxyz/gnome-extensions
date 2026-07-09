@@ -1,7 +1,7 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../../types";
-import { buildBaseCommand, filterPresent } from "../internal";
+import { buildBaseCommand, filterPresent, logIfUnexpected } from "../internal";
 
 function listProfileDirs(dirPath: string): Promise<string[]> {
   return new Promise((resolve) => {
@@ -23,7 +23,8 @@ function listProfileDirs(dirPath: string): Promise<string[]> {
           }
           enumerator.close(null);
           resolve(profiles);
-        } catch {
+        } catch (e: unknown) {
+          logIfUnexpected(e, `[browser-hub] failed to list Falkon profiles directory ${dirPath}`);
           resolve([]);
         }
       },

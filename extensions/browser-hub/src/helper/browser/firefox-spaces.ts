@@ -36,7 +36,8 @@ function listSqliteFiles(dirPath: string): Promise<string[]> {
           }
           enumerator.close(null);
           resolve(files);
-        } catch {
+        } catch (e: unknown) {
+          logIfUnexpected(e, `[browser-hub] failed to list Profile Groups directory ${dirPath}`);
           resolve([]);
         }
       },
