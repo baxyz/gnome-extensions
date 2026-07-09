@@ -12,6 +12,7 @@ import {
 } from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces } from "./zen";
+import { resolveIconName } from "../../icon-mapping";
 
 export type ProfileEntry = {
   name: string;
@@ -63,7 +64,7 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
 }
 
 const spColors = (sp: FirefoxSelectableProfile) => ({
-  icon: sp.avatar,
+  icon: resolveIconName(sp.avatar),
   fgColor: sp.themeFg,
   bgColor: sp.themeBg,
 });
@@ -125,6 +126,7 @@ export async function resolveFirefoxBrowsers(
               b.spaceType === SpaceType.ZenWorkspace && enabledSpaces.has(SpaceType.ZenWorkspace)
                 ? (await readZenSpaces(dir)).map((space) => ({
                     ...space,
+                    icon: resolveIconName(space.icon),
                     command: [
                       ...baseCommand,
                       "-P",

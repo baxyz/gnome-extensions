@@ -5,17 +5,7 @@ import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/she
 import type { BrowserSpace, ResolvedBrowserEntry } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./internal";
-import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "../icon-mapping";
-
-// Generic fallback for any avatar/workspace icon id with no verified GNOME
-// icon equivalent (see icon-mapping.ts) — no icon is better than a wrong
-// one, but a browser-shaped placeholder beats an empty slot.
-const FALLBACK_ICON_NAME = "web-browser-symbolic";
-
-function resolveIconName(rawIcon: string | undefined): string {
-  if (!rawIcon) return FALLBACK_ICON_NAME;
-  return FIREFOX_AVATAR_ICONS[rawIcon] ?? ZEN_WORKSPACE_ICONS[rawIcon] ?? FALLBACK_ICON_NAME;
-}
+import { FALLBACK_ICON_NAME } from "../icon-mapping";
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
 function tooltip(btn: St.Button, text: string): void {
@@ -57,7 +47,7 @@ function makeSpaceGroup(
       accessible_name: space.name,
       style_class: "button browser-hub-space-dot-btn",
     });
-    btn.set_child(new St.Icon({ icon_name: resolveIconName(space.icon), icon_size: 16 }));
+    btn.set_child(new St.Icon({ icon_name: space.icon ?? FALLBACK_ICON_NAME, icon_size: 16 }));
     const bgColor = safeCssColor(space.bgColor);
     const fgColor = safeCssColor(space.fgColor);
     if (bgColor || fgColor) {
@@ -207,7 +197,7 @@ export function fillMenu({
       for (const item of entry.items) {
         const cmd = item.command;
         row.add_child(
-          makeIconButton(item.label, item.icon ?? "web-browser-symbolic", 24, () => {
+          makeIconButton(item.label, item.icon ?? FALLBACK_ICON_NAME, 24, () => {
             launchBrowser({ command: cmd, title, notify });
             closeMenu();
           }),
@@ -219,7 +209,7 @@ export function fillMenu({
         const menuItem = new PopupMenuItem(item.label);
         if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
         const iconSlot = new St.Icon({
-          icon_name: resolveIconName(item.icon),
+          icon_name: item.icon ?? FALLBACK_ICON_NAME,
           icon_size: 16,
           style_class: "browser-hub-profile-icon",
         });

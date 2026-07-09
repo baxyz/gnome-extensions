@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "../src/icon-mapping";
+import {
+  FALLBACK_ICON_NAME,
+  FIREFOX_AVATAR_ICONS,
+  resolveIconName,
+  ZEN_WORKSPACE_ICONS,
+} from "../src/icon-mapping";
 
 // Firefox's 28 standard avatars, from browser/components/profiles/SelectableProfile.sys.mjs
 // (STANDARD_AVATARS) as of mozilla-firefox/firefox@main, checked 2026-07-09.
@@ -159,5 +164,20 @@ describe("icon mapping coverage", () => {
         false,
       );
     }
+  });
+});
+
+describe("resolveIconName", () => {
+  it("resolves a known Firefox avatar id", () => {
+    expect(resolveIconName("star")).toBe(FIREFOX_AVATAR_ICONS.star);
+  });
+
+  it("resolves a known Zen-only icon id", () => {
+    expect(resolveIconName("moon")).toBe(ZEN_WORKSPACE_ICONS.moon);
+  });
+
+  it("falls back for an unknown or missing id instead of guessing", () => {
+    expect(resolveIconName("some-future-avatar-id")).toBe(FALLBACK_ICON_NAME);
+    expect(resolveIconName(undefined)).toBe(FALLBACK_ICON_NAME);
   });
 });
