@@ -15,7 +15,12 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 ### Zen workspace per profile
 
 - [x] Zen workspaces are read and listed per profile.
-      Workspace switching on launch is not supported (no CLI argument available). No further work planned.
+      Workspace switching on launch sends `--zen-workspace <name>`, which isn't
+      recognized by any released Zen Browser yet — see
+      [zen-browser/desktop#14104](https://github.com/zen-browser/desktop/pull/14104)
+      (open, changes requested as of 2026-07-09), which adds exactly this flag
+      with matching syntax. Kept as-is: harmless on current Zen versions, and
+      will start working on its own once that PR merges and users update.
 
 ### Default browser switcher
 
