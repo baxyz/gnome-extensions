@@ -10,19 +10,9 @@ import type { BrowserSettings, ProfileGroupsMode } from "./helper/digging.helper
 import { getDefaultBrowser } from "./helper/default-browser.helper";
 import { SpaceType } from "./types/space-type.enum";
 import type { ResolvedBrowserEntry } from "./types";
+import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
 
 const SPACE_TYPE_VALUES = Object.values(SpaceType);
-
-// Keys that change the actual set of resolved browsers/profiles and therefore
-// need a full re-scan. "show-default-browser-edit" deliberately isn't here —
-// it only toggles a toolbar button, so it's handled as a cheap redraw instead.
-const ENTRY_AFFECTING_KEYS = new Set<string>([
-  "show-firefox-family",
-  "show-chrome-family",
-  "show-simple-browsers",
-  "firefox-profile-groups-mode",
-  ...SPACE_TYPE_VALUES,
-]);
 
 // -- Extension ----------------------------------------------------------------
 
