@@ -3,7 +3,7 @@ import { getDefaultBrowser } from "../src/helper/default-browser.helper";
 
 const defaultBrowser = getDefaultBrowser();
 if (defaultBrowser) {
-  console.log(`Default browser: ${defaultBrowser.name} (${defaultBrowser.command})`);
+  console.log(`Default browser: ${defaultBrowser.name} (${defaultBrowser.command.join(" ")})`);
 } else {
   console.log("Default browser: (none detected)");
 }
@@ -28,13 +28,13 @@ for (const entry of entries) {
   for (const item of entry.items) {
     const def = item.isDefault ? " *" : "";
     console.log(`  - ${item.label}${def}${meta(item.icon, item.fgColor, item.bgColor)}`);
-    console.log(`    ${item.command}`);
+    console.log(`    ${item.command.join(" ")}`);
     for (const space of item.spaces ?? []) {
       const spaceDef = space.isDefault ? " *" : "";
       console.log(
         `    · ${space.name}${spaceDef}${meta(space.icon, space.fgColor, space.bgColor)}`,
       );
-      console.log(`      ${space.command}`);
+      console.log(`      ${space.command.join(" ")}`);
     }
   }
 }
