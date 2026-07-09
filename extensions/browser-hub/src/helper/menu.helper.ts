@@ -204,8 +204,13 @@ export function fillMenu({
       for (const item of entry.items) {
         const menuItem = new PopupMenuItem(item.label);
         if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
+        // Reserved icon slot, kept empty for now: item.icon is often just a raw
+        // avatar/workspace id ("book", "star", ...), not a renderable glyph.
+        // Showing that id as literal text is worse than showing nothing — this
+        // will render real icons once proper id → glyph mapping exists. The
+        // data itself (item.icon) is left untouched on resolved items for that.
         const iconSlot = new St.Label({
-          text: item.icon ?? "",
+          text: "",
           style_class: "browser-hub-profile-icon",
         });
         menuItem.insert_child_below(iconSlot, menuItem.label);
@@ -214,11 +219,10 @@ export function fillMenu({
         if (item.spaces && item.spaces.length > 0) {
           menuItem.add_child(new St.Widget({ x_expand: true }));
           menuItem.add_child(makeSpaceGroup(item.spaces, title, notify));
-        } else if (safeCssColor(item.bgColor)) {
-          const dot = new St.Widget({ style_class: "browser-hub-profile-dot" });
-          dot.set_style(`background-color: ${item.bgColor};`);
-          menuItem.add_child(dot);
         }
+        // No color dot for now either — same reasoning: item.bgColor is kept on
+        // resolved items for a future unified icon/color rendering pass instead
+        // of being dropped here.
         menu.addMenuItem(menuItem);
       }
     }
