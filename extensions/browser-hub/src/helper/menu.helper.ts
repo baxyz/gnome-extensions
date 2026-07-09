@@ -37,10 +37,16 @@ function makeSpaceGroup(
   spaces: BrowserSpace[],
   title: string,
   notify: typeof Main.notify,
+  closeMenu: () => void,
 ): St.BoxLayout {
   const group = new St.BoxLayout({});
   const btns = spaces.map((space) => {
-    const displayIcon = space.icon && space.icon.length <= 4 ? space.icon : "•";
+    // space.icon is a raw workspace/avatar id ("book", "star", "fox", ...), not
+    // a renderable glyph — no length heuristic reliably tells those apart from
+    // a real short emoji, so always fall back to the bullet placeholder for
+    // now (no icon is better than showing the id as literal text). Color is
+    // kept: it's legitimate data, just not paired with a real icon glyph yet.
+    const displayIcon = "•";
     const btn = new St.Button({
       can_focus: true,
       accessible_name: space.name,
@@ -57,7 +63,10 @@ function makeSpaceGroup(
     }
     tooltip(btn, space.name);
     const cmd = space.command;
-    btn.connect("clicked", () => launchBrowser({ command: cmd, title, notify }));
+    btn.connect("clicked", () => {
+      launchBrowser({ command: cmd, title, notify });
+      closeMenu();
+    });
     return btn;
   });
   const n = btns.length;
@@ -218,7 +227,7 @@ export function fillMenu({
         menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
         if (item.spaces && item.spaces.length > 0) {
           menuItem.add_child(new St.Widget({ x_expand: true }));
-          menuItem.add_child(makeSpaceGroup(item.spaces, title, notify));
+          menuItem.add_child(makeSpaceGroup(item.spaces, title, notify, closeMenu));
         }
         // No color dot for now either — same reasoning: item.bgColor is kept on
         // resolved items for a future unified icon/color rendering pass instead
