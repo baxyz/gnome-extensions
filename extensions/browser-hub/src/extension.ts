@@ -31,6 +31,10 @@ export default class BrowserProfilesExtension extends Extension {
   private _settings: Gio.Settings | null = null;
   private _settingsChangedId = 0;
   private _refreshDebounceId = 0;
+  // Accumulated (OR'd) across every "changed" event coalesced into the
+  // current debounce window, so an entry-affecting key isn't forgotten just
+  // because a later, cosmetic-only key change re-armed the timer after it.
+  private _pendingNeedsRescan = false;
 
   enable() {
     const settings = this.getSettings();
@@ -52,13 +56,15 @@ export default class BrowserProfilesExtension extends Extension {
     );
 
     this._settingsChangedId = settings.connect("changed", (_settings, key: string) => {
+      this._pendingNeedsRescan ||= ENTRY_AFFECTING_KEYS.has(key);
       if (this._refreshDebounceId) {
         GLib.source_remove(this._refreshDebounceId);
         this._refreshDebounceId = 0;
       }
-      const needsRescan = ENTRY_AFFECTING_KEYS.has(key);
       this._refreshDebounceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
         this._refreshDebounceId = 0;
+        const needsRescan = this._pendingNeedsRescan;
+        this._pendingNeedsRescan = false;
         if (needsRescan) {
           this._indicator?.refreshEntries();
         } else {
@@ -76,6 +82,7 @@ export default class BrowserProfilesExtension extends Extension {
       GLib.source_remove(this._refreshDebounceId);
       this._refreshDebounceId = 0;
     }
+    this._pendingNeedsRescan = false;
     if (this._settingsChangedId && this._settings) {
       this._settings.disconnect(this._settingsChangedId);
       this._settingsChangedId = 0;
@@ -85,6 +92,11 @@ export default class BrowserProfilesExtension extends Extension {
       this._indicator.destroy();
       this._indicator = null;
     }
+    // GNOME Shell doesn't re-import this module on a plain disable→enable
+    // (only on unload/update/Shell restart), so the module-level pkg cache
+    // would otherwise survive with pre-disable data — bust it so a browser
+    // installed/removed while disabled is picked up on the next enable().
+    clearPkgResolutionCache();
   }
 }
 
