@@ -12,7 +12,7 @@
     <key name="show-chrome-family" type="b">
       <default>true</default>
       <summary>Show Chrome family browsers</summary>
-      <description>Include Chromium, Chrome, Edge, Brave and related browsers in the menu.</description>
+      <description>Include Chromium, Chrome, Edge, Brave, Falkon and related browsers in the menu.</description>
     </key>
 
     <key name="show-simple-browsers" type="b">

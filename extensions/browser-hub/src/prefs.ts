@@ -22,7 +22,9 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     profilesGroup.add(
       switchRow("Firefox family", "Zen, Firefox, LibreWolf, Floorp…", "show-firefox-family"),
     );
-    profilesGroup.add(switchRow("Chrome family", "Chromium, Edge, Brave…", "show-chrome-family"));
+    profilesGroup.add(
+      switchRow("Chrome family", "Chromium, Edge, Brave, Falkon…", "show-chrome-family"),
+    );
     profilesGroup.add(
       switchRow("Profile-less browsers", "GNOME Web, qutebrowser…", "show-simple-browsers"),
     );
