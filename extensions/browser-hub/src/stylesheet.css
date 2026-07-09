@@ -6,7 +6,7 @@
 /* Fixed-width icon slot left of profile label — keeps labels aligned across entries */
 .browser-hub-profile-icon {
   min-width: 1.5em;
-  text-align: center;
+  margin-right: 0.3em;
 }
 
 /* Default browser button group in toolbar */

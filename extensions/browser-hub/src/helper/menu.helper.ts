@@ -5,6 +5,17 @@ import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/she
 import type { BrowserSpace, ResolvedBrowserEntry } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./internal";
+import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "../icon-mapping";
+
+// Generic fallback for any avatar/workspace icon id with no verified GNOME
+// icon equivalent (see icon-mapping.ts) — no icon is better than a wrong
+// one, but a browser-shaped placeholder beats an empty slot.
+const FALLBACK_ICON_NAME = "web-browser-symbolic";
+
+function resolveIconName(rawIcon: string | undefined): string {
+  if (!rawIcon) return FALLBACK_ICON_NAME;
+  return FIREFOX_AVATAR_ICONS[rawIcon] ?? ZEN_WORKSPACE_ICONS[rawIcon] ?? FALLBACK_ICON_NAME;
+}
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
 function tooltip(btn: St.Button, text: string): void {
@@ -41,18 +52,12 @@ function makeSpaceGroup(
 ): St.BoxLayout {
   const group = new St.BoxLayout({});
   const btns = spaces.map((space) => {
-    // space.icon is a raw workspace/avatar id ("book", "star", "fox", ...), not
-    // a renderable glyph — no length heuristic reliably tells those apart from
-    // a real short emoji, so always fall back to the bullet placeholder for
-    // now (no icon is better than showing the id as literal text). Color is
-    // kept: it's legitimate data, just not paired with a real icon glyph yet.
-    const displayIcon = "•";
     const btn = new St.Button({
       can_focus: true,
       accessible_name: space.name,
-      label: displayIcon,
       style_class: "button browser-hub-space-dot-btn",
     });
+    btn.set_child(new St.Icon({ icon_name: resolveIconName(space.icon), icon_size: 16 }));
     const bgColor = safeCssColor(space.bgColor);
     const fgColor = safeCssColor(space.fgColor);
     if (bgColor || fgColor) {
@@ -213,15 +218,13 @@ export function fillMenu({
       for (const item of entry.items) {
         const menuItem = new PopupMenuItem(item.label);
         if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
-        // Reserved icon slot, kept empty for now: item.icon is often just a raw
-        // avatar/workspace id ("book", "star", ...), not a renderable glyph.
-        // Showing that id as literal text is worse than showing nothing — this
-        // will render real icons once proper id → glyph mapping exists. The
-        // data itself (item.icon) is left untouched on resolved items for that.
-        const iconSlot = new St.Label({
-          text: "",
+        const iconSlot = new St.Icon({
+          icon_name: resolveIconName(item.icon),
+          icon_size: 16,
           style_class: "browser-hub-profile-icon",
         });
+        const iconColor = safeCssColor(item.fgColor);
+        if (iconColor) iconSlot.set_style(`color: ${iconColor};`);
         menuItem.insert_child_below(iconSlot, menuItem.label);
         const cmd = item.command;
         menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
