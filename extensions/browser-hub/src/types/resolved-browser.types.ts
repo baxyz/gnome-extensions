@@ -22,6 +22,13 @@ export type ResolvedBrowserItem = Colored & {
   /** Sub-entries shown as icon buttons: Zen workspaces or Firefox profile groups */
   spaces?: BrowserSpace[];
   isDefault?: boolean;
+  /**
+   * True only when bgColor is a real, resolver-computed color meant to be
+   * shown as-is (currently just Chromium's account color). Firefox profile
+   * theme colors are also carried on bgColor (for future icon+color
+   * rendering) but must NOT set this — they aren't ready to render alone.
+   */
+  showColorDot?: boolean;
 };
 
 export type ResolvedBrowserEntry = {

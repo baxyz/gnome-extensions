@@ -57,6 +57,10 @@ export async function resolveChromiumBrowsers(
           command: [...buildBaseCommand(b.pkg), `--profile-directory=${profile.dir}`],
           isDefault: profile.isDefault,
           bgColor: profile.bgColor,
+          // Chrome's own profile picker shows this same account color, so
+          // it's safe to render as-is (unlike Firefox's theme color, which
+          // isn't paired with a real icon yet — see firefox.ts).
+          showColorDot: true,
         }))
         .sort(compareByDefault);
       return { label: b.label, items };

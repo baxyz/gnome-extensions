@@ -228,10 +228,14 @@ export function fillMenu({
         if (item.spaces && item.spaces.length > 0) {
           menuItem.add_child(new St.Widget({ x_expand: true }));
           menuItem.add_child(makeSpaceGroup(item.spaces, title, notify, closeMenu));
+        } else if (item.showColorDot) {
+          const bgColor = safeCssColor(item.bgColor);
+          if (bgColor) {
+            const dot = new St.Widget({ style_class: "browser-hub-profile-dot" });
+            dot.set_style(`background-color: ${bgColor};`);
+            menuItem.add_child(dot);
+          }
         }
-        // No color dot for now either — same reasoning: item.bgColor is kept on
-        // resolved items for a future unified icon/color rendering pass instead
-        // of being dropped here.
         menu.addMenuItem(menuItem);
       }
     }
