@@ -160,7 +160,7 @@ export function fillMenu({
           closeMenu();
         },
         () => {
-          launchBrowser({ command: ["gnome-control-center", "applications"], title, notify });
+          launchBrowser({ command: ["gnome-control-center", "default-apps"], title, notify });
           closeMenu();
         },
         showDefaultBrowserEdit,
