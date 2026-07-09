@@ -8,6 +8,7 @@ import {
   filterPresent,
   logIfUnexpected,
   readTextFileAsync,
+  settleAll,
 } from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces } from "./zen";
@@ -76,7 +77,7 @@ export async function resolveFirefoxBrowsers(
   browsers: FirefoxBrowserConfig[],
   { enabledSpaces, profileGroupsMode }: FirefoxOptions = DEFAULT_FIREFOX_OPTIONS,
 ): Promise<ResolvedBrowserEntry[]> {
-  const entries = await Promise.all(
+  const entries = await settleAll(
     filterPresent(browsers).map(async (b) => {
       const baseCommand = buildBaseCommand(b.pkg);
       const profiles = await readProfiles(b.path);
@@ -148,6 +149,7 @@ export async function resolveFirefoxBrowsers(
       items.sort(compareByDefault);
       return { label: b.label, items };
     }),
+    "[browser-hub] a Firefox-family browser failed to resolve",
   );
   return entries.filter((e) => e.items.length > 0);
 }

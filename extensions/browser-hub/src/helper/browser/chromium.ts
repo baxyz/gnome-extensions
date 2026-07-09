@@ -6,6 +6,7 @@ import {
   filterPresent,
   logIfUnexpected,
   readTextFileAsync,
+  settleAll,
 } from "../internal";
 
 export type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
@@ -47,7 +48,7 @@ function readProfiles(path: string): Promise<ChromiumProfile[]> {
 export async function resolveChromiumBrowsers(
   browsers: ChromiumBrowserConfig[],
 ): Promise<ResolvedBrowserEntry[]> {
-  const entries = await Promise.all(
+  const entries = await settleAll(
     filterPresent(browsers).map(async (b) => {
       const profiles = await readProfiles(b.path);
       const items = profiles
@@ -60,6 +61,7 @@ export async function resolveChromiumBrowsers(
         .sort(compareByDefault);
       return { label: b.label, items };
     }),
+    "[browser-hub] a Chromium-family browser failed to resolve",
   );
   return entries.filter((e) => e.items.length > 0);
 }
