@@ -1,3 +1,4 @@
+import { settle } from "@helpers4/promise";
 import {
   CHROMIUM_BROWSERS,
   FALKON_BROWSERS,
@@ -7,7 +8,6 @@ import {
 import type { ResolvedBrowserEntry } from "../types";
 import type { FirefoxOptions } from "../types";
 import { SpaceType } from "../types/space-type.enum";
-import { settleAll } from "./internal";
 import {
   resolveChromiumBrowsers,
   resolveFalkonBrowsers,
@@ -42,18 +42,19 @@ const ALL_ON: BrowserSettings = {
 export async function getBrowserEntries(
   settings: BrowserSettings = ALL_ON,
 ): Promise<ResolvedBrowserEntry[]> {
-  // Use settleAll to run all resolvers concurrently; one family throwing
+  // Use helpers4 settle to run all resolvers concurrently; one family throwing
   // (a bug, not a missing-file case — every resolver already swallows its own
   // I/O errors) shouldn't blank out every other family's entries too.
-  return settleAll(
-    [
-      settings.showFirefoxFamily
-        ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings)
-        : Promise.resolve([]),
-      settings.showChromeFamily ? resolveChromiumBrowsers(CHROMIUM_BROWSERS) : Promise.resolve([]),
-      settings.showChromeFamily ? resolveFalkonBrowsers(FALKON_BROWSERS) : Promise.resolve([]),
-      settings.showSimpleBrowsers ? resolveSimpleBrowsers(SIMPLE_BROWSERS) : Promise.resolve([]),
-    ],
-    "[browser-hub] a browser family failed to resolve",
-  ).then((entries) => entries.flat());
+  const { fulfilled, rejected } = await settle([
+    settings.showFirefoxFamily
+      ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings)
+      : Promise.resolve([]),
+    settings.showChromeFamily ? resolveChromiumBrowsers(CHROMIUM_BROWSERS) : Promise.resolve([]),
+    settings.showChromeFamily ? resolveFalkonBrowsers(FALKON_BROWSERS) : Promise.resolve([]),
+    settings.showSimpleBrowsers ? resolveSimpleBrowsers(SIMPLE_BROWSERS) : Promise.resolve([]),
+  ]);
+  for (const reason of rejected) {
+    logError(reason as object, "[browser-hub] a browser family failed to resolve");
+  }
+  return fulfilled.flat();
 }

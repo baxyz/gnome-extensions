@@ -8,4 +8,3 @@ export {
   resolvePkg,
 } from "./pkg";
 export { launchBrowser } from "./runner";
-export { settleAll } from "./settle";

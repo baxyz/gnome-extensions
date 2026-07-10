@@ -1,3 +1,4 @@
+import { settle } from "@helpers4/promise";
 import GLib from "gi://GLib";
 import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../../types";
 import type { FirefoxOptions } from "../../types";
@@ -8,7 +9,6 @@ import {
   filterPresent,
   logIfUnexpected,
   readTextFileAsync,
-  settleAll,
 } from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces } from "./zen";
@@ -100,7 +100,7 @@ export async function resolveFirefoxBrowsers(
   browsers: FirefoxBrowserConfig[],
   { enabledSpaces, profileGroupsMode }: FirefoxOptions = DEFAULT_FIREFOX_OPTIONS,
 ): Promise<ResolvedBrowserEntry[]> {
-  const entries = await settleAll(
+  const { fulfilled, rejected } = await settle(
     filterPresent(browsers).map(async (b) => {
       const baseCommand = buildBaseCommand(b.pkg);
       const profiles = await readProfiles(b.path);
@@ -173,7 +173,9 @@ export async function resolveFirefoxBrowsers(
       items.sort(compareByDefault);
       return { label: b.label, items };
     }),
-    "[browser-hub] a Firefox-family browser failed to resolve",
   );
-  return entries.filter((e) => e.items.length > 0);
+  for (const reason of rejected) {
+    logError(reason as object, "[browser-hub] a Firefox-family browser failed to resolve");
+  }
+  return fulfilled.filter((e) => e.items.length > 0);
 }
