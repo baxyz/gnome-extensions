@@ -124,6 +124,10 @@ function makeIconRow(): PopupMenuItem {
   return row;
 }
 
+/**
+ * Builds the complete extension menu: toolbar (default browser, refresh, settings),
+ * separators, and all browser entries with their profiles/spaces.
+ */
 export function fillMenu({
   title,
   menu,

@@ -13,6 +13,9 @@ import type { ResolvedBrowserEntry } from "./types";
 import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
 
 const SPACE_TYPE_VALUES = Object.values(SpaceType);
+// Debounce delay for settings changes (ms) — batch rapid setting changes to avoid
+// redundant menu rebuilds while the user is still adjusting preferences.
+const SETTINGS_DEBOUNCE_MS = 50;
 
 // -- Extension ----------------------------------------------------------------
 
@@ -51,17 +54,21 @@ export default class BrowserProfilesExtension extends Extension {
         GLib.source_remove(this._refreshDebounceId);
         this._refreshDebounceId = 0;
       }
-      this._refreshDebounceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-        this._refreshDebounceId = 0;
-        const needsRescan = this._pendingNeedsRescan;
-        this._pendingNeedsRescan = false;
-        if (needsRescan) {
-          this._indicator?.refreshEntries();
-        } else {
-          this._indicator?.redrawMenu();
-        }
-        return GLib.SOURCE_REMOVE;
-      });
+      this._refreshDebounceId = GLib.timeout_add(
+        GLib.PRIORITY_DEFAULT,
+        SETTINGS_DEBOUNCE_MS,
+        () => {
+          this._refreshDebounceId = 0;
+          const needsRescan = this._pendingNeedsRescan;
+          this._pendingNeedsRescan = false;
+          if (needsRescan) {
+            this._indicator?.refreshEntries();
+          } else {
+            this._indicator?.redrawMenu();
+          }
+          return GLib.SOURCE_REMOVE;
+        },
+      );
     });
 
     Main.panel.addToStatusArea(this.uuid, this._indicator);

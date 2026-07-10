@@ -3,11 +3,18 @@ import { PackageManager } from "../../types";
 import type { BrowserPkg, ResolvedBrowserPkg } from "../../types";
 import { HOME_DIR } from "../../constants/paths.constant";
 
+/** Comparator that sorts entries with isDefault=true first, then alphabetically by label. */
 export const compareByDefault = <T extends { isDefault?: boolean; label: string }>(
   a: T,
   b: T,
 ): number => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label);
 
+/**
+ * Resolves a package to a concrete binary/path without using the cache.
+ * For Native packages, finds the first available binary in PATH.
+ * For Flatpak, checks system and user flatpak directories.
+ * For Snap, checks system snap directory.
+ */
 function resolvePkgUncached(pkg: BrowserPkg): ResolvedBrowserPkg | null {
   switch (pkg.manager) {
     case PackageManager.Native: {
@@ -31,10 +38,15 @@ function resolvePkgUncached(pkg: BrowserPkg): ResolvedBrowserPkg | null {
 // explicitly busts this cache so newly-installed browsers are still picked up.
 let pkgResolutionCache = new WeakMap<BrowserPkg, ResolvedBrowserPkg | null>();
 
+/** Clears the package resolution cache. Called on extension disable and manual refresh. */
 export function clearPkgResolutionCache(): void {
   pkgResolutionCache = new WeakMap();
 }
 
+/**
+ * Resolves a package to a concrete binary/path, using a cache for performance.
+ * Returns the cached result if available, otherwise resolves and caches the result.
+ */
 export function resolvePkg(pkg: BrowserPkg): ResolvedBrowserPkg | null {
   if (pkgResolutionCache.has(pkg)) {
     return pkgResolutionCache.get(pkg) ?? null;
@@ -44,6 +56,7 @@ export function resolvePkg(pkg: BrowserPkg): ResolvedBrowserPkg | null {
   return resolved;
 }
 
+/** Filters browsers to only those whose packages are available (installed/present). */
 export function filterAvailable<T extends { pkg: BrowserPkg }>(
   browsers: T[],
 ): (Omit<T, "pkg"> & { pkg: ResolvedBrowserPkg })[] {
@@ -53,6 +66,10 @@ export function filterAvailable<T extends { pkg: BrowserPkg }>(
   });
 }
 
+/**
+ * Filters browsers to only those whose packages are available AND whose
+ * additional path (e.g., profiles.ini, Local State) exists.
+ */
 export function filterPresent<T extends { pkg: BrowserPkg; path: string }>(
   browsers: T[],
   test: number = GLib.FileTest.EXISTS,
