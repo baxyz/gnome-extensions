@@ -123,7 +123,7 @@ export async function resolveFirefoxBrowsers(
             }
 
             const spaces =
-              b.spaceType === SpaceType.ZenWorkspace && enabledSpaces.has(SpaceType.ZenWorkspace)
+              b.spaceType === SpaceType.ZenWorkspaces && enabledSpaces.has(SpaceType.ZenWorkspaces)
                 ? (await readZenSpaces(dir)).map((space) => ({
                     ...space,
                     icon: resolveZenIcon(space.icon),

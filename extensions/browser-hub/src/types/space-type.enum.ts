@@ -1,3 +1,3 @@
 export enum SpaceType {
-  ZenWorkspace = "show-zen-spaces",
+  ZenWorkspaces = "show-zen-workspaces",
 }

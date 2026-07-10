@@ -32,7 +32,7 @@
       <description>How to display Firefox Profile Groups (Firefox 128+, separate from the classic Profile Manager). "spaces": show as space buttons under the matched profile entry. "profiles": list each selectable profile as its own menu entry. "off": ignore them entirely.</description>
     </key>
 
-    <key name="show-zen-spaces" type="b">
+    <key name="show-zen-workspaces" type="b">
       <default>true</default>
       <summary>Show Zen workspaces</summary>
       <description>Display workspace buttons under each Zen Browser profile entry.</description>

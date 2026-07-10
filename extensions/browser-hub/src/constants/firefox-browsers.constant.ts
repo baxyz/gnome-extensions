@@ -150,21 +150,21 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     label: "Zen",
     path: XDG_CONFIG_HOME + "/zen/profiles.ini",
     pkg: { manager: PackageManager.Native, binary: "zen-browser" },
-    spaceType: SpaceType.ZenWorkspace,
+    spaceType: SpaceType.ZenWorkspaces,
   },
   {
     type: BrowserType.Firefox,
     label: "Zen (classic)",
     path: HOME_DIR + "/.zen/profiles.ini",
     pkg: { manager: PackageManager.Native, binary: "zen-browser" },
-    spaceType: SpaceType.ZenWorkspace,
+    spaceType: SpaceType.ZenWorkspaces,
   },
   {
     type: BrowserType.Firefox,
     label: "Zen (flatpak)",
     path: HOME_DIR + "/.var/app/app.zen_browser.zen/.zen/profiles.ini",
     pkg: { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" },
-    spaceType: SpaceType.ZenWorkspace,
+    spaceType: SpaceType.ZenWorkspaces,
   },
 
   // === Firedragon (Garuda Linux) ===

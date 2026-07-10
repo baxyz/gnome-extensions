@@ -67,7 +67,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       switchRow(
         "Zen workspaces",
         "Workspace buttons under each Zen profile",
-        SpaceType.ZenWorkspace,
+        SpaceType.ZenWorkspaces,
       ),
     );
 
