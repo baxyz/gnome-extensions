@@ -5,7 +5,7 @@ import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/she
 import type { BrowserSpace, ResolvedBrowserEntry } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./internal";
-import { FALLBACK_ICON_NAME } from "../icon-mapping";
+import { BROWSER_FALLBACK_ICON } from "../icons";
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
 function tooltip(btn: St.Button, text: string): void {
@@ -47,7 +47,9 @@ function makeSpaceGroup(
       accessible_name: space.name,
       style_class: "button browser-hub-space-dot-btn",
     });
-    btn.set_child(new St.Icon({ icon_name: space.icon ?? FALLBACK_ICON_NAME, icon_size: 16 }));
+    // space.icon is always resolved by fetch time (see src/icons/) — never a
+    // raw id, never missing.
+    btn.set_child(new St.Icon({ icon_name: space.icon, icon_size: 16 }));
     const bgColor = safeCssColor(space.bgColor);
     const fgColor = safeCssColor(space.fgColor);
     if (bgColor || fgColor) {
@@ -197,7 +199,7 @@ export function fillMenu({
       for (const item of entry.items) {
         const cmd = item.command;
         row.add_child(
-          makeIconButton(item.label, item.icon ?? FALLBACK_ICON_NAME, 24, () => {
+          makeIconButton(item.label, item.icon ?? BROWSER_FALLBACK_ICON, 24, () => {
             launchBrowser({ command: cmd, title, notify });
             closeMenu();
           }),
@@ -208,11 +210,17 @@ export function fillMenu({
       for (const item of entry.items) {
         const menuItem = new PopupMenuItem(item.label);
         if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
-        const iconSlot = new St.Icon({
-          icon_name: item.icon ?? FALLBACK_ICON_NAME,
-          icon_size: 16,
-          style_class: "browser-hub-profile-icon",
-        });
+        // item.icon is only set when the resolver has an avatar/profile
+        // concept to resolve at all (Firefox) — Chromium/Falkon profiles
+        // have none, so there's nothing to show but a reserved blank slot
+        // (keeps labels aligned across entries).
+        const iconSlot = item.icon
+          ? new St.Icon({
+              icon_name: item.icon,
+              icon_size: 16,
+              style_class: "browser-hub-profile-icon",
+            })
+          : new St.Widget({ style_class: "browser-hub-profile-icon" });
         const iconColor = safeCssColor(item.fgColor);
         if (iconColor) iconSlot.set_style(`color: ${iconColor};`);
         menuItem.insert_child_below(iconSlot, menuItem.label);

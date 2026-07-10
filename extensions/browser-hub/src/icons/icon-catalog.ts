@@ -11,13 +11,9 @@
  * name. Entries with real ambiguity are marked "(approximate)".
  *
  * Names NOT in these tables have no adwaita-icon-theme equivalent at all —
- * verified absent, not just unresearched. resolveIconName() falls back to a
- * generic browser icon for these instead of guessing. If you confirm a real
- * match for one of these, move it into the table above this comment.
- *
- * Resolution happens once, where each profile/space is built (firefox.ts) —
- * not in the menu renderer, which just displays whatever icon name it's
- * given.
+ * verified absent, not just unresearched. See resolve-icon.ts for how the
+ * fallback is chosen for these. If you confirm a real match for one of
+ * these, move it into the table above this comment.
  *
  * Unmapped Firefox avatars (browser/components/profiles/SelectableProfile.sys.mjs):
  *   barbell, bike, briefcase, canvas, craft, diamond, flower, hammer,
@@ -89,18 +85,3 @@ export const ZEN_WORKSPACE_ICONS: Readonly<Record<string, string>> = {
   warning: "dialog-warning-symbolic",
   squares: "view-grid-symbolic", // approximate
 };
-
-// No icon is better than a wrong one, but a browser-shaped placeholder
-// beats an empty slot for a raw id neither table recognizes.
-export const FALLBACK_ICON_NAME = "web-browser-symbolic";
-
-/**
- * Resolves a raw Firefox avatar id or Zen workspace icon id to a real,
- * ready-to-render GNOME icon name. Call this once, where the profile/space
- * is built — the menu renderer should never need to look these tables up
- * itself, just display whatever name it's given.
- */
-export function resolveIconName(rawIcon: string | undefined): string {
-  if (!rawIcon) return FALLBACK_ICON_NAME;
-  return FIREFOX_AVATAR_ICONS[rawIcon] ?? ZEN_WORKSPACE_ICONS[rawIcon] ?? FALLBACK_ICON_NAME;
-}

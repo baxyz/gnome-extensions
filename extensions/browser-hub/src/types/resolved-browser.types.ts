@@ -1,6 +1,6 @@
 /** Icon/color metadata shared by spaces and top-level profile items */
 type Colored = {
-  /** Emoji or short display character (e.g. Zen workspace emoji, Firefox profile avatar) */
+  /** A real, ready-to-render GNOME icon name — see src/icons/. */
   icon?: string;
   /** CSS foreground color string */
   fgColor?: string;
@@ -8,8 +8,14 @@ type Colored = {
   bgColor?: string;
 };
 
-/** Minimal shape shared by Zen workspaces and Firefox profile groups */
-export type BrowserSpace = Colored & {
+/**
+ * Minimal shape shared by Zen workspaces and Firefox profile groups.
+ * Unlike ResolvedBrowserItem, icon is required: the resolvers in src/icons/
+ * always resolve a space's icon to a real name or the neutral dot fallback,
+ * never leaving it unset.
+ */
+export type BrowserSpace = Omit<Colored, "icon"> & {
+  icon: string;
   name: string;
   command: string[];
   isDefault?: boolean;

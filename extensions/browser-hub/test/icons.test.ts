@@ -1,12 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "../src/icons/icon-catalog";
 import {
-  FALLBACK_ICON_NAME,
-  FIREFOX_AVATAR_ICONS,
-  resolveIconName,
-  ZEN_WORKSPACE_ICONS,
-} from "../src/icon-mapping";
+  BROWSER_FALLBACK_ICON,
+  SPACE_FALLBACK_ICON,
+  resolveFirefoxIcon,
+  resolveZenIcon,
+} from "../src/icons";
 
 // Firefox's 28 standard avatars, from browser/components/profiles/SelectableProfile.sys.mjs
 // (STANDARD_AVATARS) as of mozilla-firefox/firefox@main, checked 2026-07-09.
@@ -134,7 +135,7 @@ const ZEN_SELECTABLE_ICONS = [
   "weight",
 ];
 
-describe("icon mapping coverage", () => {
+describe("icon catalog coverage", () => {
   it("has a real adwaita-icon-theme file behind every mapped Firefox avatar icon name", () => {
     for (const [avatar, iconName] of Object.entries(FIREFOX_AVATAR_ICONS)) {
       expect(FIREFOX_STANDARD_AVATARS, `"${avatar}" is not a real Firefox avatar id`).toContain(
@@ -155,8 +156,8 @@ describe("icon mapping coverage", () => {
 
   it("doesn't silently drop a Firefox avatar that's since been mapped", () => {
     // If this ever fails, someone added a mapping without removing it from
-    // the "Unmapped Firefox avatars" list in the icon-mapping.ts header comment.
-    const header = readFileSync(resolve(process.cwd(), "src/icon-mapping.ts"), "utf-8");
+    // the "Unmapped Firefox avatars" list in icon-catalog.ts's header comment.
+    const header = readFileSync(resolve(process.cwd(), "src/icons/icon-catalog.ts"), "utf-8");
     const section = header.split("Unmapped Firefox avatars")[1]?.split("*/")[0] ?? "";
     const unmappedNames = new Set(section.match(/[\w-]+/g) ?? []);
     for (const avatar of Object.keys(FIREFOX_AVATAR_ICONS)) {
@@ -167,17 +168,30 @@ describe("icon mapping coverage", () => {
   });
 });
 
-describe("resolveIconName", () => {
-  it("resolves a known Firefox avatar id", () => {
-    expect(resolveIconName("star")).toBe(FIREFOX_AVATAR_ICONS.star);
+describe("resolveFirefoxIcon", () => {
+  it("resolves a known avatar id regardless of context", () => {
+    expect(resolveFirefoxIcon("star", "profile")).toBe(FIREFOX_AVATAR_ICONS.star);
+    expect(resolveFirefoxIcon("star", "space")).toBe(FIREFOX_AVATAR_ICONS.star);
   });
 
+  it("falls back to the browser icon for a profile with no mappable avatar", () => {
+    expect(resolveFirefoxIcon("barbell", "profile")).toBe(BROWSER_FALLBACK_ICON);
+    expect(resolveFirefoxIcon(undefined, "profile")).toBe(BROWSER_FALLBACK_ICON);
+  });
+
+  it("falls back to the neutral dot for a space with no mappable icon", () => {
+    expect(resolveFirefoxIcon("barbell", "space")).toBe(SPACE_FALLBACK_ICON);
+    expect(resolveFirefoxIcon(undefined, "space")).toBe(SPACE_FALLBACK_ICON);
+  });
+});
+
+describe("resolveZenIcon", () => {
   it("resolves a known Zen-only icon id", () => {
-    expect(resolveIconName("moon")).toBe(ZEN_WORKSPACE_ICONS.moon);
+    expect(resolveZenIcon("moon")).toBe(ZEN_WORKSPACE_ICONS.moon);
   });
 
-  it("falls back for an unknown or missing id instead of guessing", () => {
-    expect(resolveIconName("some-future-avatar-id")).toBe(FALLBACK_ICON_NAME);
-    expect(resolveIconName(undefined)).toBe(FALLBACK_ICON_NAME);
+  it("falls back to the neutral dot for an unmapped or missing id", () => {
+    expect(resolveZenIcon("rocket")).toBe(SPACE_FALLBACK_ICON);
+    expect(resolveZenIcon(undefined)).toBe(SPACE_FALLBACK_ICON);
   });
 });

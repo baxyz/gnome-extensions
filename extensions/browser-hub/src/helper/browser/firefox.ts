@@ -12,7 +12,7 @@ import {
 } from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces } from "./zen";
-import { resolveIconName } from "../../icon-mapping";
+import { resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../../icons";
 
 export type ProfileEntry = {
   name: string;
@@ -63,8 +63,8 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
     });
 }
 
-const spColors = (sp: FirefoxSelectableProfile) => ({
-  icon: resolveIconName(sp.avatar),
+const spColors = (sp: FirefoxSelectableProfile, context: IconContext) => ({
+  icon: resolveFirefoxIcon(sp.avatar, context),
   fgColor: sp.themeFg,
   bgColor: sp.themeBg,
 });
@@ -104,7 +104,7 @@ export async function resolveFirefoxBrowsers(
                   command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
                   // Mark default only on the sp whose folder matches this toolkit profile
                   isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
-                  ...spColors(sp),
+                  ...spColors(sp, "profile"),
                 }));
               }
               // "spaces" mode: nest selectable profiles as space buttons
@@ -116,7 +116,7 @@ export async function resolveFirefoxBrowsers(
                   spaces: selectable.map((sp) => ({
                     name: sp.name,
                     command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
-                    ...spColors(sp),
+                    ...spColors(sp, "space"),
                   })),
                 },
               ];
@@ -126,7 +126,7 @@ export async function resolveFirefoxBrowsers(
               b.spaceType === SpaceType.ZenWorkspace && enabledSpaces.has(SpaceType.ZenWorkspace)
                 ? (await readZenSpaces(dir)).map((space) => ({
                     ...space,
-                    icon: resolveIconName(space.icon),
+                    icon: resolveZenIcon(space.icon),
                     command: [
                       ...baseCommand,
                       "-P",
