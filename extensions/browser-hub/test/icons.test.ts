@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "../src/icons/icon-catalog";
+import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "../src/helper/icons/icon-catalog";
 import {
   BROWSER_FALLBACK_ICON,
   SPACE_FALLBACK_ICON,
   resolveFirefoxIcon,
   resolveZenIcon,
-} from "../src/icons";
+} from "../src/helper/icons";
 
 // Firefox's 28 standard avatars, from browser/components/profiles/SelectableProfile.sys.mjs
 // (STANDARD_AVATARS) as of mozilla-firefox/firefox@main, checked 2026-07-09.
@@ -157,7 +157,10 @@ describe("icon catalog coverage", () => {
   it("doesn't silently drop a Firefox avatar that's since been mapped", () => {
     // If this ever fails, someone added a mapping without removing it from
     // the "Unmapped Firefox avatars" list in icon-catalog.ts's header comment.
-    const header = readFileSync(resolve(process.cwd(), "src/icons/icon-catalog.ts"), "utf-8");
+    const header = readFileSync(
+      resolve(process.cwd(), "src/helper/icons/icon-catalog.ts"),
+      "utf-8",
+    );
     const section = header.split("Unmapped Firefox avatars")[1]?.split("*/")[0] ?? "";
     const unmappedNames = new Set(section.match(/[\w-]+/g) ?? []);
     for (const avatar of Object.keys(FIREFOX_AVATAR_ICONS)) {

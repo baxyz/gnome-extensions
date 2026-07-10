@@ -5,7 +5,7 @@ import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/she
 import type { BrowserSpace, ResolvedBrowserEntry } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./internal";
-import { BROWSER_FALLBACK_ICON } from "../icons";
+import { BROWSER_FALLBACK_ICON } from "./icons";
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
 function tooltip(btn: St.Button, text: string): void {
@@ -47,7 +47,7 @@ function makeSpaceGroup(
       accessible_name: space.name,
       style_class: "button browser-hub-space-dot-btn",
     });
-    // space.icon is always resolved by fetch time (see src/icons/) — never a
+    // space.icon is always resolved by fetch time (see src/helper/icons/) — never a
     // raw id, never missing.
     btn.set_child(new St.Icon({ icon_name: space.icon, icon_size: 16 }));
     const bgColor = safeCssColor(space.bgColor);

@@ -38,14 +38,22 @@ export default defineConfig({
         // This build runs on rolldown (Vite 8's default bundler), not classic
         // Rollup. Its manualChunks compat shim (a single function deciding
         // every module's group) silently merged small groups — including
-        // icons/ — back into their sole importer, with no override
+        // helper/icons/ — back into their sole importer, with no override
         // available; declarative groups with a `test` pattern each (rolldown's
         // native codeSplitting API) don't have that problem and is what
         // rolldown recommends going forward anyway.
+        // Group order is priority order (earlier = higher priority — see
+        // rolldown's codeSplitting docs) and it's load-bearing here:
+        // helper/icons/ is a dependency of files matched by helper-browser
+        // (firefox.ts imports it), and with helper-browser listed first,
+        // rolldown's recursive dependency inclusion silently swallowed
+        // helper/icons/ into helper-browser.js before helper-icons' own
+        // `test` got a chance to claim it. Keep any group whose files are
+        // *imported by* another group's files listed above that group.
         codeSplitting: {
           minSize: 0,
           groups: [
-            { name: "icons", test: /\/icons\// },
+            { name: "helper-icons", test: /\/helper\/icons\// },
             { name: "vendor-mozlz4", test: /node_modules\/mozlz4/ },
             { name: "vendor-sqlite-reader", test: /node_modules\/sqlite-reader/ },
             { name: "vendor-helpers4", test: /@helpers4/ },

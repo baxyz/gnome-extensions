@@ -1,6 +1,6 @@
 /** Icon/color metadata shared by spaces and top-level profile items */
 type Colored = {
-  /** A real, ready-to-render GNOME icon name — see src/icons/. */
+  /** A real, ready-to-render GNOME icon name — see src/helper/icons/. */
   icon?: string;
   /** CSS foreground color string */
   fgColor?: string;
@@ -10,7 +10,7 @@ type Colored = {
 
 /**
  * Minimal shape shared by Zen workspaces and Firefox profile groups.
- * Unlike ResolvedBrowserItem, icon is required: the resolvers in src/icons/
+ * Unlike ResolvedBrowserItem, icon is required: the resolvers in src/helper/icons/
  * always resolve a space's icon to a real name or the neutral dot fallback,
  * never leaving it unset.
  */

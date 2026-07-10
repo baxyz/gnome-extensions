@@ -12,7 +12,7 @@ import {
 } from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces } from "./zen";
-import { resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../../icons";
+import { resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../icons";
 
 export type ProfileEntry = {
   name: string;
