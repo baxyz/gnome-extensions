@@ -14,6 +14,7 @@ import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./
 import { readZenSpaces } from "./zen";
 import { resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../icons";
 
+/** Represents a single profile from Firefox's profiles.ini file. */
 export type ProfileEntry = {
   name: string;
   dir: string;
@@ -21,6 +22,11 @@ export type ProfileEntry = {
   isDefault: boolean;
 };
 
+/**
+ * Parses Firefox's profiles.ini content into ProfileEntry objects.
+ * Handles both legacy Default=1 flags and modern [InstallXXXX] Default=path sections.
+ * Modern sections take precedence as they track per-installation defaults.
+ */
 export function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
   const sections = content.split(/^\[/m).slice(1);
 
@@ -53,6 +59,10 @@ export function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
   });
 }
 
+/**
+ * Reads and parses a profiles.ini file from disk.
+ * Returns empty array on error (file not found, permission denied, etc.).
+ */
 function readProfiles(path: string): Promise<ProfileEntry[]> {
   const iniDir = GLib.path_get_dirname(path);
   return readTextFileAsync(path)
@@ -74,6 +84,18 @@ const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
   profileGroupsMode: "profiles",
 };
 
+/**
+ * Resolves Firefox-family browsers (Firefox, LibreWolf, Waterfox, Floorp, Zen, etc.)
+ * and their profiles.
+ *
+ * Profile Groups (Firefox 128+) handling depends on profileGroupsMode:
+ * - "profiles": Each selectable profile becomes its own top-level menu entry
+ * - "spaces": Selectable profiles are nested as space buttons under the matched profile
+ * - "off": Firefox Profile Groups are ignored entirely
+ *
+ * Zen Browser workspaces are included when enabledSpaces has ZenWorkspaces and
+ * the browser config has spaceType === SpaceType.ZenWorkspaces.
+ */
 export async function resolveFirefoxBrowsers(
   browsers: FirefoxBrowserConfig[],
   { enabledSpaces, profileGroupsMode }: FirefoxOptions = DEFAULT_FIREFOX_OPTIONS,

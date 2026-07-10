@@ -2,7 +2,7 @@ import St from "gi://St";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
-import type { BrowserSpace, ResolvedBrowserEntry } from "../types";
+import type { BrowserSpace, ResolvedBrowserEntry, ResolvedBrowserItem } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./internal";
 import { BROWSER_FALLBACK_ICON } from "./icons";
@@ -125,6 +125,146 @@ function makeIconRow(): PopupMenuItem {
 }
 
 /**
+ * Builds the toolbar row with default browser, spacer, refresh button, and settings button.
+ */
+function buildToolbar({
+  title,
+  defaultBrowser,
+  showDefaultBrowserEdit,
+  notify,
+  onRefresh,
+  onSettings,
+  closeMenu,
+}: {
+  title: string;
+  defaultBrowser?: DefaultBrowserInfo | null;
+  showDefaultBrowserEdit: boolean;
+  notify: typeof Main.notify;
+  onRefresh: () => void;
+  onSettings: () => void;
+  closeMenu: () => void;
+}): PopupMenuItem {
+  const toolbar = makeIconRow();
+
+  if (defaultBrowser) {
+    const cmd = defaultBrowser.command;
+    toolbar.add_child(
+      makeDefaultBrowserGroup(
+        defaultBrowser.name,
+        () => {
+          launchBrowser({ command: cmd, title, notify });
+          closeMenu();
+        },
+        () => {
+          launchBrowser({ command: ["gnome-control-center", "applications"], title, notify });
+          closeMenu();
+        },
+        showDefaultBrowserEdit,
+      ),
+    );
+  }
+
+  toolbar.add_child(new St.Widget({ x_expand: true }));
+  toolbar.add_child(
+    makeIconButton(
+      "Refresh",
+      "view-refresh-symbolic",
+      16,
+      onRefresh,
+      "button browser-hub-toolbar-btn",
+    ),
+  );
+  toolbar.add_child(
+    makeIconButton(
+      "Settings",
+      "preferences-system-symbolic",
+      16,
+      onSettings,
+      "button browser-hub-toolbar-btn",
+    ),
+  );
+
+  return toolbar;
+}
+
+/**
+ * Builds a menu item row for simple (profile-less) browsers with icon buttons.
+ */
+function buildSimpleBrowserRow({
+  title,
+  items,
+  notify,
+  closeMenu,
+}: {
+  title: string;
+  items: ResolvedBrowserItem[];
+  notify: typeof Main.notify;
+  closeMenu: () => void;
+}): PopupMenuItem {
+  const row = makeIconRow();
+  for (const item of items) {
+    const cmd = item.command;
+    row.add_child(
+      makeIconButton(item.label, item.icon ?? BROWSER_FALLBACK_ICON, 24, () => {
+        launchBrowser({ command: cmd, title, notify });
+        closeMenu();
+      }),
+    );
+  }
+  return row;
+}
+
+/**
+ * Builds a profile menu item with icon, color dot, and optional space buttons.
+ */
+function buildProfileMenuItem({
+  item,
+  title,
+  notify,
+  closeMenu,
+}: {
+  item: ResolvedBrowserItem;
+  title: string;
+  notify: typeof Main.notify;
+  closeMenu: () => void;
+}): PopupMenuItem {
+  const menuItem = new PopupMenuItem(item.label);
+  if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
+
+  // item.icon is only set when the resolver has an avatar/profile
+  // concept to resolve at all (Firefox) — Chromium/Falkon profiles
+  // have none, so there's nothing to show but a reserved blank slot
+  // (keeps labels aligned across entries).
+  const iconSlot = item.icon
+    ? new St.Icon({
+        icon_name: item.icon,
+        icon_size: 16,
+        style_class: "browser-hub-profile-icon",
+      })
+    : new St.Widget({ style_class: "browser-hub-profile-icon" });
+  const iconColor = safeCssColor(item.fgColor);
+  if (iconColor) iconSlot.set_style(`color: ${iconColor};`);
+  menuItem.insert_child_below(iconSlot, menuItem.label);
+
+  const cmd = item.command;
+  menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
+
+  if (item.spaces && item.spaces.length > 0) {
+    menuItem.add_child(new St.Widget({ x_expand: true }));
+    menuItem.add_child(makeSpaceGroup(item.spaces, title, notify, closeMenu));
+  } else if (item.showColorDot) {
+    const bgColor = safeCssColor(item.bgColor);
+    if (bgColor) {
+      const dot = new St.Widget({ style_class: "browser-hub-profile-dot" });
+      dot.set_style(`background-color: ${bgColor};`);
+      menuItem.add_child(dot);
+    }
+  }
+
+  return menuItem;
+}
+
+/**
  * Builds the complete extension menu: toolbar (default browser, refresh, settings),
  * separators, and all browser entries with their profiles/spaces.
  */
@@ -157,99 +297,37 @@ export function fillMenu({
 
   const closeMenu = () => (menu as { close(): void }).close();
 
-  // Top toolbar: [default browser?] — spacer — refresh — settings
-  const toolbar = makeIconRow();
-  if (defaultBrowser) {
-    const cmd = defaultBrowser.command;
-    toolbar.add_child(
-      makeDefaultBrowserGroup(
-        defaultBrowser.name,
-        () => {
-          launchBrowser({ command: cmd, title, notify });
-          closeMenu();
-        },
-        () => {
-          launchBrowser({ command: ["gnome-control-center", "applications"], title, notify });
-          closeMenu();
-        },
-        showDefaultBrowserEdit,
-      ),
-    );
-  }
-  toolbar.add_child(new St.Widget({ x_expand: true }));
-  toolbar.add_child(
-    makeIconButton(
-      "Refresh",
-      "view-refresh-symbolic",
-      16,
+  // Build and add toolbar
+  menu.addMenuItem(
+    buildToolbar({
+      title,
+      defaultBrowser,
+      showDefaultBrowserEdit,
+      notify,
       onRefresh,
-      "button browser-hub-toolbar-btn",
-    ),
-  );
-  toolbar.add_child(
-    makeIconButton(
-      "Settings",
-      "preferences-system-symbolic",
-      16,
       onSettings,
-      "button browser-hub-toolbar-btn",
-    ),
+      closeMenu,
+    }),
   );
-  menu.addMenuItem(toolbar);
 
+  // Handle empty state
   if (entries.length === 0) {
     menu.addMenuItem(new PopupSeparatorMenuItem());
     menu.addMenuItem(new PopupMenuItem("No browsers found", { reactive: false }));
     return;
   }
 
+  // Build browser entries
   for (const entry of entries) {
     menu.addMenuItem(new PopupSeparatorMenuItem(entry.label));
 
     if (entry.group === "simple") {
-      const row = makeIconRow();
-      for (const item of entry.items) {
-        const cmd = item.command;
-        row.add_child(
-          makeIconButton(item.label, item.icon ?? BROWSER_FALLBACK_ICON, 24, () => {
-            launchBrowser({ command: cmd, title, notify });
-            closeMenu();
-          }),
-        );
-      }
-      menu.addMenuItem(row);
+      // Simple browsers (no profiles) - show as icon buttons in a row
+      menu.addMenuItem(buildSimpleBrowserRow({ title, items: entry.items, notify, closeMenu }));
     } else {
+      // Firefox/Chromium/Falkon browsers with profiles
       for (const item of entry.items) {
-        const menuItem = new PopupMenuItem(item.label);
-        if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
-        // item.icon is only set when the resolver has an avatar/profile
-        // concept to resolve at all (Firefox) — Chromium/Falkon profiles
-        // have none, so there's nothing to show but a reserved blank slot
-        // (keeps labels aligned across entries).
-        const iconSlot = item.icon
-          ? new St.Icon({
-              icon_name: item.icon,
-              icon_size: 16,
-              style_class: "browser-hub-profile-icon",
-            })
-          : new St.Widget({ style_class: "browser-hub-profile-icon" });
-        const iconColor = safeCssColor(item.fgColor);
-        if (iconColor) iconSlot.set_style(`color: ${iconColor};`);
-        menuItem.insert_child_below(iconSlot, menuItem.label);
-        const cmd = item.command;
-        menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
-        if (item.spaces && item.spaces.length > 0) {
-          menuItem.add_child(new St.Widget({ x_expand: true }));
-          menuItem.add_child(makeSpaceGroup(item.spaces, title, notify, closeMenu));
-        } else if (item.showColorDot) {
-          const bgColor = safeCssColor(item.bgColor);
-          if (bgColor) {
-            const dot = new St.Widget({ style_class: "browser-hub-profile-dot" });
-            dot.set_style(`background-color: ${bgColor};`);
-            menuItem.add_child(dot);
-          }
-        }
-        menu.addMenuItem(menuItem);
+        menu.addMenuItem(buildProfileMenuItem({ item, title, notify, closeMenu }));
       }
     }
   }
