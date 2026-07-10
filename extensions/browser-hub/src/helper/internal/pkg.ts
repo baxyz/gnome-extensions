@@ -1,13 +1,14 @@
+import { combineSortFns, createSortByBooleanFn, createSortByStringFn } from "@helpers4/array";
 import GLib from "gi://GLib";
 import { PackageManager } from "../../types";
 import type { BrowserPkg, ResolvedBrowserPkg } from "../../types";
 import { HOME_DIR } from "../../constants/paths.constant";
 
 /** Comparator that sorts entries with isDefault=true first, then alphabetically by label. */
-export const compareByDefault = <T extends { isDefault?: boolean; label: string }>(
-  a: T,
-  b: T,
-): number => Number(b.isDefault) - Number(a.isDefault) || a.label.localeCompare(b.label);
+export const compareByDefault = combineSortFns<{ isDefault?: boolean; label: string }>(
+  createSortByBooleanFn("isDefault"),
+  createSortByStringFn("label"),
+);
 
 /**
  * Resolves a package to a concrete binary/path without using the cache.

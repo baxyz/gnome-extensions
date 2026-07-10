@@ -32,8 +32,8 @@ vi.mock("gi://Gio", () => ({
 }));
 
 const { parseProfiles: parseFirefoxProfiles } = await import("../src/helper/browser/firefox");
-const { parseProfiles: parseChromiumProfiles, argbToRgb } =
-  await import("../src/helper/browser/chromium");
+const { parseProfiles: parseChromiumProfiles } = await import("../src/helper/browser/chromium");
+const { argbToRgb } = await import("@helpers4/color");
 const { buildBaseCommand } = await import("../src/helper/internal/pkg");
 const { PackageManager } = await import("../src/types/package-manager.enum");
 

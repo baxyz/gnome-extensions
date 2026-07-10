@@ -1,3 +1,4 @@
+import { argbToRgb } from "@helpers4/color";
 import { safeJsonParse } from "@helpers4/object";
 import { settle } from "@helpers4/promise";
 import type { ChromiumBrowserConfig, ResolvedBrowserEntry } from "../../types";
@@ -16,13 +17,6 @@ type LocalState = {
     last_used?: string;
   };
 };
-
-export function argbToRgb(argb: number): string {
-  const r = (argb >>> 16) & 0xff;
-  const g = (argb >>> 8) & 0xff;
-  const b = argb & 0xff;
-  return `rgb(${r},${g},${b})`;
-}
 
 export function parseProfiles(content: string): ChromiumProfile[] {
   const json = safeJsonParse<LocalState>(content);

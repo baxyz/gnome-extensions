@@ -31,6 +31,8 @@
     "check": "tsx --import ./scripts/shims/register.mjs scripts/check-browsers.ts"
   },
   "dependencies": {
+    "@helpers4/array": "catalog:",
+    "@helpers4/color": "catalog:",
     "@helpers4/object": "catalog:",
     "@helpers4/promise": "catalog:",
     "mozlz4": "^0.2.2",
