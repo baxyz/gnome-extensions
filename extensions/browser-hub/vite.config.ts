@@ -35,12 +35,23 @@ export default defineConfig({
       ...base.build?.rollupOptions,
       output: {
         ...base.build?.rollupOptions?.output,
-        manualChunks: (id) => {
-          if (id.includes("node_modules/mozlz4")) return "vendor-mozlz4";
-          if (id.includes("node_modules/sqlite-reader")) return "vendor-sqlite-reader";
-          if (id.includes("@helpers4")) return "vendor-helpers4";
-          if (id.includes("/helper/browser/")) return "browser";
-          if (id.includes("/helper/internal/")) return "internal";
+        // This build runs on rolldown (Vite 8's default bundler), not classic
+        // Rollup. Its manualChunks compat shim (a single function deciding
+        // every module's group) silently merged small groups — including
+        // icons/ — back into their sole importer, with no override
+        // available; declarative groups with a `test` pattern each (rolldown's
+        // native codeSplitting API) don't have that problem and is what
+        // rolldown recommends going forward anyway.
+        codeSplitting: {
+          minSize: 0,
+          groups: [
+            { name: "icons", test: /\/icons\// },
+            { name: "vendor-mozlz4", test: /node_modules\/mozlz4/ },
+            { name: "vendor-sqlite-reader", test: /node_modules\/sqlite-reader/ },
+            { name: "vendor-helpers4", test: /@helpers4/ },
+            { name: "helper-browser", test: /\/helper\/browser\// },
+            { name: "helper-internal", test: /\/helper\/internal\// },
+          ],
         },
         chunkFileNames: "[name].js",
       },
