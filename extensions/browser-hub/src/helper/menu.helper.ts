@@ -17,7 +17,15 @@ function tooltip(btn: St.Button, text: string): void {
 // anything, but a stray `;` could still smuggle in an extra declaration —
 // reject anything that isn't a plain color token before it reaches set_style().
 function safeCssColor(color: string | undefined): string | undefined {
-  return color && /^[^;{}\\\n\r]+$/.test(color) ? color : undefined;
+  if (!color) return undefined;
+  // Match hex colors (#rgb, #rrggbb, #rrggbbaa), rgb/rgba/hsl/hsla functions, or named colors
+  const validColor =
+    /^(#([\da-f]{3}){1,2}|#([\da-f]{4}){1,2}|rgb\(|rgba\(|hsl\(|hsla\(|[a-z]+)$/i.test(
+      color.trim(),
+    );
+  // Additionally reject any string containing dangerous CSS characters
+  if (!validColor || /[{}\\]/.test(color)) return undefined;
+  return color;
 }
 
 function makeIconButton(

@@ -6,10 +6,6 @@ import metadata from "../metadata.json";
 import tsconfig from "../tsconfig.json";
 
 describe("Browser Profiles Extension Integration", () => {
-  it("should have basic test structure", () => {
-    expect(true).toBe(true);
-  });
-
   it("should handle multiple GNOME Shell versions", () => {
     const versions = metadata["shell-version"];
 
