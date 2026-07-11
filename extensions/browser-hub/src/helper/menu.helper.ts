@@ -2,7 +2,7 @@ import St from "gi://St";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
-import type { BrowserSpace, ResolvedBrowserEntry, ResolvedBrowserItem } from "../types";
+import type { BrowserSpace, ResolvedBrowserEntry, ResolvedBrowserItem } from "../taxonomy";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./internal";
 import { SPACE_FALLBACK_ICON } from "./icons";

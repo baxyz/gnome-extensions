@@ -1,6 +1,6 @@
 import Gio from "gi://Gio";
-import { PackageManager } from "../types";
-import type { ResolvedBrowserPkg } from "../types";
+import { PackageManager } from "../taxonomy";
+import type { ResolvedBrowserPkg } from "../taxonomy";
 import { buildBaseCommand } from "./internal";
 
 export type DefaultBrowserInfo = {

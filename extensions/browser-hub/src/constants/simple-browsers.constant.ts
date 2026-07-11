@@ -1,5 +1,5 @@
-import { BrowserType, PackageManager } from "../types";
-import type { SimpleBrowserConfig } from "../types";
+import { BrowserType, PackageManager } from "../taxonomy";
+import type { SimpleBrowserConfig } from "../taxonomy";
 
 export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   // === GNOME Web (Epiphany) ===

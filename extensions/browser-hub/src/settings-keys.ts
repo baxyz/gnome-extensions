@@ -1,4 +1,4 @@
-import { SpaceType } from "./types/space-type.enum";
+import { SpaceType } from "./taxonomy/space-type.enum";
 
 const SPACE_TYPE_VALUES = Object.values(SpaceType);
 

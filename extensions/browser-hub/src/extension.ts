@@ -8,8 +8,8 @@ import { Button } from "resource:///org/gnome/shell/ui/panelMenu.js";
 import { clearPkgResolutionCache, fillMenu, getBrowserEntries } from "./helper";
 import type { BrowserSettings, ProfileGroupsMode } from "./helper/browser-resolution.helper";
 import { getDefaultBrowser } from "./helper/default-browser.helper";
-import { SpaceType } from "./types/space-type.enum";
-import type { ResolvedBrowserEntry } from "./types";
+import { SpaceType } from "./taxonomy/space-type.enum";
+import type { ResolvedBrowserEntry } from "./taxonomy";
 import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
 
 const SPACE_TYPE_VALUES = Object.values(SpaceType);

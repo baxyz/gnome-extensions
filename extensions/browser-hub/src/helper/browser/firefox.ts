@@ -1,8 +1,8 @@
 import { settle } from "@helpers4/promise";
 import GLib from "gi://GLib";
-import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../../types";
-import type { FirefoxOptions } from "../../types";
-import { SpaceType } from "../../types/space-type.enum";
+import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../../taxonomy";
+import type { FirefoxOptions } from "../../taxonomy";
+import { SpaceType } from "../../taxonomy/space-type.enum";
 import {
   buildBaseCommand,
   compareByDefault,

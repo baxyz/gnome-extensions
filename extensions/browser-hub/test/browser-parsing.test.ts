@@ -48,7 +48,7 @@ const { parseProfiles: parseFirefoxProfiles } = await import("../src/helper/brow
 const { parseProfiles: parseChromiumProfiles } = await import("../src/helper/browser/chromium");
 const { argbToRgb } = await import("@helpers4/color");
 const { buildBaseCommand } = await import("../src/helper/internal/pkg");
-const { PackageManager } = await import("../src/types/package-manager.enum");
+const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 
 describe("firefox profiles.ini parsing", () => {
   it("marks the legacy Default=1 profile as default when there is no Install section", () => {

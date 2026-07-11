@@ -1,5 +1,5 @@
-import { BrowserType, PackageManager } from "../types";
-import type { ChromiumBrowserConfig } from "../types";
+import { BrowserType, PackageManager } from "../taxonomy";
+import type { ChromiumBrowserConfig } from "../taxonomy";
 import { HOME_DIR } from "./paths.constant";
 
 // Chromium-based browsers do not honor $XDG_CONFIG_HOME — they hardcode ~/.config.

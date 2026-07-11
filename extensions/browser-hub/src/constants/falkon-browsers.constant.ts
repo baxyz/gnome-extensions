@@ -1,5 +1,5 @@
-import { BrowserType, PackageManager } from "../types";
-import type { FalkonBrowserConfig } from "../types";
+import { BrowserType, PackageManager } from "../taxonomy";
+import type { FalkonBrowserConfig } from "../taxonomy";
 import { HOME_DIR, XDG_CONFIG_HOME } from "./paths.constant";
 
 // Best-guess "-symbolic" icon name — unverified, see FIREFOX_BROWSERS for rationale.

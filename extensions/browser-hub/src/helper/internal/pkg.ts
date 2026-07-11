@@ -1,7 +1,7 @@
 import { combineSortFns, createSortByBooleanFn, createSortByStringFn } from "@helpers4/array";
 import GLib from "gi://GLib";
-import { PackageManager } from "../../types";
-import type { BrowserPkg, ResolvedBrowserPkg } from "../../types";
+import { PackageManager } from "../../taxonomy";
+import type { BrowserPkg, ResolvedBrowserPkg } from "../../taxonomy";
 import { HOME_DIR } from "../../constants/paths.constant";
 
 /** Comparator that sorts entries with isDefault=true first, then alphabetically by label. */

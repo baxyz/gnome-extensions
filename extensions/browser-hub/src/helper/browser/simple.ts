@@ -1,4 +1,4 @@
-import type { SimpleBrowserConfig, ResolvedBrowserEntry } from "../../types";
+import type { SimpleBrowserConfig, ResolvedBrowserEntry } from "../../taxonomy";
 import { buildBaseCommand, filterAvailable } from "../internal";
 
 export async function resolveSimpleBrowsers(

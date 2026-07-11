@@ -5,9 +5,9 @@ import {
   FIREFOX_BROWSERS,
   SIMPLE_BROWSERS,
 } from "../constants";
-import type { ResolvedBrowserEntry } from "../types";
-import type { FirefoxOptions } from "../types";
-import { SpaceType } from "../types/space-type.enum";
+import type { ResolvedBrowserEntry } from "../taxonomy";
+import type { FirefoxOptions } from "../taxonomy";
+import { SpaceType } from "../taxonomy/space-type.enum";
 import {
   resolveChromiumBrowsers,
   resolveFalkonBrowsers,
@@ -15,7 +15,7 @@ import {
   resolveSimpleBrowsers,
 } from "./browser";
 
-export type { FirefoxOptions, ProfileGroupsMode } from "../types";
+export type { FirefoxOptions, ProfileGroupsMode } from "../taxonomy";
 
 /** Settings that control which browser families and features are enabled. */
 export type BrowserSettings = {

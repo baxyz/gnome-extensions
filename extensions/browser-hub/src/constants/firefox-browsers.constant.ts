@@ -1,5 +1,5 @@
-import { BrowserType, PackageManager, SpaceType } from "../types";
-import type { FirefoxBrowserConfig } from "../types";
+import { BrowserType, PackageManager, SpaceType } from "../taxonomy";
+import type { FirefoxBrowserConfig } from "../taxonomy";
 import { HOME_DIR, XDG_CONFIG_HOME } from "./paths.constant";
 
 // Best-guess "-symbolic" icon name(s) per real browser identity, shared across

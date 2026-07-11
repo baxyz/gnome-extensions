@@ -36,27 +36,31 @@ export default defineConfig({
       output: {
         ...base.build?.rollupOptions?.output,
         // This build runs on rolldown (Vite 8's default bundler), not classic
-        // Rollup. Its manualChunks compat shim (a single function deciding
-        // every module's group) silently merged small groups — including
-        // helper/icons/ — back into their sole importer, with no override
-        // available; declarative groups with a `test` pattern each (rolldown's
-        // native codeSplitting API) don't have that problem and is what
-        // rolldown recommends going forward anyway.
-        // Group order is priority order (earlier = higher priority — see
-        // rolldown's codeSplitting docs) and it's load-bearing here:
-        // helper/icons/ is a dependency of files matched by helper-browser
-        // (firefox.ts imports it), and with helper-browser listed first,
-        // rolldown's recursive dependency inclusion silently swallowed
-        // helper/icons/ into helper-browser.js before helper-icons' own
-        // `test` got a chance to claim it. Keep any group whose files are
-        // *imported by* another group's files listed above that group.
+        // Rollup — its native codeSplitting API, not the manualChunks compat
+        // shim (which silently merges small groups back into their sole
+        // importer with no override available).
+        //
+        // Group order is priority order (earlier = higher priority): a
+        // module used by files in two groups is claimed by whichever group
+        // is listed first, so a group whose files are *imported by* another
+        // group's files must be listed above that group — otherwise it gets
+        // swallowed whole into the importing group's chunk instead of
+        // getting its own. Both taxonomy and helper-icons are dependencies of
+        // helper-browser (firefox.ts imports both), so they must precede it.
+        // taxonomy (src/taxonomy/ — its runtime content is just the
+        // BrowserType/PackageManager/SpaceType enums, the rest fully erases
+        // at compile time) must also precede everything else: prefs.ts (a
+        // separate, non-Shell GJS process without the St typelib) imports
+        // one of those enums too — swallowed into any chunk that also
+        // imports "gi://St" (e.g. helper-icons), loading prefs.js would crash it.
         codeSplitting: {
           minSize: 0,
           groups: [
+            { name: "taxonomy", test: /\/taxonomy\// },
             { name: "helper-icons", test: /\/helper\/icons\// },
+            { name: "vendor-helpers4", test: /@helpers4/ },
             { name: "vendor-mozlz4", test: /node_modules\/mozlz4/ },
             { name: "vendor-sqlite-reader", test: /node_modules\/sqlite-reader/ },
-            { name: "vendor-helpers4", test: /@helpers4/ },
             { name: "helper-browser", test: /\/helper\/browser\// },
             { name: "helper-internal", test: /\/helper\/internal\// },
           ],

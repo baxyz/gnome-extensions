@@ -2,7 +2,7 @@ import Adw from "gi://Adw";
 import Gio from "gi://Gio";
 import Gtk from "gi://Gtk";
 import { ExtensionPreferences } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
-import { SpaceType } from "./types/space-type.enum";
+import { SpaceType } from "./taxonomy/space-type.enum";
 import type { ProfileGroupsMode } from "./helper/browser-resolution.helper";
 
 const PROFILE_GROUP_MODES: ProfileGroupsMode[] = ["spaces", "profiles", "off"];
