@@ -1,4 +1,5 @@
 import St from "gi://St";
+import type Gio from "gi://Gio";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -30,16 +31,23 @@ function safeCssColor(color: string | undefined): string | undefined {
   return color;
 }
 
+// Firefox Profile Groups avatars and Zen icons are GNOME/Adwaita icon names
+// (icon_name); a browser's own icon fetched from its .desktop file (see
+// internal/desktop-icon.ts) is a real Gio.Icon (gicon) instead.
+function iconProps(icon: string | Gio.Icon): { icon_name: string } | { gicon: Gio.Icon } {
+  return typeof icon === "string" ? { icon_name: icon } : { gicon: icon };
+}
+
 function makeIconButton(
   label: string,
-  iconName: string | undefined,
+  icon: string | Gio.Icon | undefined,
   iconSize: number,
   onClick: () => void,
   styleClass = "button browser-hub-browser-btn",
 ): St.Button {
   const btn = new St.Button({ can_focus: true, accessible_name: label, style_class: styleClass });
   btn.set_child(
-    iconName ? new St.Icon({ icon_name: iconName, icon_size: iconSize }) : new St.Widget({}),
+    icon ? new St.Icon({ ...iconProps(icon), icon_size: iconSize }) : new St.Widget({}),
   );
   tooltip(btn, label);
   btn.connect("clicked", onClick);
@@ -237,13 +245,12 @@ function buildProfileMenuItem({
   const menuItem = new PopupMenuItem(item.label);
   if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
 
-  // item.icon is only set when the resolver has an avatar/profile
-  // concept to resolve at all (Firefox) — Chromium/Falkon profiles
-  // have none, so there's nothing to show but a reserved blank slot
-  // (keeps labels aligned across entries).
+  // item.icon is undefined only when neither an avatar nor the browser's own
+  // .desktop icon could be resolved — nothing to show but a reserved blank
+  // slot (keeps labels aligned across entries).
   const iconSlot = item.icon
     ? new St.Icon({
-        icon_name: item.icon,
+        ...iconProps(item.icon),
         icon_size: 16,
         style_class: "browser-hub-profile-icon",
       })

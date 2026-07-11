@@ -42,6 +42,21 @@ export function readTextFileAsync(path: string): Promise<string> {
   return readFileAsync(path).then((bytes) => decoder.decode(bytes));
 }
 
+// Gio.DesktopAppInfo is Linux-specific (gio-unix-2.0) — present in GJS but
+// absent from @girs types. Shared here since both default-browser.ts and
+// internal/desktop-icon.ts need it.
+export type DesktopAppInfo = {
+  get_string(key: string): string | null;
+  get_icon(): Gio.Icon | null;
+};
+const _DesktopAppInfo = (
+  Gio as unknown as { DesktopAppInfo: { new: (id: string) => DesktopAppInfo | null } }
+).DesktopAppInfo;
+
+export function getDesktopAppInfo(desktopId: string): DesktopAppInfo | null {
+  return _DesktopAppInfo.new(desktopId);
+}
+
 export type DirEntry = { name: string; type: Gio.FileType };
 
 /**

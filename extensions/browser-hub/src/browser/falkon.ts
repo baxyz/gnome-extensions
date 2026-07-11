@@ -2,8 +2,7 @@ import { settle } from "@helpers4/promise";
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../taxonomy";
-import { buildBaseCommand, filterPresent, listDirEntries } from "../internal";
-import { resolveBrowserIcon } from "../icons";
+import { buildBaseCommand, filterPresent, listDirEntries, resolveDesktopIcon } from "../internal";
 
 async function listProfileDirs(dirPath: string): Promise<string[]> {
   const entries = await listDirEntries(
@@ -17,14 +16,17 @@ export async function resolveFalkonBrowsers(
   browsers: FalkonBrowserConfig[],
 ): Promise<ResolvedBrowserEntry[]> {
   const { fulfilled, rejected } = await settle(
-    filterPresent(browsers, GLib.FileTest.IS_DIR).map(async (b) => ({
-      label: b.label,
-      items: (await listProfileDirs(b.path)).map((name) => ({
-        label: name,
-        command: [...buildBaseCommand(b.pkg), "--profile", name],
-        icon: resolveBrowserIcon(b.icon),
-      })),
-    })),
+    filterPresent(browsers, GLib.FileTest.IS_DIR).map(async (b) => {
+      const icon = resolveDesktopIcon(b.pkg);
+      return {
+        label: b.label,
+        items: (await listProfileDirs(b.path)).map((name) => ({
+          label: name,
+          command: [...buildBaseCommand(b.pkg), "--profile", name],
+          icon,
+        })),
+      };
+    }),
   );
   for (const reason of rejected) {
     logError(reason as object, "[browser-hub] a Falkon browser failed to resolve");

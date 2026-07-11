@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import type Gio from "gi://Gio";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "../src/icons/icon-catalog";
@@ -18,8 +19,7 @@ vi.mock("gi://St", () => ({
   },
 }));
 
-const { SPACE_FALLBACK_ICON, resolveBrowserIcon, resolveFirefoxIcon, resolveZenIcon } =
-  await import("../src/icons");
+const { SPACE_FALLBACK_ICON, resolveFirefoxIcon, resolveZenIcon } = await import("../src/icons");
 
 // Firefox's 28 standard avatars, from browser/components/profiles/SelectableProfile.sys.mjs
 // (STANDARD_AVATARS) as of mozilla-firefox/firefox@main, checked 2026-07-09.
@@ -186,23 +186,18 @@ describe("resolveFirefoxIcon", () => {
     expect(resolveFirefoxIcon("star", "space")).toBe(FIREFOX_AVATAR_ICONS.star);
   });
 
-  it("falls back to the browser's own icon for a profile with no mappable avatar", () => {
-    expect(resolveFirefoxIcon("barbell", "profile", "firefox-symbolic")).toBe("firefox-symbolic");
-    expect(resolveFirefoxIcon(undefined, "profile", "firefox-symbolic")).toBe("firefox-symbolic");
+  it("falls back to the browser's own icon (a Gio.Icon, passed through as-is) for a profile with no mappable avatar", () => {
+    const fakeGicon = {} as Gio.Icon; // resolveFirefoxIcon never inspects it, just returns it
+    expect(resolveFirefoxIcon("barbell", "profile", fakeGicon)).toBe(fakeGicon);
+    expect(resolveFirefoxIcon(undefined, "profile", fakeGicon)).toBe(fakeGicon);
   });
 
-  it("falls back to nothing for a profile whose browser icon isn't in the theme either", () => {
-    unavailableIcons.add("made-up-browser-symbolic");
-    try {
-      expect(resolveFirefoxIcon("barbell", "profile", "made-up-browser-symbolic")).toBeUndefined();
-      expect(resolveFirefoxIcon("barbell", "profile", undefined)).toBeUndefined();
-    } finally {
-      unavailableIcons.clear();
-    }
+  it("falls back to nothing for a profile with no mappable avatar and no browser icon either", () => {
+    expect(resolveFirefoxIcon("barbell", "profile", undefined)).toBeUndefined();
   });
 
   it("falls back to the neutral dot for a space with no mappable icon, ignoring any browser icon", () => {
-    expect(resolveFirefoxIcon("barbell", "space", "firefox-symbolic")).toBe(SPACE_FALLBACK_ICON);
+    expect(resolveFirefoxIcon("barbell", "space")).toBe(SPACE_FALLBACK_ICON);
     expect(resolveFirefoxIcon(undefined, "space")).toBe(SPACE_FALLBACK_ICON);
   });
 });
@@ -215,34 +210,5 @@ describe("resolveZenIcon", () => {
   it("falls back to the neutral dot for an unmapped or missing id", () => {
     expect(resolveZenIcon("rocket")).toBe(SPACE_FALLBACK_ICON);
     expect(resolveZenIcon(undefined)).toBe(SPACE_FALLBACK_ICON);
-  });
-});
-
-describe("resolveBrowserIcon", () => {
-  it("returns undefined when no candidate is given", () => {
-    expect(resolveBrowserIcon(undefined)).toBeUndefined();
-  });
-
-  it("returns a single present candidate", () => {
-    expect(resolveBrowserIcon("firefox-symbolic")).toBe("firefox-symbolic");
-  });
-
-  it("tries an ordered list and returns the first one the theme actually has", () => {
-    unavailableIcons.add("opera-gx-symbolic");
-    try {
-      expect(resolveBrowserIcon(["opera-gx-symbolic", "opera-symbolic"])).toBe("opera-symbolic");
-    } finally {
-      unavailableIcons.clear();
-    }
-  });
-
-  it("returns undefined when none of the candidates are present", () => {
-    unavailableIcons.add("a-symbolic");
-    unavailableIcons.add("b-symbolic");
-    try {
-      expect(resolveBrowserIcon(["a-symbolic", "b-symbolic"])).toBeUndefined();
-    } finally {
-      unavailableIcons.clear();
-    }
   });
 });

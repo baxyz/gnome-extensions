@@ -1,3 +1,5 @@
+import type Gio from "gi://Gio";
+
 /**
  * How a profile item's own color should be presented, if it has one at all —
  * absent means no color data (Falkon, plain Firefox profiles).
@@ -27,8 +29,13 @@ export type ResolvedBrowserItem = {
   label: string;
   /** Fully built launch argv, ready to pass to Gio.Subprocess.new() */
   command: string[];
-  /** A real, ready-to-render GNOME icon name — see src/icons/. */
-  icon?: string;
+  /**
+   * Either a GNOME/Adwaita icon name (Firefox Profile Groups avatars — see
+   * src/icons/) or the browser's own real icon fetched from its installed
+   * .desktop file (see src/internal/desktop-icon.ts). St.Icon takes the
+   * former as `icon_name`, the latter as `gicon`.
+   */
+  icon?: string | Gio.Icon;
   isDefault?: boolean;
   /** Sub-entries shown as icon buttons: Zen workspaces or Firefox profile groups */
   spaces?: BrowserSpace[];

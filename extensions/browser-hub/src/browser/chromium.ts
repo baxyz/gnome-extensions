@@ -8,8 +8,8 @@ import {
   filterPresent,
   logIfUnexpected,
   readTextFileAsync,
+  resolveDesktopIcon,
 } from "../internal";
-import { resolveBrowserIcon } from "../icons";
 
 export type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
 type LocalState = {
@@ -52,12 +52,13 @@ export async function resolveChromiumBrowsers(
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers).map(async (b) => {
       const profiles = await readProfiles(b.path);
+      const icon = resolveDesktopIcon(b.pkg);
       const items = profiles
         .map((profile) => ({
           label: profile.name,
           command: [...buildBaseCommand(b.pkg), `--profile-directory=${profile.dir}`],
           isDefault: profile.isDefault,
-          icon: resolveBrowserIcon(b.icon),
+          icon,
           color: toDotColor(profile.bgColor),
         }))
         .sort(compareByDefault);

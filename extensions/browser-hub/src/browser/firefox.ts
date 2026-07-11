@@ -1,4 +1,5 @@
 import { settle } from "@helpers4/promise";
+import type Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type {
   ColorPresentation,
@@ -15,10 +16,11 @@ import {
   filterPresent,
   logIfUnexpected,
   readTextFileAsync,
+  resolveDesktopIcon,
 } from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces } from "./zen";
-import { resolveBrowserIcon, resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../icons";
+import { resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../icons";
 
 /** Represents a single profile from Firefox's profiles.ini file. */
 export type ProfileEntry = {
@@ -93,13 +95,9 @@ function spColors(
 function spColors(
   sp: FirefoxSelectableProfile,
   context: "profile",
-  browserIcon?: string | string[],
-): { icon: string | undefined; color: ColorPresentation | undefined };
-function spColors(
-  sp: FirefoxSelectableProfile,
-  context: IconContext,
-  browserIcon?: string | string[],
-) {
+  browserIcon?: Gio.Icon,
+): { icon: string | Gio.Icon | undefined; color: ColorPresentation | undefined };
+function spColors(sp: FirefoxSelectableProfile, context: IconContext, browserIcon?: Gio.Icon) {
   if (context === "space") {
     return {
       icon: resolveFirefoxIcon(sp.avatar, "space"),
@@ -116,7 +114,7 @@ function resolveProfileGroupsAsFlatItems(
   isDefault: boolean,
   folderBasename: string,
   baseCommand: string[],
-  browserIcon: string | string[] | undefined,
+  browserIcon: Gio.Icon | undefined,
 ): ResolvedBrowserItem[] {
   return selectable.map((sp) => ({
     label: sp.name,
@@ -133,14 +131,14 @@ function resolveProfileGroupsAsSpaces(
   selectable: FirefoxSelectableProfile[],
   isDefault: boolean,
   baseCommand: string[],
-  browserIcon: string | string[] | undefined,
+  browserIcon: Gio.Icon | undefined,
 ): ResolvedBrowserItem[] {
   return [
     {
       label: name,
       command: [...baseCommand, "-P", name, "-no-remote"],
       isDefault,
-      icon: resolveBrowserIcon(browserIcon),
+      icon: browserIcon,
       spaces: selectable.map((sp) => ({
         name: sp.name,
         command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
@@ -156,7 +154,7 @@ async function resolveZenWorkspaceItem(
   dir: string,
   isDefault: boolean,
   baseCommand: string[],
-  browserIcon: string | string[] | undefined,
+  browserIcon: Gio.Icon | undefined,
 ): Promise<ResolvedBrowserItem> {
   const spaces = (await readZenSpaces(dir)).map((space) => ({
     ...space,
@@ -167,7 +165,7 @@ async function resolveZenWorkspaceItem(
     label: name,
     command: [...baseCommand, "-P", name, "-no-remote"],
     isDefault,
-    icon: resolveBrowserIcon(browserIcon),
+    icon: browserIcon,
     ...(spaces.length > 0 && { spaces }),
   };
 }
@@ -177,13 +175,13 @@ function resolvePlainProfileItem(
   name: string,
   isDefault: boolean,
   baseCommand: string[],
-  browserIcon: string | string[] | undefined,
+  browserIcon: Gio.Icon | undefined,
 ): ResolvedBrowserItem {
   return {
     label: name,
     command: [...baseCommand, "-P", name, "-no-remote"],
     isDefault,
-    icon: resolveBrowserIcon(browserIcon),
+    icon: browserIcon,
   };
 }
 
@@ -201,7 +199,7 @@ async function resolveOneProfile(
   selectableMap: Map<string, FirefoxSelectableProfile[]>,
   profileGroupsMode: ProfileGroupsMode,
   baseCommand: string[],
-  browserIcon: string | string[] | undefined,
+  browserIcon: Gio.Icon | undefined,
   spaceType: SpaceType | undefined,
   enabledSpaces: ReadonlySet<SpaceType>,
 ): Promise<ResolvedBrowserItem[]> {
@@ -256,6 +254,7 @@ export async function resolveFirefoxBrowsers(
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers).map(async (b) => {
       const baseCommand = buildBaseCommand(b.pkg);
+      const browserIcon = resolveDesktopIcon(b.pkg);
       const profiles = await readProfiles(b.path);
       const firefoxRoot = GLib.path_get_dirname(b.path);
       const selectableMap =
@@ -274,7 +273,7 @@ export async function resolveFirefoxBrowsers(
               selectableMap,
               profileGroupsMode,
               baseCommand,
-              b.icon,
+              browserIcon,
               b.spaceType,
               enabledSpaces,
             ),

@@ -10,13 +10,6 @@ export type FirefoxBrowserConfig = {
   pkg: BrowserPkg;
   /** Set when the browser supports in-profile spaces (e.g. Zen) */
   spaceType?: SpaceType;
-  /**
-   * This browser's own "-symbolic" GNOME icon name candidate(s), tried in
-   * order as a profile's fallback icon when it has no other mappable one.
-   * Unverified guesses are fine — resolveBrowserIcon() checks presence
-   * against the real icon theme and shows nothing if none of them exist.
-   */
-  icon?: string | string[];
 };
 
 export type ChromiumBrowserConfig = {
@@ -25,8 +18,6 @@ export type ChromiumBrowserConfig = {
   /** Absolute path to the "Local State" JSON file */
   path: string;
   pkg: BrowserPkg;
-  /** This browser's own "-symbolic" GNOME icon name candidate(s) — see FirefoxBrowserConfig.icon. */
-  icon?: string | string[];
 };
 
 export type FalkonBrowserConfig = {
@@ -35,8 +26,6 @@ export type FalkonBrowserConfig = {
   /** Absolute path to the profiles directory */
   path: string;
   pkg: BrowserPkg;
-  /** This browser's own "-symbolic" GNOME icon name candidate(s) — see FirefoxBrowserConfig.icon. */
-  icon?: string | string[];
 };
 
 export type SimpleBrowserConfig = {

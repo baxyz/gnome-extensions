@@ -8,7 +8,7 @@ import { Button } from "resource:///org/gnome/shell/ui/panelMenu.js";
 import { getBrowserEntries } from "./browser";
 import type { BrowserSettings, ProfileGroupsMode } from "./browser";
 import { fillMenu } from "./menu";
-import { clearPkgResolutionCache } from "./internal";
+import { clearDesktopIconCache, clearPkgResolutionCache } from "./internal";
 import { getDefaultBrowser } from "./default-browser";
 import { SpaceType } from "./taxonomy/space-type.enum";
 import type { ResolvedBrowserEntry } from "./taxonomy";
@@ -92,10 +92,11 @@ export default class BrowserProfilesExtension extends Extension {
       this._indicator = null;
     }
     // GNOME Shell doesn't re-import this module on a plain disable→enable
-    // (only on unload/update/Shell restart), so the module-level pkg cache
-    // would otherwise survive with pre-disable data — bust it so a browser
-    // installed/removed while disabled is picked up on the next enable().
+    // (only on unload/update/Shell restart), so the module-level pkg/icon
+    // caches would otherwise survive with pre-disable data — bust them so a
+    // browser installed/removed while disabled is picked up on next enable().
     clearPkgResolutionCache();
+    clearDesktopIconCache();
   }
 }
 
@@ -166,8 +167,9 @@ class BrowserProfilesIndicator extends Button {
       onSettings: this._onSettings,
       onRefresh: () => {
         // Manual refresh is the user's explicit way to pick up a browser
-        // installed/removed since the last scan — bust the cache first.
+        // installed/removed since the last scan — bust the caches first.
         clearPkgResolutionCache();
+        clearDesktopIconCache();
         this.refreshEntries();
       },
       defaultBrowser: getDefaultBrowser(),

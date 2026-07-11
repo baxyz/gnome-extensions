@@ -1,4 +1,5 @@
 import St from "gi://St";
+import type Gio from "gi://Gio";
 import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "./icon-catalog";
 
 /** Plain filled dot — used when a space/workspace has no mappable, present icon. */
@@ -28,42 +29,32 @@ function firstExistingIcon(...candidates: (string | undefined)[]): string | unde
 }
 
 /**
- * Resolves a browser's own icon name candidate(s) (e.g. "firefox-symbolic")
- * to whichever one the current icon theme actually provides, or undefined if
- * none are — the menu shows nothing rather than guessing at a substitute.
- */
-export function resolveBrowserIcon(candidates: string | string[] | undefined): string | undefined {
-  if (candidates == null) return undefined;
-  return firstExistingIcon(...(Array.isArray(candidates) ? candidates : [candidates]));
-}
-
-/**
  * Resolves a Firefox Profile Groups avatar id to a real, present GNOME icon name.
  *
  * The same avatar vocabulary is used for two different UI contexts —
  * flattened top-level profiles ("profiles" mode) and nested space buttons
  * ("spaces" mode) — and they don't share a fallback: a profile with no
- * mappable-and-present avatar icon falls back to the browser's own icon (if
- * that one is present), or nothing at all — while a space falls back to a
- * neutral dot (matching Zen's own space fallback, since both render as small
- * buttons in the same row).
+ * mappable-and-present avatar icon falls back to the browser's own real icon
+ * (see internal/desktop-icon.ts), or nothing at all — while a space falls
+ * back to a neutral dot (matching Zen's own space fallback, since both
+ * render as small buttons in the same row).
  */
 export function resolveFirefoxIcon(avatar: string | undefined, context: "space"): string;
 export function resolveFirefoxIcon(
   avatar: string | undefined,
   context: "profile",
-  browserIcon?: string | string[],
-): string | undefined;
+  browserIcon?: Gio.Icon,
+): string | Gio.Icon | undefined;
 export function resolveFirefoxIcon(
   avatar: string | undefined,
   context: IconContext,
-  browserIcon?: string | string[],
-): string | undefined {
+  browserIcon?: Gio.Icon,
+): string | Gio.Icon | undefined {
   const mapped = avatar ? FIREFOX_AVATAR_ICONS[avatar] : undefined;
   if (context === "space") {
     return firstExistingIcon(mapped) ?? SPACE_FALLBACK_ICON;
   }
-  return firstExistingIcon(mapped, ...(Array.isArray(browserIcon) ? browserIcon : [browserIcon]));
+  return firstExistingIcon(mapped) ?? browserIcon;
 }
 
 /**

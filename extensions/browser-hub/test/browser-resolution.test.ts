@@ -94,6 +94,9 @@ vi.mock("gi://Gio", () => ({
     Subprocess: { new: () => ({}) },
     SubprocessFlags: { NONE: 0 },
     IOErrorEnum: { NOT_FOUND: 1 },
+    // No installed app matches any guessed desktop id — desktop-icon
+    // resolution itself is covered by desktop-icon.test.ts, not this file.
+    DesktopAppInfo: { new: () => null },
   },
 }));
 

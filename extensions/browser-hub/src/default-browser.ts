@@ -1,22 +1,14 @@
 import Gio from "gi://Gio";
 import { PackageManager } from "./taxonomy";
 import type { ResolvedBrowserPkg } from "./taxonomy";
-import { buildBaseCommand } from "./internal";
+import { buildBaseCommand, getDesktopAppInfo, type DesktopAppInfo } from "./internal";
 
 export type DefaultBrowserInfo = {
   name: string;
   command: string[];
 };
 
-// Gio.DesktopAppInfo is Linux-specific (gio-unix-2.0) — present in GJS but absent from @girs types
-type _DesktopInfo = { get_string(key: string): string | null };
-const _DesktopAppInfo = (
-  Gio as unknown as {
-    DesktopAppInfo: { new: (id: string) => _DesktopInfo | null };
-  }
-).DesktopAppInfo;
-
-function desktopField(info: _DesktopInfo, key: string): string | null {
+function desktopField(info: DesktopAppInfo, key: string): string | null {
   try {
     return info.get_string(key);
   } catch {
@@ -25,7 +17,7 @@ function desktopField(info: _DesktopInfo, key: string): string | null {
 }
 
 function detectPkg(desktopId: string, executable: string): ResolvedBrowserPkg {
-  const info = _DesktopAppInfo.new(desktopId);
+  const info = getDesktopAppInfo(desktopId);
   if (info) {
     const flatpakId = desktopField(info, "X-Flatpak");
     if (flatpakId) return { manager: PackageManager.Flatpak, appId: flatpakId };
