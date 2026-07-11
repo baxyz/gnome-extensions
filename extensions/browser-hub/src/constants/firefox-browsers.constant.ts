@@ -20,52 +20,108 @@ const ICECAT_ICON = "icecat-symbolic";
 const PALEMOON_ICON = "palemoon-symbolic";
 const BASILISK_ICON = "basilisk-symbolic";
 
+/**
+ * Most Firefox-family browsers follow the same packaging shapes: an XDG path
+ * (`$XDG_CONFIG_HOME/<name>/profiles.ini`), a pre-XDG "classic" path
+ * (`~/.<name>/profiles.ini`), a Flatpak path (the classic path mirrored under
+ * the sandbox's own home), and sometimes a snap path. `classic` is the
+ * relative suffix under HOME_DIR shared by the classic AND Flatpak forms
+ * (they're usually identical, e.g. ".librewolf/profiles.ini" — Firefox itself
+ * is the one exception, using ".mozilla/firefox/profiles.ini" instead of
+ * ".firefox/profiles.ini").
+ *
+ * The "(classic)" label suffix is only added when an XDG variant is ALSO
+ * generated (otherwise it's just the plain label) — browsers with only one
+ * native path don't need to disambiguate. A few real oddities don't fit this
+ * shape at all (Tor Browser's deeply nested path, IceCat's "(classic)" label
+ * despite having no XDG sibling yet) and are written out by hand below
+ * instead of forced through this generator.
+ */
+function expandFirefoxVariants(v: {
+  label: string;
+  icon?: string | string[];
+  spaceType?: SpaceType;
+  binary?: string | string[];
+  /** Relative to XDG_CONFIG_HOME, e.g. "librewolf/profiles.ini". */
+  xdg?: string;
+  /** Relative to HOME_DIR, e.g. ".librewolf/profiles.ini". Also used for the Flatpak path. */
+  classic?: string;
+  flatpakId?: string;
+  /** Relative to HOME_DIR, e.g. "snap/firefox/common/.mozilla/firefox/profiles.ini". */
+  snap?: string;
+  snapName?: string;
+}): FirefoxBrowserConfig[] {
+  const configs: FirefoxBrowserConfig[] = [];
+  const binary = v.binary ?? v.label.toLowerCase();
+  const common = {
+    type: BrowserType.Firefox as const,
+    ...(v.spaceType != null && { spaceType: v.spaceType }),
+    ...(v.icon != null && { icon: v.icon }),
+  };
+
+  if (v.xdg) {
+    configs.push({
+      ...common,
+      label: v.label,
+      path: `${XDG_CONFIG_HOME}/${v.xdg}`,
+      pkg: { manager: PackageManager.Native, binary },
+    });
+  }
+  if (v.classic) {
+    configs.push({
+      ...common,
+      label: v.xdg ? `${v.label} (classic)` : v.label,
+      path: `${HOME_DIR}/${v.classic}`,
+      pkg: { manager: PackageManager.Native, binary },
+    });
+  }
+  if (v.flatpakId && v.classic) {
+    configs.push({
+      ...common,
+      label: `${v.label} (flatpak)`,
+      path: `${HOME_DIR}/.var/app/${v.flatpakId}/${v.classic}`,
+      pkg: { manager: PackageManager.Flatpak, appId: v.flatpakId },
+    });
+  }
+  if (v.snap) {
+    configs.push({
+      ...common,
+      label: `${v.label} (snap)`,
+      path: `${HOME_DIR}/${v.snap}`,
+      // SnapPkg.name is a single string, unlike NativePkg.binary — fall back
+      // to the first binary name on the rare chance binary is an array.
+      pkg: {
+        manager: PackageManager.Snap,
+        name: v.snapName ?? (Array.isArray(binary) ? binary[0] : binary),
+      },
+    });
+  }
+  return configs;
+}
+
 export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
-  // === Firefox ===
   // XDG support since Firefox 147.
-  {
-    type: BrowserType.Firefox,
+  ...expandFirefoxVariants({
     label: "Firefox",
-    path: XDG_CONFIG_HOME + "/mozilla/firefox/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "firefox" },
+    xdg: "mozilla/firefox/profiles.ini",
+    classic: ".mozilla/firefox/profiles.ini",
+    flatpakId: "org.mozilla.firefox",
+    snap: "snap/firefox/common/.mozilla/firefox/profiles.ini",
+    binary: "firefox",
     icon: FIREFOX_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Firefox (classic)",
-    path: HOME_DIR + "/.mozilla/firefox/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "firefox" },
-    icon: FIREFOX_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Firefox (flatpak)",
-    path: HOME_DIR + "/.var/app/org.mozilla.firefox/.mozilla/firefox/profiles.ini",
-    pkg: { manager: PackageManager.Flatpak, appId: "org.mozilla.firefox" },
-    icon: FIREFOX_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Firefox (snap)",
-    path: HOME_DIR + "/snap/firefox/common/.mozilla/firefox/profiles.ini",
-    pkg: { manager: PackageManager.Snap, name: "firefox" },
-    icon: FIREFOX_ICON,
-  },
+  }),
 
-  // === Firefox ESR ===
-  // No XDG support (ESR lags stable). Profile dir is shared with regular Firefox on Debian/Ubuntu
-  // (both use ~/.mozilla/firefox/), but the binary differs: firefox-esr vs firefox.
-  {
-    type: BrowserType.Firefox,
+  // Firefox ESR: no XDG support (ESR lags stable). Profile dir is shared with regular Firefox
+  // on Debian/Ubuntu (both use ~/.mozilla/firefox/), but the binary differs: firefox-esr vs firefox.
+  ...expandFirefoxVariants({
     label: "Firefox ESR",
-    path: HOME_DIR + "/.mozilla/firefox/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "firefox-esr" },
+    classic: ".mozilla/firefox/profiles.ini",
+    binary: "firefox-esr",
     icon: FIREFOX_ICON,
-  },
+  }),
 
-  // === Tor Browser ===
-  // Installed via torbrowser-launcher. profiles.ini is buried inside the downloaded bundle,
-  // not in ~/.mozilla/ like standard Firefox.
+  // Tor Browser: installed via torbrowser-launcher. profiles.ini is buried inside the downloaded
+  // bundle, not in ~/.mozilla/ like standard Firefox — doesn't fit expandFirefoxVariants' shape.
   {
     type: BrowserType.Firefox,
     label: "Tor Browser",
@@ -85,147 +141,71 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     icon: TOR_BROWSER_ICON,
   },
 
-  // === Waterfox ===
-  {
-    type: BrowserType.Firefox,
+  ...expandFirefoxVariants({
     label: "Waterfox",
-    path: XDG_CONFIG_HOME + "/waterfox/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "waterfox" },
+    xdg: "waterfox/profiles.ini",
+    classic: ".waterfox/profiles.ini",
+    flatpakId: "net.waterfox.waterfox",
+    binary: "waterfox",
     icon: WATERFOX_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Waterfox (classic)",
-    path: HOME_DIR + "/.waterfox/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "waterfox" },
-    icon: WATERFOX_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Waterfox (flatpak)",
-    path: HOME_DIR + "/.var/app/net.waterfox.waterfox/.waterfox/profiles.ini",
-    pkg: { manager: PackageManager.Flatpak, appId: "net.waterfox.waterfox" },
-    icon: WATERFOX_ICON,
-  },
+  }),
 
-  // === LibreWolf ===
-  {
-    type: BrowserType.Firefox,
+  ...expandFirefoxVariants({
     label: "LibreWolf",
-    path: XDG_CONFIG_HOME + "/librewolf/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "librewolf" },
+    xdg: "librewolf/profiles.ini",
+    classic: ".librewolf/profiles.ini",
+    flatpakId: "io.gitlab.librewolf-community",
+    binary: "librewolf",
     icon: LIBREWOLF_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "LibreWolf (classic)",
-    path: HOME_DIR + "/.librewolf/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "librewolf" },
-    icon: LIBREWOLF_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "LibreWolf (flatpak)",
-    path: HOME_DIR + "/.var/app/io.gitlab.librewolf-community/.librewolf/profiles.ini",
-    pkg: { manager: PackageManager.Flatpak, appId: "io.gitlab.librewolf-community" },
-    icon: LIBREWOLF_ICON,
-  },
+  }),
 
-  // === Mullvad Browser ===
   // No XDG support: issue #224 is Icebox (not planned).
-  {
-    type: BrowserType.Firefox,
+  ...expandFirefoxVariants({
     label: "Mullvad Browser",
-    path: HOME_DIR + "/.mullvad-browser/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "mullvad-browser" },
+    classic: ".mullvad-browser/profiles.ini",
+    flatpakId: "net.mullvad.MullvadBrowser",
+    binary: "mullvad-browser",
     icon: MULLVAD_BROWSER_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Mullvad Browser (flatpak)",
-    path: HOME_DIR + "/.var/app/net.mullvad.MullvadBrowser/.mullvad-browser/profiles.ini",
-    pkg: { manager: PackageManager.Flatpak, appId: "net.mullvad.MullvadBrowser" },
-    icon: MULLVAD_BROWSER_ICON,
-  },
+  }),
 
-  // === Floorp ===
-  {
-    type: BrowserType.Firefox,
+  ...expandFirefoxVariants({
     label: "Floorp",
-    path: XDG_CONFIG_HOME + "/floorp/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "floorp" },
+    xdg: "floorp/profiles.ini",
+    classic: ".floorp/profiles.ini",
+    flatpakId: "one.ablaze.floorp",
+    binary: "floorp",
     icon: FLOORP_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Floorp (classic)",
-    path: HOME_DIR + "/.floorp/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "floorp" },
-    icon: FLOORP_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Floorp (flatpak)",
-    path: HOME_DIR + "/.var/app/one.ablaze.floorp/.floorp/profiles.ini",
-    pkg: { manager: PackageManager.Flatpak, appId: "one.ablaze.floorp" },
-    icon: FLOORP_ICON,
-  },
+  }),
 
-  // === Ghostery Dawn (discontinued 2024) ===
-  // Profile dir name contains a space.
-  {
-    type: BrowserType.Firefox,
+  // Discontinued 2024. Profile dir name contains a space.
+  ...expandFirefoxVariants({
     label: "Ghostery Dawn",
-    path: HOME_DIR + "/.ghostery browser/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "ghostery" },
+    classic: ".ghostery browser/profiles.ini",
+    binary: "ghostery",
     icon: GHOSTERY_ICON,
-  },
+  }),
 
-  // === Zen Browser ===
-  {
-    type: BrowserType.Firefox,
+  ...expandFirefoxVariants({
     label: "Zen",
-    path: XDG_CONFIG_HOME + "/zen/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "zen-browser" },
+    xdg: "zen/profiles.ini",
+    classic: ".zen/profiles.ini",
+    flatpakId: "app.zen_browser.zen",
+    binary: "zen-browser",
     spaceType: SpaceType.ZenWorkspaces,
     icon: ZEN_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Zen (classic)",
-    path: HOME_DIR + "/.zen/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "zen-browser" },
-    spaceType: SpaceType.ZenWorkspaces,
-    icon: ZEN_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Zen (flatpak)",
-    path: HOME_DIR + "/.var/app/app.zen_browser.zen/.zen/profiles.ini",
-    pkg: { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" },
-    spaceType: SpaceType.ZenWorkspaces,
-    icon: ZEN_ICON,
-  },
+  }),
 
-  // === Firedragon (Garuda Linux) ===
-  // XDG support added in v13. Classic path covers pre-v13.
-  {
-    type: BrowserType.Firefox,
+  // Garuda Linux. XDG support added in v13, classic path covers pre-v13.
+  ...expandFirefoxVariants({
     label: "Firedragon",
-    path: XDG_CONFIG_HOME + "/firedragon/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "firedragon" },
+    xdg: "firedragon/profiles.ini",
+    classic: ".firedragon/profiles.ini",
+    binary: "firedragon",
     icon: FIREDRAGON_ICON,
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Firedragon (classic)",
-    path: HOME_DIR + "/.firedragon/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "firedragon" },
-    icon: FIREDRAGON_ICON,
-  },
+  }),
 
-  // === IceCat (GNU) ===
-  // Based on Firefox ESR 115; XDG landed upstream in Firefox 147, not yet inherited.
+  // GNU IceCat, based on Firefox ESR 115; XDG landed upstream in Firefox 147, not yet inherited —
+  // hand-written since the "(classic)" label anticipates a future XDG sibling that doesn't exist yet.
   {
     type: BrowserType.Firefox,
     label: "IceCat (classic)",
@@ -234,7 +214,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     icon: ICECAT_ICON,
   },
 
-  // === Pale Moon (Moonchild Productions, Goanna engine) ===
+  // Moonchild Productions, Goanna engine.
   {
     type: BrowserType.Firefox,
     label: "Palemoon",
@@ -243,8 +223,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     icon: PALEMOON_ICON,
   },
 
-  // === Basilisk (Moonchild Productions, Goanna engine) ===
-  // No XDG support planned; uses non-standard .basilisk-dev directory.
+  // Moonchild Productions, Goanna engine. No XDG support planned; uses non-standard .basilisk-dev directory.
   {
     type: BrowserType.Firefox,
     label: "Basilisk",

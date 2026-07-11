@@ -1,14 +1,7 @@
-import { combineSortFns, createSortByBooleanFn, createSortByStringFn } from "@helpers4/array";
 import GLib from "gi://GLib";
 import { PackageManager } from "../../taxonomy";
 import type { BrowserPkg, ResolvedBrowserPkg } from "../../taxonomy";
 import { HOME_DIR } from "../../constants/paths.constant";
-
-/** Comparator that sorts entries with isDefault=true first, then alphabetically by label. */
-export const compareByDefault = combineSortFns<{ isDefault?: boolean; label: string }>(
-  createSortByBooleanFn("isDefault"),
-  createSortByStringFn("label"),
-);
 
 /**
  * Resolves a package to a concrete binary/path without using the cache.

@@ -1,4 +1,5 @@
 import Gio from "gi://Gio";
+import GLib from "gi://GLib";
 
 export const decoder = new TextDecoder();
 
@@ -39,4 +40,37 @@ export function readFileAsync(path: string): Promise<Uint8Array> {
 
 export function readTextFileAsync(path: string): Promise<string> {
   return readFileAsync(path).then((bytes) => decoder.decode(bytes));
+}
+
+export type DirEntry = { name: string; type: Gio.FileType };
+
+/**
+ * Lists a directory's immediate entries (name + type), or [] if it doesn't
+ * exist or can't be enumerated — callers apply their own name/type filter.
+ */
+export function listDirEntries(dirPath: string, logContext: string): Promise<DirEntry[]> {
+  return new Promise((resolve) => {
+    const dir = Gio.File.new_for_path(dirPath);
+    dir.enumerate_children_async(
+      "standard::name,standard::type",
+      Gio.FileQueryInfoFlags.NONE,
+      GLib.PRIORITY_DEFAULT,
+      null,
+      (_source, result) => {
+        try {
+          const enumerator = dir.enumerate_children_finish(result);
+          const entries: DirEntry[] = [];
+          let info: Gio.FileInfo | null;
+          while ((info = enumerator.next_file(null)) !== null) {
+            entries.push({ name: info.get_name(), type: info.get_file_type() });
+          }
+          enumerator.close(null);
+          resolve(entries);
+        } catch (e: unknown) {
+          logIfUnexpected(e, logContext);
+          resolve([]);
+        }
+      },
+    );
+  });
 }

@@ -1,10 +1,11 @@
-export { decoder, logIfUnexpected, readFileAsync, readTextFileAsync } from "./gio";
+export { decoder, listDirEntries, logIfUnexpected, readFileAsync, readTextFileAsync } from "./gio";
+export type { DirEntry } from "./gio";
 export {
   buildBaseCommand,
   clearPkgResolutionCache,
-  compareByDefault,
   filterAvailable,
   filterPresent,
   resolvePkg,
 } from "./pkg";
+export { compareByDefault } from "./sort";
 export { launchBrowser } from "./runner";

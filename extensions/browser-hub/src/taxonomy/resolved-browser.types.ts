@@ -1,40 +1,38 @@
-/** Icon/color metadata shared by spaces and top-level profile items */
-type Colored = {
-  /** A real, ready-to-render GNOME icon name — see src/helper/icons/. */
-  icon?: string;
+/**
+ * How a profile item's own color should be presented, if it has one at all —
+ * absent means no color data (Falkon, plain Firefox profiles).
+ */
+export type ColorPresentation =
+  | { mode: "badge"; fgColor?: string; bgColor?: string } // rendered on the icon itself (Firefox Profile Groups)
+  | { mode: "dot"; bgColor: string }; // rendered as a separate dot after the label (Chromium)
+
+/**
+ * Space shown as an icon button nested under a profile item (Zen workspace or
+ * Firefox Profile Groups member). Unlike ResolvedBrowserItem, icon is
+ * required: the resolvers in src/helper/icons/ always resolve a space's icon
+ * to a real name or the neutral dot fallback, never leaving it unset.
+ */
+export type BrowserSpace = {
+  icon: string;
   /** CSS foreground color string */
   fgColor?: string;
   /** CSS background color string */
   bgColor?: string;
-};
-
-/**
- * Minimal shape shared by Zen workspaces and Firefox profile groups.
- * Unlike ResolvedBrowserItem, icon is required: the resolvers in src/helper/icons/
- * always resolve a space's icon to a real name or the neutral dot fallback,
- * never leaving it unset.
- */
-export type BrowserSpace = Omit<Colored, "icon"> & {
-  icon: string;
   name: string;
   command: string[];
   isDefault?: boolean;
 };
 
-export type ResolvedBrowserItem = Colored & {
+export type ResolvedBrowserItem = {
   label: string;
   /** Fully built launch argv, ready to pass to Gio.Subprocess.new() */
   command: string[];
+  /** A real, ready-to-render GNOME icon name — see src/helper/icons/. */
+  icon?: string;
+  isDefault?: boolean;
   /** Sub-entries shown as icon buttons: Zen workspaces or Firefox profile groups */
   spaces?: BrowserSpace[];
-  isDefault?: boolean;
-  /**
-   * True only when bgColor is a real, resolver-computed color meant to be
-   * shown as-is (currently just Chromium's account color). Firefox profile
-   * theme colors are also carried on bgColor (for future icon+color
-   * rendering) but must NOT set this — they aren't ready to render alone.
-   */
-  showColorDot?: boolean;
+  color?: ColorPresentation;
 };
 
 export type ResolvedBrowserEntry = {

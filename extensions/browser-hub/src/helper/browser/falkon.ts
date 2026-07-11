@@ -2,36 +2,15 @@ import { settle } from "@helpers4/promise";
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../../taxonomy";
-import { buildBaseCommand, filterPresent, logIfUnexpected } from "../internal";
+import { buildBaseCommand, filterPresent, listDirEntries } from "../internal";
 import { resolveBrowserIcon } from "../icons";
 
-function listProfileDirs(dirPath: string): Promise<string[]> {
-  return new Promise((resolve) => {
-    const dir = Gio.File.new_for_path(dirPath);
-    dir.enumerate_children_async(
-      "standard::name,standard::type",
-      Gio.FileQueryInfoFlags.NONE,
-      GLib.PRIORITY_DEFAULT,
-      null,
-      (_source, result) => {
-        try {
-          const enumerator = dir.enumerate_children_finish(result);
-          const profiles: string[] = [];
-          let info: Gio.FileInfo | null;
-          while ((info = enumerator.next_file(null)) !== null) {
-            if (info.get_file_type() === Gio.FileType.DIRECTORY) {
-              profiles.push(info.get_name());
-            }
-          }
-          enumerator.close(null);
-          resolve(profiles);
-        } catch (e: unknown) {
-          logIfUnexpected(e, `[browser-hub] failed to list Falkon profiles directory ${dirPath}`);
-          resolve([]);
-        }
-      },
-    );
-  });
+async function listProfileDirs(dirPath: string): Promise<string[]> {
+  const entries = await listDirEntries(
+    dirPath,
+    `[browser-hub] failed to list Falkon profiles directory ${dirPath}`,
+  );
+  return entries.filter((e) => e.type === Gio.FileType.DIRECTORY).map((e) => e.name);
 }
 
 export async function resolveFalkonBrowsers(

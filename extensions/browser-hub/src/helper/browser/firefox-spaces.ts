@@ -1,7 +1,6 @@
-import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import { readTable } from "sqlite-reader";
-import { logIfUnexpected, readFileAsync } from "../internal";
+import { listDirEntries, logIfUnexpected, readFileAsync } from "../internal";
 
 export interface FirefoxSelectableProfile {
   name: string;
@@ -16,33 +15,12 @@ export interface FirefoxSelectableProfile {
 
 const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
 
-function listSqliteFiles(dirPath: string): Promise<string[]> {
-  return new Promise((resolve) => {
-    if (!GLib.file_test(dirPath, GLib.FileTest.IS_DIR)) return resolve([]);
-    const dir = Gio.File.new_for_path(dirPath);
-    dir.enumerate_children_async(
-      "standard::name",
-      Gio.FileQueryInfoFlags.NONE,
-      GLib.PRIORITY_DEFAULT,
-      null,
-      (_source, result) => {
-        try {
-          const enumerator = dir.enumerate_children_finish(result);
-          const files: string[] = [];
-          let info: Gio.FileInfo | null;
-          while ((info = enumerator.next_file(null)) !== null) {
-            const name = info.get_name();
-            if (name.endsWith(".sqlite")) files.push(`${dirPath}/${name}`);
-          }
-          enumerator.close(null);
-          resolve(files);
-        } catch (e: unknown) {
-          logIfUnexpected(e, `[browser-hub] failed to list Profile Groups directory ${dirPath}`);
-          resolve([]);
-        }
-      },
-    );
-  });
+async function listSqliteFiles(dirPath: string): Promise<string[]> {
+  const entries = await listDirEntries(
+    dirPath,
+    `[browser-hub] failed to list Profile Groups directory ${dirPath}`,
+  );
+  return entries.filter((e) => e.name.endsWith(".sqlite")).map((e) => `${dirPath}/${e.name}`);
 }
 
 /**

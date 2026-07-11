@@ -18,9 +18,11 @@ function tooltip(btn: St.Button, text: string): void {
 // reject anything that isn't a plain color token before it reaches set_style().
 function safeCssColor(color: string | undefined): string | undefined {
   if (!color) return undefined;
-  // Match hex colors (#rgb, #rrggbb, #rrggbbaa), rgb/rgba/hsl/hsla functions, or named colors
+  // Match hex colors (#rgb, #rrggbb, #rrggbbaa), a full rgb/rgba/hsl/hsla(...)
+  // call (no nested parens, so a smuggled ");" can't close early and append
+  // more declarations), or a plain named color.
   const validColor =
-    /^(#([\da-f]{3}){1,2}|#([\da-f]{4}){1,2}|rgb\(|rgba\(|hsl\(|hsla\(|[a-z]+)$/i.test(
+    /^(#([\da-f]{3}){1,2}|#([\da-f]{4}){1,2}|(rgb|rgba|hsl|hsla)\([^()]*\)|[a-z]+)$/i.test(
       color.trim(),
     );
   // Additionally reject any string containing dangerous CSS characters
@@ -246,16 +248,18 @@ function buildProfileMenuItem({
         style_class: "browser-hub-profile-icon",
       })
     : new St.Widget({ style_class: "browser-hub-profile-icon" });
-  // Chromium's bgColor renders as its own dot after the label (below,
-  // gated on showColorDot) — only badge the icon itself for profiles that
-  // don't already have that separate indicator (currently Firefox Profile
-  // Groups profiles), so a color is never shown twice.
-  const iconColor = safeCssColor(item.fgColor);
-  const iconBg = item.showColorDot ? undefined : safeCssColor(item.bgColor);
-  const iconStyle: string[] = [];
-  if (iconColor) iconStyle.push(`color: ${iconColor}`);
-  if (iconBg) iconStyle.push(`background-color: ${iconBg}`, "border-radius: 999px", "padding: 2px");
-  if (iconStyle.length > 0) iconSlot.set_style(`${iconStyle.join("; ")};`);
+  // "badge" colors the icon itself (currently Firefox Profile Groups); "dot"
+  // renders as its own indicator after the label instead (currently
+  // Chromium) — a color is never shown both ways at once.
+  if (item.color?.mode === "badge") {
+    const iconColor = safeCssColor(item.color.fgColor);
+    const iconBg = safeCssColor(item.color.bgColor);
+    const iconStyle: string[] = [];
+    if (iconColor) iconStyle.push(`color: ${iconColor}`);
+    if (iconBg)
+      iconStyle.push(`background-color: ${iconBg}`, "border-radius: 999px", "padding: 2px");
+    if (iconStyle.length > 0) iconSlot.set_style(`${iconStyle.join("; ")};`);
+  }
   menuItem.insert_child_below(iconSlot, menuItem.label);
 
   const cmd = item.command;
@@ -264,8 +268,8 @@ function buildProfileMenuItem({
   if (item.spaces && item.spaces.length > 0) {
     menuItem.add_child(new St.Widget({ x_expand: true }));
     menuItem.add_child(makeSpaceGroup(item.spaces, title, notify, closeMenu));
-  } else if (item.showColorDot) {
-    const bgColor = safeCssColor(item.bgColor);
+  } else if (item.color?.mode === "dot") {
+    const bgColor = safeCssColor(item.color.bgColor);
     if (bgColor) {
       const dot = new St.Widget({ style_class: "browser-hub-profile-dot" });
       dot.set_style(`background-color: ${bgColor};`);

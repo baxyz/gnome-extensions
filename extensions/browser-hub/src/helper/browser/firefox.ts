@@ -1,6 +1,12 @@
 import { settle } from "@helpers4/promise";
 import GLib from "gi://GLib";
-import type { FirefoxBrowserConfig, ResolvedBrowserEntry } from "../../taxonomy";
+import type {
+  ColorPresentation,
+  FirefoxBrowserConfig,
+  ProfileGroupsMode,
+  ResolvedBrowserEntry,
+  ResolvedBrowserItem,
+} from "../../taxonomy";
 import type { FirefoxOptions } from "../../taxonomy";
 import { SpaceType } from "../../taxonomy/space-type.enum";
 import {
@@ -73,6 +79,13 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
     });
 }
 
+/** Firefox theme colors only ever render as an icon badge, never a dot (that's Chromium-only). */
+function toBadgeColor(sp: FirefoxSelectableProfile): ColorPresentation | undefined {
+  return sp.themeFg || sp.themeBg
+    ? { mode: "badge", fgColor: sp.themeFg, bgColor: sp.themeBg }
+    : undefined;
+}
+
 function spColors(
   sp: FirefoxSelectableProfile,
   context: "space",
@@ -81,20 +94,142 @@ function spColors(
   sp: FirefoxSelectableProfile,
   context: "profile",
   browserIcon?: string | string[],
-): { icon: string | undefined; fgColor: string | undefined; bgColor: string | undefined };
+): { icon: string | undefined; color: ColorPresentation | undefined };
 function spColors(
   sp: FirefoxSelectableProfile,
   context: IconContext,
   browserIcon?: string | string[],
 ) {
+  if (context === "space") {
+    return {
+      icon: resolveFirefoxIcon(sp.avatar, "space"),
+      fgColor: sp.themeFg,
+      bgColor: sp.themeBg,
+    };
+  }
+  return { icon: resolveFirefoxIcon(sp.avatar, "profile", browserIcon), color: toBadgeColor(sp) };
+}
+
+/** "profiles" mode: each selectable profile becomes its own top-level entry. */
+function resolveProfileGroupsAsFlatItems(
+  selectable: FirefoxSelectableProfile[],
+  isDefault: boolean,
+  folderBasename: string,
+  baseCommand: string[],
+  browserIcon: string | string[] | undefined,
+): ResolvedBrowserItem[] {
+  return selectable.map((sp) => ({
+    label: sp.name,
+    command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
+    // Mark default only on the sp whose folder matches this toolkit profile
+    isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
+    ...spColors(sp, "profile", browserIcon),
+  }));
+}
+
+/** "spaces" mode: nest selectable profiles as space buttons under one item. */
+function resolveProfileGroupsAsSpaces(
+  name: string,
+  selectable: FirefoxSelectableProfile[],
+  isDefault: boolean,
+  baseCommand: string[],
+  browserIcon: string | string[] | undefined,
+): ResolvedBrowserItem[] {
+  return [
+    {
+      label: name,
+      command: [...baseCommand, "-P", name, "-no-remote"],
+      isDefault,
+      icon: resolveBrowserIcon(browserIcon),
+      spaces: selectable.map((sp) => ({
+        name: sp.name,
+        command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
+        ...spColors(sp, "space"),
+      })),
+    },
+  ];
+}
+
+/** A profile with real Zen workspaces and no Profile Groups match — reads its zen-sessions.jsonlz4. */
+async function resolveZenWorkspaceItem(
+  name: string,
+  dir: string,
+  isDefault: boolean,
+  baseCommand: string[],
+  browserIcon: string | string[] | undefined,
+): Promise<ResolvedBrowserItem> {
+  const spaces = (await readZenSpaces(dir)).map((space) => ({
+    ...space,
+    icon: resolveZenIcon(space.icon),
+    command: [...baseCommand, "-P", name, "--zen-workspace", space.name, "-no-remote"],
+  }));
   return {
-    icon:
-      context === "space"
-        ? resolveFirefoxIcon(sp.avatar, "space")
-        : resolveFirefoxIcon(sp.avatar, "profile", browserIcon),
-    fgColor: sp.themeFg,
-    bgColor: sp.themeBg,
+    label: name,
+    command: [...baseCommand, "-P", name, "-no-remote"],
+    isDefault,
+    icon: resolveBrowserIcon(browserIcon),
+    ...(spaces.length > 0 && { spaces }),
   };
+}
+
+/** A profile with neither Profile Groups nor Zen workspaces. */
+function resolvePlainProfileItem(
+  name: string,
+  isDefault: boolean,
+  baseCommand: string[],
+  browserIcon: string | string[] | undefined,
+): ResolvedBrowserItem {
+  return {
+    label: name,
+    command: [...baseCommand, "-P", name, "-no-remote"],
+    isDefault,
+    icon: resolveBrowserIcon(browserIcon),
+  };
+}
+
+/**
+ * Resolves a single toolkit profile to one or more menu items.
+ *
+ * Precedence when a profile has BOTH a Firefox Profile Groups match AND real
+ * Zen workspaces: Profile Groups wins and the Zen workspaces are dropped —
+ * the menu has one "spaces" slot per item, so the two can't both be shown.
+ * This is a deliberate choice (not an accident of branch ordering), logged
+ * so it's visible if it ever surprises someone.
+ */
+async function resolveOneProfile(
+  { name, dir, folderBasename, isDefault }: ProfileEntry,
+  selectableMap: Map<string, FirefoxSelectableProfile[]>,
+  profileGroupsMode: ProfileGroupsMode,
+  baseCommand: string[],
+  browserIcon: string | string[] | undefined,
+  spaceType: SpaceType | undefined,
+  enabledSpaces: ReadonlySet<SpaceType>,
+): Promise<ResolvedBrowserItem[]> {
+  const selectable = selectableMap.get(folderBasename);
+  const hasZenWorkspaces =
+    spaceType === SpaceType.ZenWorkspaces && enabledSpaces.has(SpaceType.ZenWorkspaces);
+
+  if (selectable != null) {
+    if (hasZenWorkspaces) {
+      console.log(
+        `[browser-hub] profile "${name}" has both Firefox Profile Groups and Zen workspaces` +
+          " — Profile Groups takes precedence, Zen workspaces are not shown",
+      );
+    }
+    return profileGroupsMode === "profiles"
+      ? resolveProfileGroupsAsFlatItems(
+          selectable,
+          isDefault,
+          folderBasename,
+          baseCommand,
+          browserIcon,
+        )
+      : resolveProfileGroupsAsSpaces(name, selectable, isDefault, baseCommand, browserIcon);
+  }
+
+  return hasZenWorkspaces
+    ? [await resolveZenWorkspaceItem(name, dir, isDefault, baseCommand, browserIcon)]
+    : [resolvePlainProfileItem(name, isDefault, baseCommand, browserIcon)];
 }
 
 const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
@@ -133,61 +268,17 @@ export async function resolveFirefoxBrowsers(
 
       const items = (
         await Promise.all(
-          profiles.map(async ({ name, dir, folderBasename, isDefault }) => {
-            const selectable = selectableMap.get(folderBasename);
-
-            if (selectable != null) {
-              if (profileGroupsMode === "profiles") {
-                // Flatten: each selectable profile becomes its own top-level entry
-                return selectable.map((sp) => ({
-                  label: sp.name,
-                  command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
-                  // Mark default only on the sp whose folder matches this toolkit profile
-                  isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
-                  ...spColors(sp, "profile", b.icon),
-                }));
-              }
-              // "spaces" mode: nest selectable profiles as space buttons
-              return [
-                {
-                  label: name,
-                  command: [...baseCommand, "-P", name, "-no-remote"],
-                  isDefault,
-                  icon: resolveBrowserIcon(b.icon),
-                  spaces: selectable.map((sp) => ({
-                    name: sp.name,
-                    command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
-                    ...spColors(sp, "space"),
-                  })),
-                },
-              ];
-            }
-
-            const spaces =
-              b.spaceType === SpaceType.ZenWorkspaces && enabledSpaces.has(SpaceType.ZenWorkspaces)
-                ? (await readZenSpaces(dir)).map((space) => ({
-                    ...space,
-                    icon: resolveZenIcon(space.icon),
-                    command: [
-                      ...baseCommand,
-                      "-P",
-                      name,
-                      "--zen-workspace",
-                      space.name,
-                      "-no-remote",
-                    ],
-                  }))
-                : [];
-            return [
-              {
-                label: name,
-                command: [...baseCommand, "-P", name, "-no-remote"],
-                isDefault,
-                icon: resolveBrowserIcon(b.icon),
-                ...(spaces.length > 0 && { spaces }),
-              },
-            ];
-          }),
+          profiles.map((profile) =>
+            resolveOneProfile(
+              profile,
+              selectableMap,
+              profileGroupsMode,
+              baseCommand,
+              b.icon,
+              b.spaceType,
+              enabledSpaces,
+            ),
+          ),
         )
       ).flat();
       items.sort(compareByDefault);

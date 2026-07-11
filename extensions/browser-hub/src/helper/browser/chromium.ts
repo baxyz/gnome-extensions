@@ -1,7 +1,11 @@
 import { argbToRgb } from "@helpers4/color";
 import { safeJsonParse } from "@helpers4/object";
 import { settle } from "@helpers4/promise";
-import type { ChromiumBrowserConfig, ResolvedBrowserEntry } from "../../taxonomy";
+import type {
+  ChromiumBrowserConfig,
+  ColorPresentation,
+  ResolvedBrowserEntry,
+} from "../../taxonomy";
 import {
   buildBaseCommand,
   compareByDefault,
@@ -31,6 +35,12 @@ export function parseProfiles(content: string): ChromiumProfile[] {
   }));
 }
 
+/** Chromium's account color always renders as-is — unlike Firefox's theme color
+ * (see firefox.ts), it's not paired with an icon yet, so it can't be a badge. */
+function toDotColor(bgColor: string | undefined): ColorPresentation | undefined {
+  return bgColor != null ? { mode: "dot", bgColor } : undefined;
+}
+
 function readProfiles(path: string): Promise<ChromiumProfile[]> {
   return readTextFileAsync(path)
     .then((text) => parseProfiles(text))
@@ -52,11 +62,7 @@ export async function resolveChromiumBrowsers(
           command: [...buildBaseCommand(b.pkg), `--profile-directory=${profile.dir}`],
           isDefault: profile.isDefault,
           icon: resolveBrowserIcon(b.icon),
-          bgColor: profile.bgColor,
-          // Chrome's own profile picker shows this same account color, so
-          // it's safe to render as-is (unlike Firefox's theme color, which
-          // isn't paired with a real icon yet — see firefox.ts).
-          showColorDot: true,
+          color: toDotColor(profile.bgColor),
         }))
         .sort(compareByDefault);
       return { label: b.label, items };

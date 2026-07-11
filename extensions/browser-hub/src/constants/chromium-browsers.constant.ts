@@ -21,214 +21,156 @@ const SRWARE_IRON_ICON = "iron-symbolic";
 const SLIMJET_ICON = "slimjet-symbolic";
 const THORIUM_ICON = "thorium-symbolic";
 
+/**
+ * Every Chromium-family browser follows the same three packaging shapes —
+ * only the config dir name (under CONFIG_DIR / the Flatpak sandbox's mirrored
+ * home / the snap's own home), binary, Flatpak app id, and snap name differ.
+ * Native is always unsuffixed; flatpak/snap are always suffixed, whether or
+ * not a native variant is also generated (see "Ungoogled Chromium", which has
+ * no native entry of its own — its binary is indistinguishable from stock
+ * Chromium's — but its flatpak entry still reads "(flatpak)").
+ */
+function expandChromiumVariants(v: {
+  label: string;
+  icon?: string | string[];
+  /** Config dir name, e.g. "chromium" or "BraveSoftware/Brave-Browser". */
+  dirName: string;
+  /** Native binary name(s). Omit when this identity has no distinct native binary (e.g. Ungoogled Chromium). */
+  binary?: string | string[];
+  flatpakId?: string;
+  snap?: { name: string; subdir: "current" | "common" };
+}): ChromiumBrowserConfig[] {
+  const configs: ChromiumBrowserConfig[] = [];
+  const common = { type: BrowserType.Chromium as const, ...(v.icon != null && { icon: v.icon }) };
+  if (v.binary) {
+    configs.push({
+      ...common,
+      label: v.label,
+      path: `${CONFIG_DIR}/${v.dirName}/Local State`,
+      pkg: { manager: PackageManager.Native, binary: v.binary },
+    });
+  }
+  if (v.flatpakId) {
+    configs.push({
+      ...common,
+      label: `${v.label} (flatpak)`,
+      path: `${HOME_DIR}/.var/app/${v.flatpakId}/config/${v.dirName}/Local State`,
+      pkg: { manager: PackageManager.Flatpak, appId: v.flatpakId },
+    });
+  }
+  if (v.snap) {
+    configs.push({
+      ...common,
+      label: `${v.label} (snap)`,
+      path: `${HOME_DIR}/snap/${v.snap.name}/${v.snap.subdir}/.config/${v.dirName}/Local State`,
+      pkg: { manager: PackageManager.Snap, name: v.snap.name },
+    });
+  }
+  return configs;
+}
+
 export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
-  // === Google Chrome ===
-  {
-    type: BrowserType.Chromium,
+  ...expandChromiumVariants({
     label: "Google Chrome",
-    path: CONFIG_DIR + "/google-chrome/Local State",
-    pkg: { manager: PackageManager.Native, binary: ["google-chrome", "google-chrome-stable"] },
+    dirName: "google-chrome",
+    binary: ["google-chrome", "google-chrome-stable"],
+    flatpakId: "com.google.Chrome",
     icon: GOOGLE_CHROME_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Google Chrome (flatpak)",
-    path: HOME_DIR + "/.var/app/com.google.Chrome/config/google-chrome/Local State",
-    pkg: { manager: PackageManager.Flatpak, appId: "com.google.Chrome" },
-    icon: GOOGLE_CHROME_ICON,
-  },
-
-  // === Chromium ===
-  {
-    type: BrowserType.Chromium,
+  }),
+  ...expandChromiumVariants({
     label: "Chromium",
-    path: CONFIG_DIR + "/chromium/Local State",
-    pkg: { manager: PackageManager.Native, binary: ["chromium", "chromium-browser"] },
+    dirName: "chromium",
+    binary: ["chromium", "chromium-browser"],
+    flatpakId: "org.chromium.Chromium",
+    snap: { name: "chromium", subdir: "current" },
     icon: CHROMIUM_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Chromium (flatpak)",
-    path: HOME_DIR + "/.var/app/org.chromium.Chromium/config/chromium/Local State",
-    pkg: { manager: PackageManager.Flatpak, appId: "org.chromium.Chromium" },
-    icon: CHROMIUM_ICON,
-  },
-
-  // === Ungoogled Chromium ===
+  }),
   // Native binary is 'chromium', sharing ~/.config/chromium/ with stock Chromium — indistinguishable.
   // Only the Flatpak ID reliably differentiates it.
-  {
-    type: BrowserType.Chromium,
-    label: "Ungoogled Chromium (flatpak)",
-    path: HOME_DIR + "/.var/app/com.github.Eloston.UngoogledChromium/config/chromium/Local State",
-    pkg: { manager: PackageManager.Flatpak, appId: "com.github.Eloston.UngoogledChromium" },
+  ...expandChromiumVariants({
+    label: "Ungoogled Chromium",
+    dirName: "chromium",
+    flatpakId: "com.github.Eloston.UngoogledChromium",
     icon: CHROMIUM_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Chromium (snap)",
-    path: HOME_DIR + "/snap/chromium/current/.config/chromium/Local State",
-    pkg: { manager: PackageManager.Snap, name: "chromium" },
-    icon: CHROMIUM_ICON,
-  },
-
-  // === Brave ===
-  {
-    type: BrowserType.Chromium,
+  }),
+  ...expandChromiumVariants({
     label: "Brave",
-    path: CONFIG_DIR + "/BraveSoftware/Brave-Browser/Local State",
-    pkg: { manager: PackageManager.Native, binary: "brave-browser" },
+    dirName: "BraveSoftware/Brave-Browser",
+    binary: "brave-browser",
+    flatpakId: "com.brave.Browser",
+    snap: { name: "brave", subdir: "current" },
     icon: BRAVE_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Brave (flatpak)",
-    path: HOME_DIR + "/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser/Local State",
-    pkg: { manager: PackageManager.Flatpak, appId: "com.brave.Browser" },
-    icon: BRAVE_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Brave (snap)",
-    path: HOME_DIR + "/snap/brave/current/.config/BraveSoftware/Brave-Browser/Local State",
-    pkg: { manager: PackageManager.Snap, name: "brave" },
-    icon: BRAVE_ICON,
-  },
-
-  // === Brave Origin ===
-  {
-    type: BrowserType.Chromium,
+  }),
+  ...expandChromiumVariants({
     label: "Brave Origin",
-    path: CONFIG_DIR + "/BraveSoftware/Brave-Origin/Local State",
-    pkg: { manager: PackageManager.Native, binary: "brave-origin" },
+    dirName: "BraveSoftware/Brave-Origin",
+    binary: "brave-origin",
     icon: BRAVE_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
+  }),
+  ...expandChromiumVariants({
     label: "Brave Origin Beta",
-    path: CONFIG_DIR + "/BraveSoftware/Brave-Origin-Beta/Local State",
-    pkg: { manager: PackageManager.Native, binary: "brave-origin-beta" },
+    dirName: "BraveSoftware/Brave-Origin-Beta",
+    binary: "brave-origin-beta",
     icon: BRAVE_ICON,
-  },
-
-  // === Microsoft Edge ===
-  {
-    type: BrowserType.Chromium,
+  }),
+  ...expandChromiumVariants({
     label: "Microsoft Edge",
-    path: CONFIG_DIR + "/microsoft-edge/Local State",
-    pkg: { manager: PackageManager.Native, binary: "microsoft-edge" },
+    dirName: "microsoft-edge",
+    binary: "microsoft-edge",
+    flatpakId: "com.microsoft.Edge",
     icon: MICROSOFT_EDGE_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Microsoft Edge (flatpak)",
-    path: HOME_DIR + "/.var/app/com.microsoft.Edge/config/microsoft-edge/Local State",
-    pkg: { manager: PackageManager.Flatpak, appId: "com.microsoft.Edge" },
-    icon: MICROSOFT_EDGE_ICON,
-  },
-
-  // === Vivaldi ===
-  {
-    type: BrowserType.Chromium,
+  }),
+  ...expandChromiumVariants({
     label: "Vivaldi",
-    path: CONFIG_DIR + "/vivaldi/Local State",
-    pkg: { manager: PackageManager.Native, binary: "vivaldi" },
+    dirName: "vivaldi",
+    binary: "vivaldi",
+    flatpakId: "com.vivaldi.Vivaldi",
     icon: VIVALDI_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Vivaldi (flatpak)",
-    path: HOME_DIR + "/.var/app/com.vivaldi.Vivaldi/config/vivaldi/Local State",
-    pkg: { manager: PackageManager.Flatpak, appId: "com.vivaldi.Vivaldi" },
-    icon: VIVALDI_ICON,
-  },
-
-  // === Opera ===
-  {
-    type: BrowserType.Chromium,
+  }),
+  ...expandChromiumVariants({
     label: "Opera",
-    path: CONFIG_DIR + "/opera/Local State",
-    pkg: { manager: PackageManager.Native, binary: "opera" },
+    dirName: "opera",
+    binary: "opera",
+    flatpakId: "com.opera.Opera",
+    // Path pattern unverified against a real install — please confirm with
+    // the diagnostic commands and correct if it doesn't match.
+    snap: { name: "opera", subdir: "common" },
     icon: OPERA_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Opera (flatpak)",
-    path: HOME_DIR + "/.var/app/com.opera.Opera/config/opera/Local State",
-    pkg: { manager: PackageManager.Flatpak, appId: "com.opera.Opera" },
-    icon: OPERA_ICON,
-  },
-  {
-    // Path pattern mirrors "Opera GX (snap)" below (same publisher/packaging) —
-    // unverified against a real install, please confirm with the diagnostic
-    // commands and correct if it doesn't match.
-    type: BrowserType.Chromium,
-    label: "Opera (snap)",
-    path: HOME_DIR + "/snap/opera/common/.config/opera/Local State",
-    pkg: { manager: PackageManager.Snap, name: "opera" },
-    icon: OPERA_ICON,
-  },
-
-  // === Opera GX ===
+  }),
   // Linux support added March 2026.
-  {
-    type: BrowserType.Chromium,
+  ...expandChromiumVariants({
     label: "Opera GX",
-    path: CONFIG_DIR + "/opera-gx/Local State",
-    pkg: { manager: PackageManager.Native, binary: "opera-gx" },
+    dirName: "opera-gx",
+    binary: "opera-gx",
+    flatpakId: "com.opera.opera-gx",
+    snap: { name: "opera-gx", subdir: "common" },
     icon: OPERA_GX_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Opera GX (flatpak)",
-    path: HOME_DIR + "/.var/app/com.opera.opera-gx/config/opera-gx/Local State",
-    pkg: { manager: PackageManager.Flatpak, appId: "com.opera.opera-gx" },
-    icon: OPERA_GX_ICON,
-  },
-  {
-    type: BrowserType.Chromium,
-    label: "Opera GX (snap)",
-    path: HOME_DIR + "/snap/opera-gx/common/.config/opera-gx/Local State",
-    pkg: { manager: PackageManager.Snap, name: "opera-gx" },
-    icon: OPERA_GX_ICON,
-  },
-
-  // === Iridium Browser ===
+  }),
   // Distributed via iridiumbrowser.de's own repo; no flatpak.
-  {
-    type: BrowserType.Chromium,
+  ...expandChromiumVariants({
     label: "Iridium",
-    path: CONFIG_DIR + "/iridium/Local State",
-    pkg: { manager: PackageManager.Native, binary: "iridium-browser" },
+    dirName: "iridium",
+    binary: "iridium-browser",
     icon: IRIDIUM_ICON,
-  },
-
-  // === SRWare Iron ===
+  }),
   // Distributed as direct download from srware.net; no flatpak.
-  {
-    type: BrowserType.Chromium,
+  ...expandChromiumVariants({
     label: "SRWare Iron",
-    path: CONFIG_DIR + "/iron/Local State",
-    pkg: { manager: PackageManager.Native, binary: "iron" },
+    dirName: "iron",
+    binary: "iron",
     icon: SRWARE_IRON_ICON,
-  },
-
-  // === Slimjet ===
+  }),
   // Distributed as direct download from slimjet.com; no flatpak.
-  {
-    type: BrowserType.Chromium,
+  ...expandChromiumVariants({
     label: "Slimjet",
-    path: CONFIG_DIR + "/slimjet/Local State",
-    pkg: { manager: PackageManager.Native, binary: "flashpeak-slimjet" },
+    dirName: "slimjet",
+    binary: "flashpeak-slimjet",
     icon: SLIMJET_ICON,
-  },
-
-  // === Thorium ===
-  {
-    type: BrowserType.Chromium,
+  }),
+  ...expandChromiumVariants({
     label: "Thorium",
-    path: CONFIG_DIR + "/thorium/Local State",
-    pkg: { manager: PackageManager.Native, binary: "thorium-browser" },
+    dirName: "thorium",
+    binary: "thorium-browser",
     icon: THORIUM_ICON,
-  },
+  }),
 ];
