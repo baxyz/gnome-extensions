@@ -1,6 +1,7 @@
 export {
-  BROWSER_FALLBACK_ICON,
   SPACE_FALLBACK_ICON,
+  iconExists,
+  resolveBrowserIcon,
   resolveFirefoxIcon,
   resolveZenIcon,
 } from "./resolve-icon";

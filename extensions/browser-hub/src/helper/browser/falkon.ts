@@ -3,6 +3,7 @@ import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../../types";
 import { buildBaseCommand, filterPresent, logIfUnexpected } from "../internal";
+import { resolveBrowserIcon } from "../icons";
 
 function listProfileDirs(dirPath: string): Promise<string[]> {
   return new Promise((resolve) => {
@@ -42,6 +43,7 @@ export async function resolveFalkonBrowsers(
       items: (await listProfileDirs(b.path)).map((name) => ({
         label: name,
         command: [...buildBaseCommand(b.pkg), "--profile", name],
+        icon: resolveBrowserIcon(b.icon),
       })),
     })),
   );

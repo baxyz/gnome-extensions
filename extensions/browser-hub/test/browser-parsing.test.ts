@@ -31,6 +31,19 @@ vi.mock("gi://Gio", () => ({
   },
 }));
 
+// firefox.ts/chromium.ts import the icons module, which checks icon presence
+// via St.IconTheme — stub it as "everything is present" since icon-theme
+// availability itself is covered by icons.test.ts, not this file.
+vi.mock("gi://St", () => ({
+  default: {
+    IconTheme: class {
+      has_icon() {
+        return true;
+      }
+    },
+  },
+}));
+
 const { parseProfiles: parseFirefoxProfiles } = await import("../src/helper/browser/firefox");
 const { parseProfiles: parseChromiumProfiles } = await import("../src/helper/browser/chromium");
 const { argbToRgb } = await import("@helpers4/color");

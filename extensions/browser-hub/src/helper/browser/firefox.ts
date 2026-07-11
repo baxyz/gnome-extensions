@@ -12,7 +12,7 @@ import {
 } from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces } from "./zen";
-import { resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../icons";
+import { resolveBrowserIcon, resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../icons";
 
 /** Represents a single profile from Firefox's profiles.ini file. */
 export type ProfileEntry = {
@@ -73,11 +73,29 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
     });
 }
 
-const spColors = (sp: FirefoxSelectableProfile, context: IconContext) => ({
-  icon: resolveFirefoxIcon(sp.avatar, context),
-  fgColor: sp.themeFg,
-  bgColor: sp.themeBg,
-});
+function spColors(
+  sp: FirefoxSelectableProfile,
+  context: "space",
+): { icon: string; fgColor: string | undefined; bgColor: string | undefined };
+function spColors(
+  sp: FirefoxSelectableProfile,
+  context: "profile",
+  browserIcon?: string | string[],
+): { icon: string | undefined; fgColor: string | undefined; bgColor: string | undefined };
+function spColors(
+  sp: FirefoxSelectableProfile,
+  context: IconContext,
+  browserIcon?: string | string[],
+) {
+  return {
+    icon:
+      context === "space"
+        ? resolveFirefoxIcon(sp.avatar, "space")
+        : resolveFirefoxIcon(sp.avatar, "profile", browserIcon),
+    fgColor: sp.themeFg,
+    bgColor: sp.themeBg,
+  };
+}
 
 const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
   enabledSpaces: new Set(Object.values(SpaceType)),
@@ -126,7 +144,7 @@ export async function resolveFirefoxBrowsers(
                   command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
                   // Mark default only on the sp whose folder matches this toolkit profile
                   isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
-                  ...spColors(sp, "profile"),
+                  ...spColors(sp, "profile", b.icon),
                 }));
               }
               // "spaces" mode: nest selectable profiles as space buttons
@@ -135,6 +153,7 @@ export async function resolveFirefoxBrowsers(
                   label: name,
                   command: [...baseCommand, "-P", name, "-no-remote"],
                   isDefault,
+                  icon: resolveBrowserIcon(b.icon),
                   spaces: selectable.map((sp) => ({
                     name: sp.name,
                     command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
@@ -164,6 +183,7 @@ export async function resolveFirefoxBrowsers(
                 label: name,
                 command: [...baseCommand, "-P", name, "-no-remote"],
                 isDefault,
+                icon: resolveBrowserIcon(b.icon),
                 ...(spaces.length > 0 && { spaces }),
               },
             ];

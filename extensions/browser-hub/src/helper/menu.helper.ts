@@ -5,7 +5,7 @@ import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/she
 import type { BrowserSpace, ResolvedBrowserEntry, ResolvedBrowserItem } from "../types";
 import type { DefaultBrowserInfo } from "./default-browser.helper";
 import { launchBrowser } from "./internal";
-import { BROWSER_FALLBACK_ICON } from "./icons";
+import { SPACE_FALLBACK_ICON } from "./icons";
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
 function tooltip(btn: St.Button, text: string): void {
@@ -30,13 +30,15 @@ function safeCssColor(color: string | undefined): string | undefined {
 
 function makeIconButton(
   label: string,
-  iconName: string,
+  iconName: string | undefined,
   iconSize: number,
   onClick: () => void,
   styleClass = "button browser-hub-browser-btn",
 ): St.Button {
   const btn = new St.Button({ can_focus: true, accessible_name: label, style_class: styleClass });
-  btn.set_child(new St.Icon({ icon_name: iconName, icon_size: iconSize }));
+  btn.set_child(
+    iconName ? new St.Icon({ icon_name: iconName, icon_size: iconSize }) : new St.Widget({}),
+  );
   tooltip(btn, label);
   btn.connect("clicked", onClick);
   return btn;
@@ -56,8 +58,10 @@ function makeSpaceGroup(
       style_class: "button browser-hub-space-dot-btn",
     });
     // space.icon is always resolved by fetch time (see src/helper/icons/) — never a
-    // raw id, never missing.
-    btn.set_child(new St.Icon({ icon_name: space.icon, icon_size: 16 }));
+    // raw id, never missing. The neutral fallback renders smaller than a real
+    // icon so it reads as a discreet placeholder rather than a bold glyph.
+    const iconSize = space.icon === SPACE_FALLBACK_ICON ? 8 : 16;
+    btn.set_child(new St.Icon({ icon_name: space.icon, icon_size: iconSize }));
     const bgColor = safeCssColor(space.bgColor);
     const fgColor = safeCssColor(space.fgColor);
     if (bgColor || fgColor) {
@@ -205,7 +209,7 @@ function buildSimpleBrowserRow({
   for (const item of items) {
     const cmd = item.command;
     row.add_child(
-      makeIconButton(item.label, item.icon ?? BROWSER_FALLBACK_ICON, 24, () => {
+      makeIconButton(item.label, item.icon, 24, () => {
         launchBrowser({ command: cmd, title, notify });
         closeMenu();
       }),
@@ -242,8 +246,16 @@ function buildProfileMenuItem({
         style_class: "browser-hub-profile-icon",
       })
     : new St.Widget({ style_class: "browser-hub-profile-icon" });
+  // Chromium's bgColor renders as its own dot after the label (below,
+  // gated on showColorDot) — only badge the icon itself for profiles that
+  // don't already have that separate indicator (currently Firefox Profile
+  // Groups profiles), so a color is never shown twice.
   const iconColor = safeCssColor(item.fgColor);
-  if (iconColor) iconSlot.set_style(`color: ${iconColor};`);
+  const iconBg = item.showColorDot ? undefined : safeCssColor(item.bgColor);
+  const iconStyle: string[] = [];
+  if (iconColor) iconStyle.push(`color: ${iconColor}`);
+  if (iconBg) iconStyle.push(`background-color: ${iconBg}`, "border-radius: 999px", "padding: 2px");
+  if (iconStyle.length > 0) iconSlot.set_style(`${iconStyle.join("; ")};`);
   menuItem.insert_child_below(iconSlot, menuItem.label);
 
   const cmd = item.command;

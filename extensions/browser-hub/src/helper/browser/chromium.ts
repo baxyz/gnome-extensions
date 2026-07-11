@@ -9,6 +9,7 @@ import {
   logIfUnexpected,
   readTextFileAsync,
 } from "../internal";
+import { resolveBrowserIcon } from "../icons";
 
 export type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
 type LocalState = {
@@ -50,6 +51,7 @@ export async function resolveChromiumBrowsers(
           label: profile.name,
           command: [...buildBaseCommand(b.pkg), `--profile-directory=${profile.dir}`],
           isDefault: profile.isDefault,
+          icon: resolveBrowserIcon(b.icon),
           bgColor: profile.bgColor,
           // Chrome's own profile picker shows this same account color, so
           // it's safe to render as-is (unlike Firefox's theme color, which
