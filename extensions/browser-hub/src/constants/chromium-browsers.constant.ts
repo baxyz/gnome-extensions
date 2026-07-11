@@ -125,6 +125,15 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     path: HOME_DIR + "/.var/app/com.opera.Opera/config/opera/Local State",
     pkg: { manager: PackageManager.Flatpak, appId: "com.opera.Opera" },
   },
+  {
+    // Path pattern mirrors "Opera GX (snap)" below (same publisher/packaging) —
+    // unverified against a real install, please confirm with the diagnostic
+    // commands and correct if it doesn't match.
+    type: BrowserType.Chromium,
+    label: "Opera (snap)",
+    path: HOME_DIR + "/snap/opera/common/.config/opera/Local State",
+    pkg: { manager: PackageManager.Snap, name: "opera" },
+  },
 
   // === Opera GX ===
   // Linux support added March 2026.
