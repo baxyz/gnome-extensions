@@ -1,11 +1,7 @@
 import { argbToRgb } from "@helpers4/color";
 import { safeJsonParse } from "@helpers4/object";
 import { settle } from "@helpers4/promise";
-import type {
-  ChromiumBrowserConfig,
-  ColorPresentation,
-  ResolvedBrowserEntry,
-} from "../../taxonomy";
+import type { ChromiumBrowserConfig, ColorPresentation, ResolvedBrowserEntry } from "../taxonomy";
 import {
   buildBaseCommand,
   compareByDefault,

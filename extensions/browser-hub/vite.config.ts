@@ -45,24 +45,24 @@ export default defineConfig({
         // is listed first, so a group whose files are *imported by* another
         // group's files must be listed above that group — otherwise it gets
         // swallowed whole into the importing group's chunk instead of
-        // getting its own. Both taxonomy and helper-icons are dependencies of
-        // helper-browser (firefox.ts imports both), so they must precede it.
+        // getting its own. Both taxonomy and icons are dependencies of
+        // browser (firefox.ts imports both), so they must precede it.
         // taxonomy (src/taxonomy/ — its runtime content is just the
         // BrowserType/PackageManager/SpaceType enums, the rest fully erases
         // at compile time) must also precede everything else: prefs.ts (a
         // separate, non-Shell GJS process without the St typelib) imports
         // one of those enums too — swallowed into any chunk that also
-        // imports "gi://St" (e.g. helper-icons), loading prefs.js would crash it.
+        // imports "gi://St" (e.g. icons), loading prefs.js would crash it.
         codeSplitting: {
           minSize: 0,
           groups: [
             { name: "taxonomy", test: /\/taxonomy\// },
-            { name: "helper-icons", test: /\/helper\/icons\// },
+            { name: "icons", test: /\/icons\// },
             { name: "vendor-helpers4", test: /@helpers4/ },
             { name: "vendor-mozlz4", test: /node_modules\/mozlz4/ },
             { name: "vendor-sqlite-reader", test: /node_modules\/sqlite-reader/ },
-            { name: "helper-browser", test: /\/helper\/browser\// },
-            { name: "helper-internal", test: /\/helper\/internal\// },
+            { name: "browser", test: /\/browser\// },
+            { name: "internal", test: /\/internal\// },
           ],
         },
         chunkFileNames: "[name].js",

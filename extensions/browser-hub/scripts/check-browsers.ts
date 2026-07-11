@@ -1,5 +1,5 @@
-import { getBrowserEntries } from "../src/helper";
-import { getDefaultBrowser } from "../src/helper/default-browser.helper";
+import { getBrowserEntries } from "../src/browser";
+import { getDefaultBrowser } from "../src/default-browser";
 
 const defaultBrowser = getDefaultBrowser();
 if (defaultBrowser) {
@@ -27,7 +27,8 @@ for (const entry of entries) {
   console.log(`\n[${entry.label}]`);
   for (const item of entry.items) {
     const def = item.isDefault ? " *" : "";
-    console.log(`  - ${item.label}${def}${meta(item.icon, item.fgColor, item.bgColor)}`);
+    const itemFg = item.color?.mode === "badge" ? item.color.fgColor : undefined;
+    console.log(`  - ${item.label}${def}${meta(item.icon, itemFg, item.color?.bgColor)}`);
     console.log(`    ${item.command.join(" ")}`);
     for (const space of item.spaces ?? []) {
       const spaceDef = space.isDefault ? " *" : "";

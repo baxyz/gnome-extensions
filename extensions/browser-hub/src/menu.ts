@@ -2,8 +2,8 @@ import St from "gi://St";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
-import type { BrowserSpace, ResolvedBrowserEntry, ResolvedBrowserItem } from "../taxonomy";
-import type { DefaultBrowserInfo } from "./default-browser.helper";
+import type { BrowserSpace, ResolvedBrowserEntry, ResolvedBrowserItem } from "./taxonomy";
+import type { DefaultBrowserInfo } from "./default-browser";
 import { launchBrowser } from "./internal";
 import { SPACE_FALLBACK_ICON } from "./icons";
 
@@ -59,7 +59,7 @@ function makeSpaceGroup(
       accessible_name: space.name,
       style_class: "button browser-hub-space-dot-btn",
     });
-    // space.icon is always resolved by fetch time (see src/helper/icons/) — never a
+    // space.icon is always resolved by fetch time (see src/icons/) — never a
     // raw id, never missing. The neutral fallback renders smaller than a real
     // icon so it reads as a discreet placeholder rather than a bold glyph.
     const iconSize = space.icon === SPACE_FALLBACK_ICON ? 8 : 16;

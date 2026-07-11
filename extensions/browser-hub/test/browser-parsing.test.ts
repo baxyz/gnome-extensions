@@ -44,10 +44,10 @@ vi.mock("gi://St", () => ({
   },
 }));
 
-const { parseProfiles: parseFirefoxProfiles } = await import("../src/helper/browser/firefox");
-const { parseProfiles: parseChromiumProfiles } = await import("../src/helper/browser/chromium");
+const { parseProfiles: parseFirefoxProfiles } = await import("../src/browser/firefox");
+const { parseProfiles: parseChromiumProfiles } = await import("../src/browser/chromium");
 const { argbToRgb } = await import("@helpers4/color");
-const { buildBaseCommand } = await import("../src/helper/internal/pkg");
+const { buildBaseCommand } = await import("../src/internal/pkg");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 
 describe("firefox profiles.ini parsing", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// menu.helper.ts imports { launchBrowser } from "./internal", which loads the
+// menu.ts imports { launchBrowser } from "./internal", which loads the
 // whole internal/index.ts barrel — including pkg.ts, which imports "gi://GLib"
 // at module scope even though nothing in these tests exercises GLib-using
 // functions. Needs a stub so the import itself resolves under Node.
@@ -12,7 +12,7 @@ vi.mock("gi://GLib", () => ({
   },
 }));
 
-// Safety-net tests for the CURRENT rendering behavior of menu.helper.ts,
+// Safety-net tests for the CURRENT rendering behavior of menu.ts,
 // written before the Phase 2 color/icon type rework (see the approved plan).
 // Only fillMenu is exported — everything else is driven through it and
 // asserted on the resulting fake widget tree, which is what these tests
@@ -103,7 +103,7 @@ vi.mock("gi://Gio", () => ({
   },
 }));
 
-const { fillMenu } = await import("../src/helper/menu.helper");
+const { fillMenu } = await import("../src/menu");
 
 type FakeMenu = {
   items: FakeWidget[];

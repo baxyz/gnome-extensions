@@ -6,9 +6,9 @@ import type {
   ProfileGroupsMode,
   ResolvedBrowserEntry,
   ResolvedBrowserItem,
-} from "../../taxonomy";
-import type { FirefoxOptions } from "../../taxonomy";
-import { SpaceType } from "../../taxonomy/space-type.enum";
+} from "../taxonomy";
+import type { FirefoxOptions } from "../taxonomy";
+import { SpaceType } from "../taxonomy/space-type.enum";
 import {
   buildBaseCommand,
   compareByDefault,

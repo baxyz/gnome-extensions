@@ -3,7 +3,7 @@ import Gio from "gi://Gio";
 import Gtk from "gi://Gtk";
 import { ExtensionPreferences } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 import { SpaceType } from "./taxonomy/space-type.enum";
-import type { ProfileGroupsMode } from "./helper/browser-resolution.helper";
+import type { ProfileGroupsMode } from "./browser";
 
 const PROFILE_GROUP_MODES: ProfileGroupsMode[] = ["spaces", "profiles", "off"];
 const PROFILE_GROUP_LABELS = ["Space buttons", "Individual profiles", "Off"];

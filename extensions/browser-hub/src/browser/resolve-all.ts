@@ -8,12 +8,10 @@ import {
 import type { ResolvedBrowserEntry } from "../taxonomy";
 import type { FirefoxOptions } from "../taxonomy";
 import { SpaceType } from "../taxonomy/space-type.enum";
-import {
-  resolveChromiumBrowsers,
-  resolveFalkonBrowsers,
-  resolveFirefoxBrowsers,
-  resolveSimpleBrowsers,
-} from "./browser";
+import { resolveChromiumBrowsers } from "./chromium";
+import { resolveFalkonBrowsers } from "./falkon";
+import { resolveFirefoxBrowsers } from "./firefox";
+import { resolveSimpleBrowsers } from "./simple";
 
 export type { FirefoxOptions, ProfileGroupsMode } from "../taxonomy";
 

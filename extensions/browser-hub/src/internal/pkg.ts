@@ -1,7 +1,7 @@
 import GLib from "gi://GLib";
-import { PackageManager } from "../../taxonomy";
-import type { BrowserPkg, ResolvedBrowserPkg } from "../../taxonomy";
-import { HOME_DIR } from "../../constants/paths.constant";
+import { PackageManager } from "../taxonomy";
+import type { BrowserPkg, ResolvedBrowserPkg } from "../taxonomy";
+import { HOME_DIR } from "../constants/paths.constant";
 
 /**
  * Resolves a package to a concrete binary/path without using the cache.

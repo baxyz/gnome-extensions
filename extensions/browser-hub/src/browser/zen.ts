@@ -1,6 +1,6 @@
 import GLib from "gi://GLib";
 import { safeJsonParse } from "@helpers4/object";
-import type { ZenSpaceData } from "../../taxonomy";
+import type { ZenSpaceData } from "../taxonomy";
 import { decodeMozLz4 } from "mozlz4";
 import { decoder, logIfUnexpected, readFileAsync } from "../internal";
 

@@ -1,7 +1,7 @@
 import { settle } from "@helpers4/promise";
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
-import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../../taxonomy";
+import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../taxonomy";
 import { buildBaseCommand, filterPresent, listDirEntries } from "../internal";
 import { resolveBrowserIcon } from "../icons";
 

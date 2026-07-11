@@ -120,11 +120,11 @@ vi.mock("mozlz4", () => ({
   decodeMozLz4: (data: Uint8Array) => data,
 }));
 
-const { resolveFirefoxBrowsers } = await import("../src/helper/browser/firefox");
-const { resolveChromiumBrowsers } = await import("../src/helper/browser/chromium");
-const { resolveFalkonBrowsers } = await import("../src/helper/browser/falkon");
-const { resolveSimpleBrowsers } = await import("../src/helper/browser/simple");
-const { getBrowserEntries } = await import("../src/helper/browser-resolution.helper");
+const { resolveFirefoxBrowsers } = await import("../src/browser/firefox");
+const { resolveChromiumBrowsers } = await import("../src/browser/chromium");
+const { resolveFalkonBrowsers } = await import("../src/browser/falkon");
+const { resolveSimpleBrowsers } = await import("../src/browser/simple");
+const { getBrowserEntries } = await import("../src/browser");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 const { BrowserType } = await import("../src/taxonomy/browser-type.enum");
 const { SpaceType } = await import("../src/taxonomy/space-type.enum");

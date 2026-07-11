@@ -9,7 +9,7 @@ export type ColorPresentation =
 /**
  * Space shown as an icon button nested under a profile item (Zen workspace or
  * Firefox Profile Groups member). Unlike ResolvedBrowserItem, icon is
- * required: the resolvers in src/helper/icons/ always resolve a space's icon
+ * required: the resolvers in src/icons/ always resolve a space's icon
  * to a real name or the neutral dot fallback, never leaving it unset.
  */
 export type BrowserSpace = {
@@ -27,7 +27,7 @@ export type ResolvedBrowserItem = {
   label: string;
   /** Fully built launch argv, ready to pass to Gio.Subprocess.new() */
   command: string[];
-  /** A real, ready-to-render GNOME icon name — see src/helper/icons/. */
+  /** A real, ready-to-render GNOME icon name — see src/icons/. */
   icon?: string;
   isDefault?: boolean;
   /** Sub-entries shown as icon buttons: Zen workspaces or Firefox profile groups */
