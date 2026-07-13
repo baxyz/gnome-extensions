@@ -1,6 +1,6 @@
 import { BrowserType, PackageManager } from "../taxonomy";
 import type { ChromiumBrowserConfig } from "../taxonomy";
-import { HOME_DIR } from "./paths.constant";
+import { HOME_DIR, snapDataDir } from "./paths.constant";
 
 // Chromium-based browsers do not honor $XDG_CONFIG_HOME — they hardcode ~/.config.
 const CONFIG_DIR = HOME_DIR + "/.config";
@@ -21,7 +21,7 @@ function expandChromiumVariants(v: {
   /** Native binary name(s). Omit when this identity has no distinct native binary (e.g. Ungoogled Chromium). */
   binary?: string | string[];
   flatpakId?: string;
-  snap?: { name: string; subdir: "current" | "common" };
+  snap?: { name: string };
 }): ChromiumBrowserConfig[] {
   const configs: ChromiumBrowserConfig[] = [];
   const common = { type: BrowserType.Chromium as const };
@@ -45,7 +45,7 @@ function expandChromiumVariants(v: {
     configs.push({
       ...common,
       label: `${v.label} (snap)`,
-      path: `${HOME_DIR}/snap/${v.snap.name}/${v.snap.subdir}/.config/${v.dirName}/Local State`,
+      path: `${snapDataDir(v.snap.name)}/.config/${v.dirName}/Local State`,
       pkg: { manager: PackageManager.Snap, name: v.snap.name },
     });
   }
@@ -64,7 +64,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     dirName: "chromium",
     binary: ["chromium", "chromium-browser"],
     flatpakId: "org.chromium.Chromium",
-    snap: { name: "chromium", subdir: "current" },
+    snap: { name: "chromium" },
   }),
   // Native binary is 'chromium', sharing ~/.config/chromium/ with stock Chromium — indistinguishable.
   // Only the Flatpak ID reliably differentiates it.
@@ -78,7 +78,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     dirName: "BraveSoftware/Brave-Browser",
     binary: "brave-browser",
     flatpakId: "com.brave.Browser",
-    snap: { name: "brave", subdir: "current" },
+    snap: { name: "brave" },
   }),
   ...expandChromiumVariants({
     label: "Brave Origin",
@@ -107,9 +107,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     dirName: "opera",
     binary: "opera",
     flatpakId: "com.opera.Opera",
-    // Path pattern unverified against a real install — please confirm with
-    // the diagnostic commands and correct if it doesn't match.
-    snap: { name: "opera", subdir: "common" },
+    snap: { name: "opera" },
   }),
   // Linux support added March 2026.
   ...expandChromiumVariants({
@@ -117,7 +115,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     dirName: "opera-gx",
     binary: "opera-gx",
     flatpakId: "com.opera.opera-gx",
-    snap: { name: "opera-gx", subdir: "common" },
+    snap: { name: "opera-gx" },
   }),
   // Distributed via iridiumbrowser.de's own repo; no flatpak.
   ...expandChromiumVariants({ label: "Iridium", dirName: "iridium", binary: "iridium-browser" }),
