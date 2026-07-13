@@ -13,6 +13,8 @@ export const ENTRY_AFFECTING_KEYS = new Set<string>([
   "show-firefox-family",
   "show-chrome-family",
   "show-simple-browsers",
+  "show-profiled-browsers",
+  "collapse-single-profile-browsers",
   "firefox-profile-groups-mode",
   ...SPACE_TYPE_VALUES,
 ]);

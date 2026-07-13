@@ -20,6 +20,8 @@ export type BrowserSettings = {
   showFirefoxFamily: boolean;
   showChromeFamily: boolean;
   showSimpleBrowsers: boolean;
+  showProfiledBrowsers: boolean;
+  collapseSingleProfileBrowsers: boolean;
 } & FirefoxOptions;
 
 /** Default settings with all features enabled — used when no settings are provided. */
@@ -27,9 +29,20 @@ const ALL_ON: BrowserSettings = {
   showFirefoxFamily: true,
   showChromeFamily: true,
   showSimpleBrowsers: true,
+  showProfiledBrowsers: true,
+  collapseSingleProfileBrowsers: true,
   enabledSpaces: new Set(Object.values(SpaceType)),
   profileGroupsMode: "profiles",
 };
+
+/**
+ * A family entry with exactly one profile and no active spaces/workspaces
+ * under it — collapseSingleProfileBrowsers hides these from their detailed
+ * section since the "Browsers" row already covers them with a single icon.
+ */
+function isSingleProfileEntry(entry: ResolvedBrowserEntry): boolean {
+  return entry.items.length === 1 && (entry.items[0].spaces?.length ?? 0) <= 1;
+}
 
 /**
  * Builds the "Browsers" quick-launch row: one icon per installed browser
@@ -37,13 +50,15 @@ const ALL_ON: BrowserSettings = {
  * base command (no profile arg, no profile-groups/spaces handling), sorted
  * alphabetically. Every family still gets its own detailed section too (see
  * getBrowserEntries) — this row is a flat, uniform "just launch it" list
- * alongside those, gated by the same family toggles.
+ * alongside those, gated by the same family toggles plus showProfiledBrowsers.
  */
 function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
-  const withProfilesConfigs = [
-    ...(settings.showFirefoxFamily ? FIREFOX_BROWSERS : []),
-    ...(settings.showChromeFamily ? [...CHROMIUM_BROWSERS, ...FALKON_BROWSERS] : []),
-  ];
+  const withProfilesConfigs = settings.showProfiledBrowsers
+    ? [
+        ...(settings.showFirefoxFamily ? FIREFOX_BROWSERS : []),
+        ...(settings.showChromeFamily ? [...CHROMIUM_BROWSERS, ...FALKON_BROWSERS] : []),
+      ]
+    : [];
   const available = [
     ...filterPresent(withProfilesConfigs),
     ...(settings.showSimpleBrowsers ? filterAvailable(SIMPLE_BROWSERS) : []),
@@ -65,6 +80,10 @@ function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
  * family's detailed section (profiles, colors, spaces) plus the flat
  * "Browsers" quick-launch row. If a family resolver fails, its error is
  * logged but other families' entries are still returned.
+ *
+ * collapseSingleProfileBrowsers is a sub-setting of showProfiledBrowsers (it
+ * only takes effect when that's also on) — otherwise a single-profile
+ * browser hidden from its detailed section wouldn't appear anywhere.
  */
 export async function getBrowserEntries(
   settings: BrowserSettings = ALL_ON,
@@ -79,5 +98,11 @@ export async function getBrowserEntries(
   for (const reason of rejected) {
     logError(reason as object, "[browser-hub] a browser family failed to resolve");
   }
-  return [...fulfilled.flat(), ...resolveBrowsersRow(settings)];
+
+  const collapsing = settings.showProfiledBrowsers && settings.collapseSingleProfileBrowsers;
+  const detailedEntries = fulfilled
+    .flat()
+    .filter((entry) => !collapsing || !isSingleProfileEntry(entry));
+
+  return [...detailedEntries, ...resolveBrowsersRow(settings)];
 }

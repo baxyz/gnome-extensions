@@ -32,6 +32,27 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
         "show-simple-browsers",
       ),
     );
+    profilesGroup.add(
+      switchRow(
+        "Profile browsers in Browsers row",
+        "Also list Firefox/Chrome-family browsers as single icons in the Browsers row",
+        "show-profiled-browsers",
+      ),
+    );
+    const collapseSingleProfileRow = switchRow(
+      "Collapse single-profile browsers",
+      "For a browser with only one profile and no active spaces, show it only in the Browsers row",
+      "collapse-single-profile-browsers",
+    );
+    // Sub-setting of "show-profiled-browsers" — meaningless (and visually
+    // grey it out) when the parent switch is off.
+    settings.bind(
+      "show-profiled-browsers",
+      collapseSingleProfileRow,
+      "sensitive",
+      Gio.SettingsBindFlags.GET,
+    );
+    profilesGroup.add(collapseSingleProfileRow);
 
     const spacesGroup = new Adw.PreferencesGroup({ title: "Workspaces & Profile Groups" });
 

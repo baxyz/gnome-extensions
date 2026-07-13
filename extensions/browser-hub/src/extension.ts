@@ -39,6 +39,8 @@ export default class BrowserProfilesExtension extends Extension {
       showFirefoxFamily: settings.get_boolean("show-firefox-family"),
       showChromeFamily: settings.get_boolean("show-chrome-family"),
       showSimpleBrowsers: settings.get_boolean("show-simple-browsers"),
+      showProfiledBrowsers: settings.get_boolean("show-profiled-browsers"),
+      collapseSingleProfileBrowsers: settings.get_boolean("collapse-single-profile-browsers"),
       enabledSpaces: new Set(SPACE_TYPE_VALUES.filter((key) => settings.get_boolean(key))),
       profileGroupsMode: settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
     });

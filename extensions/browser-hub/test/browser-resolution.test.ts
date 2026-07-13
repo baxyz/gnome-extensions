@@ -435,6 +435,8 @@ describe("Browsers row (getBrowserEntries)", () => {
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: true,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: false,
       enabledSpaces: new Set(),
       profileGroupsMode: "off",
     });
@@ -459,6 +461,8 @@ describe("Browsers row (getBrowserEntries)", () => {
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: false,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: false,
       enabledSpaces: new Set(),
       profileGroupsMode: "off",
     });
@@ -479,6 +483,8 @@ describe("Browsers row (getBrowserEntries)", () => {
       showFirefoxFamily: false,
       showChromeFamily: false,
       showSimpleBrowsers: true,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: false,
       enabledSpaces: new Set(),
       profileGroupsMode: "off",
     });
@@ -505,6 +511,8 @@ describe("getBrowserEntries", () => {
       showFirefoxFamily: false,
       showChromeFamily: false,
       showSimpleBrowsers: false,
+      showProfiledBrowsers: false,
+      collapseSingleProfileBrowsers: false,
       enabledSpaces: new Set(),
       profileGroupsMode: "off",
     });
@@ -522,10 +530,74 @@ describe("getBrowserEntries", () => {
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: false,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: false,
       enabledSpaces: new Set(),
       profileGroupsMode: "off",
     });
 
     expect(entries.some((e) => e.label === "Firefox (classic)")).toBe(true);
+  });
+
+  it("collapses a single-profile browser's detailed section into the Browsers row when both settings are on", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
+    );
+
+    const entries = await getBrowserEntries({
+      showFirefoxFamily: true,
+      showChromeFamily: false,
+      showSimpleBrowsers: false,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: true,
+      enabledSpaces: new Set(),
+      profileGroupsMode: "off",
+    });
+
+    expect(entries.some((e) => e.label === "Firefox (classic)")).toBe(false);
+    const browsersRow = entries.find((e) => e.label === "Browsers");
+    expect(browsersRow?.items.map((i) => i.label)).toContain("Firefox (classic)");
+  });
+
+  it("does not collapse a single-profile browser when showProfiledBrowsers is off (sub-setting has no effect)", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
+    );
+
+    const entries = await getBrowserEntries({
+      showFirefoxFamily: true,
+      showChromeFamily: false,
+      showSimpleBrowsers: false,
+      showProfiledBrowsers: false,
+      collapseSingleProfileBrowsers: true,
+      enabledSpaces: new Set(),
+      profileGroupsMode: "off",
+    });
+
+    expect(entries.some((e) => e.label === "Firefox (classic)")).toBe(true);
+    expect(entries.find((e) => e.label === "Browsers")).toBeUndefined();
+  });
+
+  it("does not collapse a browser with multiple profiles even when both settings are on", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1\n" +
+        "[Profile1]\nName=work\nIsRelative=1\nPath=abc.work\nDefault=0",
+    );
+
+    const entries = await getBrowserEntries({
+      showFirefoxFamily: true,
+      showChromeFamily: false,
+      showSimpleBrowsers: false,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: true,
+      enabledSpaces: new Set(),
+      profileGroupsMode: "off",
+    });
+
+    const firefoxEntry = entries.find((e) => e.label === "Firefox (classic)");
+    expect(firefoxEntry?.items.map((i) => i.label).sort()).toEqual(["default", "work"]);
   });
 });
