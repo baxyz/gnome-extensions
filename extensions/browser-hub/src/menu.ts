@@ -138,6 +138,20 @@ function makeIconRow(): PopupMenuItem {
   return row;
 }
 
+/** Builds a category separator, with the browser's own icon before the label when known. */
+function buildCategorySeparator(label: string, icon: Gio.Icon | undefined): PopupSeparatorMenuItem {
+  const separator = new PopupSeparatorMenuItem(label);
+  if (icon) {
+    const iconWidget = new St.Icon({
+      gicon: icon,
+      icon_size: 16,
+      style_class: "browser-hub-category-icon",
+    });
+    separator.insert_child_below(iconWidget, separator.label);
+  }
+  return separator;
+}
+
 /**
  * Builds the toolbar row with default browser, spacer, refresh button, and settings button.
  */
@@ -255,17 +269,14 @@ function buildProfileMenuItem({
         style_class: "browser-hub-profile-icon",
       })
     : new St.Widget({ style_class: "browser-hub-profile-icon" });
-  // "badge" colors the icon itself (currently Firefox Profile Groups); "dot"
-  // renders as its own indicator after the label instead (currently
-  // Chromium) — a color is never shown both ways at once.
+  // "badge" tints the icon itself via its fg color (currently Firefox Profile
+  // Groups); "dot" renders as its own indicator after the label instead
+  // (currently Chromium) — a color is never shown both ways at once. Badge
+  // uses a single tint (no background/padding) so the icon slot never grows
+  // wider than a plain, uncolored icon.
   if (item.color?.mode === "badge") {
-    const iconColor = safeCssColor(item.color.fgColor);
-    const iconBg = safeCssColor(item.color.bgColor);
-    const iconStyle: string[] = [];
-    if (iconColor) iconStyle.push(`color: ${iconColor}`);
-    if (iconBg)
-      iconStyle.push(`background-color: ${iconBg}`, "border-radius: 999px", "padding: 2px");
-    if (iconStyle.length > 0) iconSlot.set_style(`${iconStyle.join("; ")};`);
+    const tint = safeCssColor(item.color.bgColor);
+    if (tint) iconSlot.set_style(`color: ${tint};`);
   }
   menuItem.insert_child_below(iconSlot, menuItem.label);
 
@@ -342,7 +353,7 @@ export function fillMenu({
 
   // Build browser entries
   for (const entry of entries) {
-    menu.addMenuItem(new PopupSeparatorMenuItem(entry.label));
+    menu.addMenuItem(buildCategorySeparator(entry.label, entry.icon));
 
     if (entry.group === "simple") {
       // Simple browsers (no profiles) - show as icon buttons in a row

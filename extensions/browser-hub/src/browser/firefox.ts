@@ -1,5 +1,4 @@
 import { settle } from "@helpers4/promise";
-import type Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type {
   ColorPresentation,
@@ -83,9 +82,7 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
 
 /** Firefox theme colors only ever render as an icon badge, never a dot (that's Chromium-only). */
 function toBadgeColor(sp: FirefoxSelectableProfile): ColorPresentation | undefined {
-  return sp.themeFg || sp.themeBg
-    ? { mode: "badge", fgColor: sp.themeFg, bgColor: sp.themeBg }
-    : undefined;
+  return sp.themeBg ? { mode: "badge", bgColor: sp.themeBg } : undefined;
 }
 
 function spColors(
@@ -95,9 +92,8 @@ function spColors(
 function spColors(
   sp: FirefoxSelectableProfile,
   context: "profile",
-  browserIcon?: Gio.Icon,
-): { icon: string | Gio.Icon | undefined; color: ColorPresentation | undefined };
-function spColors(sp: FirefoxSelectableProfile, context: IconContext, browserIcon?: Gio.Icon) {
+): { icon: string | undefined; color: ColorPresentation | undefined };
+function spColors(sp: FirefoxSelectableProfile, context: IconContext) {
   if (context === "space") {
     return {
       icon: resolveFirefoxIcon(sp.avatar, "space"),
@@ -105,7 +101,7 @@ function spColors(sp: FirefoxSelectableProfile, context: IconContext, browserIco
       bgColor: sp.themeBg,
     };
   }
-  return { icon: resolveFirefoxIcon(sp.avatar, "profile", browserIcon), color: toBadgeColor(sp) };
+  return { icon: resolveFirefoxIcon(sp.avatar, "profile"), color: toBadgeColor(sp) };
 }
 
 /** "profiles" mode: each selectable profile becomes its own top-level entry. */
@@ -114,14 +110,13 @@ function resolveProfileGroupsAsFlatItems(
   isDefault: boolean,
   folderBasename: string,
   baseCommand: string[],
-  browserIcon: Gio.Icon | undefined,
 ): ResolvedBrowserItem[] {
   return selectable.map((sp) => ({
     label: sp.name,
     command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
     // Mark default only on the sp whose folder matches this toolkit profile
     isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
-    ...spColors(sp, "profile", browserIcon),
+    ...spColors(sp, "profile"),
   }));
 }
 
@@ -131,14 +126,12 @@ function resolveProfileGroupsAsSpaces(
   selectable: FirefoxSelectableProfile[],
   isDefault: boolean,
   baseCommand: string[],
-  browserIcon: Gio.Icon | undefined,
 ): ResolvedBrowserItem[] {
   return [
     {
       label: name,
       command: [...baseCommand, "-P", name, "-no-remote"],
       isDefault,
-      icon: browserIcon,
       spaces: selectable.map((sp) => ({
         name: sp.name,
         command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
@@ -154,7 +147,6 @@ async function resolveZenWorkspaceItem(
   dir: string,
   isDefault: boolean,
   baseCommand: string[],
-  browserIcon: Gio.Icon | undefined,
 ): Promise<ResolvedBrowserItem> {
   const spaces = (await readZenSpaces(dir)).map((space) => ({
     ...space,
@@ -165,7 +157,6 @@ async function resolveZenWorkspaceItem(
     label: name,
     command: [...baseCommand, "-P", name, "-no-remote"],
     isDefault,
-    icon: browserIcon,
     ...(spaces.length > 0 && { spaces }),
   };
 }
@@ -175,13 +166,11 @@ function resolvePlainProfileItem(
   name: string,
   isDefault: boolean,
   baseCommand: string[],
-  browserIcon: Gio.Icon | undefined,
 ): ResolvedBrowserItem {
   return {
     label: name,
     command: [...baseCommand, "-P", name, "-no-remote"],
     isDefault,
-    icon: browserIcon,
   };
 }
 
@@ -199,7 +188,6 @@ async function resolveOneProfile(
   selectableMap: Map<string, FirefoxSelectableProfile[]>,
   profileGroupsMode: ProfileGroupsMode,
   baseCommand: string[],
-  browserIcon: Gio.Icon | undefined,
   spaceType: SpaceType | undefined,
   enabledSpaces: ReadonlySet<SpaceType>,
 ): Promise<ResolvedBrowserItem[]> {
@@ -215,19 +203,13 @@ async function resolveOneProfile(
       );
     }
     return profileGroupsMode === "profiles"
-      ? resolveProfileGroupsAsFlatItems(
-          selectable,
-          isDefault,
-          folderBasename,
-          baseCommand,
-          browserIcon,
-        )
-      : resolveProfileGroupsAsSpaces(name, selectable, isDefault, baseCommand, browserIcon);
+      ? resolveProfileGroupsAsFlatItems(selectable, isDefault, folderBasename, baseCommand)
+      : resolveProfileGroupsAsSpaces(name, selectable, isDefault, baseCommand);
   }
 
   return hasZenWorkspaces
-    ? [await resolveZenWorkspaceItem(name, dir, isDefault, baseCommand, browserIcon)]
-    : [resolvePlainProfileItem(name, isDefault, baseCommand, browserIcon)];
+    ? [await resolveZenWorkspaceItem(name, dir, isDefault, baseCommand)]
+    : [resolvePlainProfileItem(name, isDefault, baseCommand)];
 }
 
 const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
@@ -273,7 +255,6 @@ export async function resolveFirefoxBrowsers(
               selectableMap,
               profileGroupsMode,
               baseCommand,
-              browserIcon,
               b.spaceType,
               enabledSpaces,
             ),
@@ -281,7 +262,7 @@ export async function resolveFirefoxBrowsers(
         )
       ).flat();
       items.sort(compareByDefault);
-      return { label: b.label, items };
+      return { label: b.label, items, icon: browserIcon };
     }),
   );
   for (const reason of rejected) {

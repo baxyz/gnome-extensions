@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from "vitest";
-import type Gio from "gi://Gio";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "../src/icons/icon-catalog";
@@ -186,14 +185,9 @@ describe("resolveFirefoxIcon", () => {
     expect(resolveFirefoxIcon("star", "space")).toBe(FIREFOX_AVATAR_ICONS.star);
   });
 
-  it("falls back to the browser's own icon (a Gio.Icon, passed through as-is) for a profile with no mappable avatar", () => {
-    const fakeGicon = {} as Gio.Icon; // resolveFirefoxIcon never inspects it, just returns it
-    expect(resolveFirefoxIcon("barbell", "profile", fakeGicon)).toBe(fakeGicon);
-    expect(resolveFirefoxIcon(undefined, "profile", fakeGicon)).toBe(fakeGicon);
-  });
-
-  it("falls back to nothing for a profile with no mappable avatar and no browser icon either", () => {
-    expect(resolveFirefoxIcon("barbell", "profile", undefined)).toBeUndefined();
+  it("falls back to nothing (never the browser's own icon) for a profile with no mappable avatar", () => {
+    expect(resolveFirefoxIcon("barbell", "profile")).toBeUndefined();
+    expect(resolveFirefoxIcon(undefined, "profile")).toBeUndefined();
   });
 
   it("falls back to the neutral dot for a space with no mappable icon, ignoring any browser icon", () => {

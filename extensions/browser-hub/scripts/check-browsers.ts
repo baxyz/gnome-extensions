@@ -24,11 +24,11 @@ function meta(icon?: string, fgColor?: string, bgColor?: string): string {
 }
 
 for (const entry of entries) {
-  console.log(`\n[${entry.label}]`);
+  console.log(`\n[${entry.label}]${entry.icon ? " (has browser icon)" : ""}`);
   for (const item of entry.items) {
     const def = item.isDefault ? " *" : "";
-    const itemFg = item.color?.mode === "badge" ? item.color.fgColor : undefined;
-    console.log(`  - ${item.label}${def}${meta(item.icon, itemFg, item.color?.bgColor)}`);
+    const itemIcon = typeof item.icon === "string" ? item.icon : undefined;
+    console.log(`  - ${item.label}${def}${meta(itemIcon, undefined, item.color?.bgColor)}`);
     console.log(`    ${item.command.join(" ")}`);
     for (const space of item.spaces ?? []) {
       const spaceDef = space.isDefault ? " *" : "";

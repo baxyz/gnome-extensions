@@ -5,7 +5,7 @@ import type Gio from "gi://Gio";
  * absent means no color data (Falkon, plain Firefox profiles).
  */
 export type ColorPresentation =
-  | { mode: "badge"; fgColor?: string; bgColor?: string } // rendered on the icon itself (Firefox Profile Groups)
+  | { mode: "badge"; bgColor: string } // tints the icon itself (Firefox Profile Groups)
   | { mode: "dot"; bgColor: string }; // rendered as a separate dot after the label (Chromium)
 
 /**
@@ -30,10 +30,13 @@ export type ResolvedBrowserItem = {
   /** Fully built launch argv, ready to pass to Gio.Subprocess.new() */
   command: string[];
   /**
-   * Either a GNOME/Adwaita icon name (Firefox Profile Groups avatars — see
-   * src/icons/) or the browser's own real icon fetched from its installed
-   * .desktop file (see src/internal/desktop-icon.ts). St.Icon takes the
-   * former as `icon_name`, the latter as `gicon`.
+   * In a family entry (Firefox/Chromium/Falkon): a GNOME/Adwaita icon name
+   * for a per-profile identity (Firefox Profile Groups avatars — see
+   * src/icons/), or undefined — the browser's own icon is never used as a
+   * per-item fallback here, it's shown once on the entry instead (see
+   * ResolvedBrowserEntry.icon below). In the "simple" row, each item IS a
+   * distinct browser, so it carries that browser's own real icon directly
+   * (a Gio.Icon fetched from its .desktop file).
    */
   icon?: string | Gio.Icon;
   isDefault?: boolean;
@@ -48,4 +51,11 @@ export type ResolvedBrowserEntry = {
   items: ResolvedBrowserItem[];
   /** "simple" groups all profile-less browsers into a single icon-button row */
   group?: "simple";
+  /**
+   * The browser's own real icon, fetched from its installed .desktop file
+   * (see src/internal/desktop-icon.ts) — shown once next to the section
+   * label instead of being repeated on every profile item. Absent for the
+   * "simple" row, which aggregates many different browsers.
+   */
+  icon?: Gio.Icon;
 };

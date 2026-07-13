@@ -24,6 +24,8 @@ function notFoundError(): { matches: (domain: unknown, code: number) => boolean 
   return { matches: (_domain: unknown, code: number) => code === 1 };
 }
 
+const FAKE_ICON = { __fakeIcon: true };
+
 vi.mock("gi://GLib", () => ({
   default: {
     path_get_basename: (p: string) => p.split("/").filter(Boolean).pop() ?? "",
@@ -94,9 +96,13 @@ vi.mock("gi://Gio", () => ({
     Subprocess: { new: () => ({}) },
     SubprocessFlags: { NONE: 0 },
     IOErrorEnum: { NOT_FOUND: 1 },
-    // No installed app matches any guessed desktop id — desktop-icon
-    // resolution itself is covered by desktop-icon.test.ts, not this file.
-    DesktopAppInfo: { new: () => null },
+    // Only "iconbrowser.desktop" resolves to a real icon (used to verify the
+    // browser icon lands on the entry, not on every profile item) — every
+    // other guessed desktop id (the "firefox"/"chromium"/"falkon" binaries
+    // used throughout this file) matches nothing, same as before.
+    DesktopAppInfo: {
+      new: (id: string) => (id === "iconbrowser.desktop" ? { get_icon: () => FAKE_ICON } : null),
+    },
   },
 }));
 
@@ -175,6 +181,25 @@ describe("resolveFirefoxBrowsers", () => {
         ],
       },
     ]);
+  });
+
+  it("attaches the browser's real icon to the entry, never as a fallback on a plain profile item", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
+    );
+
+    const entries = await resolveFirefoxBrowsers([
+      {
+        type: BrowserType.Firefox,
+        label: "Firefox",
+        path: "/home/user/.mozilla/firefox/profiles.ini",
+        pkg: { manager: PackageManager.Native, binary: "iconbrowser" },
+      },
+    ]);
+
+    expect(entries[0].icon).toBe(FAKE_ICON);
+    expect(entries[0].items[0].icon).toBeUndefined();
   });
 
   it("attaches Zen workspaces when there's no Profile Groups match for that profile", async () => {
@@ -398,10 +423,29 @@ describe("resolveChromiumBrowsers", () => {
     ]);
     expect(entries).toEqual([]);
   });
+
+  it("attaches the browser's real icon to the entry, never to a profile item", async () => {
+    setFile(
+      "/home/user/.config/chromium/Local State",
+      JSON.stringify({ profile: { info_cache: { Default: { name: "Default" } } } }),
+    );
+
+    const entries = await resolveChromiumBrowsers([
+      {
+        type: BrowserType.Chromium,
+        label: "Chromium",
+        path: "/home/user/.config/chromium/Local State",
+        pkg: { manager: PackageManager.Native, binary: "iconbrowser" },
+      },
+    ]);
+
+    expect(entries[0].icon).toBe(FAKE_ICON);
+    expect(entries[0].items[0].icon).toBeUndefined();
+  });
 });
 
 describe("resolveFalkonBrowsers", () => {
-  it("lists profile directories as items with the browser's resolved icon", async () => {
+  it("lists profile directories as items", async () => {
     setDir("/home/user/.config/falkon/profiles", ["default", "work"]);
 
     const entries = await resolveFalkonBrowsers([
@@ -414,6 +458,22 @@ describe("resolveFalkonBrowsers", () => {
     ]);
 
     expect(entries[0].items.map((i) => i.label).sort()).toEqual(["default", "work"]);
+  });
+
+  it("attaches the browser's real icon to the entry, never to a profile item", async () => {
+    setDir("/home/user/.config/falkon/profiles", ["default"]);
+
+    const entries = await resolveFalkonBrowsers([
+      {
+        type: BrowserType.Falkon,
+        label: "Falkon",
+        path: "/home/user/.config/falkon/profiles",
+        pkg: { manager: PackageManager.Native, binary: "iconbrowser" },
+      },
+    ]);
+
+    expect(entries[0].icon).toBe(FAKE_ICON);
+    expect(entries[0].items[0].icon).toBeUndefined();
   });
 });
 

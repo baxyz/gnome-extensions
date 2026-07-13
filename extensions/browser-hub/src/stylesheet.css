@@ -9,6 +9,11 @@
   margin-right: 0.3em;
 }
 
+/* Browser icon shown once before a category separator's label */
+.browser-hub-category-icon {
+  margin-right: 0.3em;
+}
+
 /* Default browser button group in toolbar */
 .browser-hub-default-browser-btn {
   font-size: 9pt;

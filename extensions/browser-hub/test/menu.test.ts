@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type Gio from "gi://Gio";
 
 // menu.ts imports { launchBrowser } from "./internal", which loads the
 // whole internal/index.ts barrel — including pkg.ts, which imports "gi://GLib"
@@ -85,8 +86,13 @@ class FakePopupMenuItem extends FakeWidget {
   }
 }
 class FakePopupSeparatorMenuItem extends FakeWidget {
+  label: FakeLabel;
   constructor(public text?: string) {
     super();
+    this.label = new FakeLabel(text ?? "");
+  }
+  insert_child_below(child: FakeWidget, _sibling: FakeWidget): void {
+    this.children.unshift(child);
   }
 }
 
@@ -158,6 +164,45 @@ describe("fillMenu", () => {
     expect(iconSlot).not.toBeInstanceOf(FakeIcon);
   });
 
+  it("shows the browser's icon before the separator label when the entry has one", () => {
+    const menu = makeFakeMenu();
+    const fakeGicon = {} as Gio.Icon;
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [
+        {
+          label: "Firefox (snap)",
+          items: [{ label: "default", command: ["firefox"] }],
+          icon: fakeGicon,
+        },
+      ],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const separator = menu.items[1] as FakePopupSeparatorMenuItem;
+    const iconWidget = separator.children[0] as FakeIcon;
+    expect(iconWidget).toBeInstanceOf(FakeIcon);
+    expect(iconWidget.props.gicon).toBe(fakeGicon);
+  });
+
+  it("renders no icon before the separator label when the entry has none", () => {
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const separator = menu.items[1] as FakePopupSeparatorMenuItem;
+    expect(separator.children).toHaveLength(0);
+  });
+
   it("renders a real St.Icon for a profile item with an icon", () => {
     const menu = makeFakeMenu();
     fillMenu({
@@ -180,7 +225,7 @@ describe("fillMenu", () => {
     expect(iconSlot.props.icon_name).toBe("firefox-symbolic");
   });
 
-  it("applies color.mode 'badge' as fgColor/bgColor on the icon itself (Firefox Profile Groups)", () => {
+  it("applies color.mode 'badge' as a single fg tint on the icon itself, no background/padding (Firefox Profile Groups)", () => {
     const menu = makeFakeMenu();
     fillMenu({
       title: "t",
@@ -193,7 +238,7 @@ describe("fillMenu", () => {
               label: "Work",
               command: ["firefox"],
               icon: "starred-symbolic",
-              color: { mode: "badge", fgColor: "#ffffff", bgColor: "#20123a" },
+              color: { mode: "badge", bgColor: "#20123a" },
             },
           ],
         },
@@ -205,9 +250,7 @@ describe("fillMenu", () => {
 
     const profileItem = menu.items[2] as FakePopupMenuItem;
     const iconSlot = profileItem.children[0] as FakeIcon;
-    expect(iconSlot.style).toContain("color: #ffffff");
-    expect(iconSlot.style).toContain("background-color: #20123a");
-    expect(iconSlot.style).toContain("border-radius");
+    expect(iconSlot.style).toBe("color: #20123a;");
   });
 
   it("renders color.mode 'dot' as a separate indicator, not an icon badge (Chromium)", () => {

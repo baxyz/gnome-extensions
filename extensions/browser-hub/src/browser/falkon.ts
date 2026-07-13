@@ -17,14 +17,13 @@ export async function resolveFalkonBrowsers(
 ): Promise<ResolvedBrowserEntry[]> {
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers, GLib.FileTest.IS_DIR).map(async (b) => {
-      const icon = resolveDesktopIcon(b.pkg);
       return {
         label: b.label,
         items: (await listProfileDirs(b.path)).map((name) => ({
           label: name,
           command: [...buildBaseCommand(b.pkg), "--profile", name],
-          icon,
         })),
+        icon: resolveDesktopIcon(b.pkg),
       };
     }),
   );

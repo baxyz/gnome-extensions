@@ -52,17 +52,15 @@ export async function resolveChromiumBrowsers(
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers).map(async (b) => {
       const profiles = await readProfiles(b.path);
-      const icon = resolveDesktopIcon(b.pkg);
       const items = profiles
         .map((profile) => ({
           label: profile.name,
           command: [...buildBaseCommand(b.pkg), `--profile-directory=${profile.dir}`],
           isDefault: profile.isDefault,
-          icon,
           color: toDotColor(profile.bgColor),
         }))
         .sort(compareByDefault);
-      return { label: b.label, items };
+      return { label: b.label, items, icon: resolveDesktopIcon(b.pkg) };
     }),
   );
   for (const reason of rejected) {
