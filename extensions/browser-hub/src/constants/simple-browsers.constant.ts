@@ -6,13 +6,11 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "GNOME Web",
-    icon: "org.gnome.Epiphany",
     pkg: { manager: PackageManager.Native, binary: "epiphany" },
   },
   {
     type: BrowserType.Simple,
     label: "GNOME Web (Flatpak)",
-    icon: "org.gnome.Epiphany",
     pkg: { manager: PackageManager.Flatpak, appId: "org.gnome.Epiphany" },
   },
 
@@ -20,7 +18,6 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "qutebrowser",
-    icon: "qutebrowser",
     pkg: { manager: PackageManager.Native, binary: "qutebrowser" },
   },
 
@@ -28,7 +25,6 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "Luakit",
-    icon: "luakit",
     pkg: { manager: PackageManager.Native, binary: "luakit" },
   },
 
@@ -36,13 +32,11 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "Nyxt",
-    icon: "engineer.atlas.Nyxt",
     pkg: { manager: PackageManager.Native, binary: "nyxt" },
   },
   {
     type: BrowserType.Simple,
     label: "Nyxt (flatpak)",
-    icon: "engineer.atlas.Nyxt",
     pkg: { manager: PackageManager.Flatpak, appId: "engineer.atlas.Nyxt" },
   },
 
@@ -50,13 +44,11 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "Otter Browser",
-    icon: "org.otter_browser.OtterBrowser",
     pkg: { manager: PackageManager.Native, binary: "otter-browser" },
   },
   {
     type: BrowserType.Simple,
     label: "Otter Browser (flatpak)",
-    icon: "org.otter_browser.OtterBrowser",
     pkg: { manager: PackageManager.Flatpak, appId: "org.otter_browser.OtterBrowser" },
   },
 
@@ -64,7 +56,6 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "Midori",
-    icon: "midori",
     pkg: { manager: PackageManager.Native, binary: "midori" },
   },
 
@@ -72,7 +63,6 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "Konqueror",
-    icon: "konqueror",
     pkg: { manager: PackageManager.Native, binary: "konqueror" },
   },
 
@@ -80,13 +70,11 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "NetSurf",
-    icon: "org.netsurf_browser.NetSurf",
     pkg: { manager: PackageManager.Native, binary: "netsurf-gtk3" },
   },
   {
     type: BrowserType.Simple,
     label: "NetSurf (flatpak)",
-    icon: "org.netsurf_browser.NetSurf",
     pkg: { manager: PackageManager.Flatpak, appId: "org.netsurf_browser.NetSurf" },
   },
 
@@ -94,7 +82,6 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "Dillo",
-    icon: "dillo",
     pkg: { manager: PackageManager.Native, binary: "dillo" },
   },
 

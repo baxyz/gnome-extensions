@@ -32,6 +32,4 @@ export type SimpleBrowserConfig = {
   type: BrowserType.Simple;
   label: string;
   pkg: BrowserPkg;
-  /** Desktop icon name (e.g. "org.gnome.Epiphany") */
-  icon?: string;
 };

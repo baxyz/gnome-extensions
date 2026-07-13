@@ -17,8 +17,8 @@
 
     <key name="show-simple-browsers" type="b">
       <default>true</default>
-      <summary>Show profile-less browsers</summary>
-      <description>Include browsers without profile support (GNOME Web, qutebrowser, …) in the menu.</description>
+      <summary>Show the Browsers quick-launch row</summary>
+      <description>Display a "Browsers" row listing every installed browser as a single icon (its default profile, no profile picker) — includes profile-less browsers (GNOME Web, qutebrowser, …) alongside Firefox/Chrome-family ones already shown in their own detailed section above.</description>
     </key>
 
     <key name="firefox-profile-groups-mode" type="s">

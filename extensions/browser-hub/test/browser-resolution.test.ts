@@ -126,7 +126,6 @@ vi.mock("mozlz4", () => ({
 const { resolveFirefoxBrowsers } = await import("../src/browser/firefox");
 const { resolveChromiumBrowsers } = await import("../src/browser/chromium");
 const { resolveFalkonBrowsers } = await import("../src/browser/falkon");
-const { resolveSimpleBrowsers } = await import("../src/browser/simple");
 const { getBrowserEntries } = await import("../src/browser");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 const { BrowserType } = await import("../src/taxonomy/browser-type.enum");
@@ -418,29 +417,76 @@ describe("resolveFalkonBrowsers", () => {
   });
 });
 
-describe("resolveSimpleBrowsers", () => {
-  it("groups available profile-less browsers under a single 'simple' entry, passing icon through as-is", async () => {
-    const entries = await resolveSimpleBrowsers([
-      {
-        type: BrowserType.Simple,
-        label: "GNOME Web",
-        icon: "org.gnome.Epiphany",
-        pkg: { manager: PackageManager.Native, binary: "epiphany" },
-      },
-    ]);
+describe("Browsers row (getBrowserEntries)", () => {
+  // The "Browsers" row combines every installed browser — Firefox/Chrome-family
+  // AND profile-less ones — into a single flat, alphabetically-sorted entry,
+  // in addition to (not instead of) the detailed per-family sections above.
+  // Flatpak-packaged simple browsers never resolve here: resolvePkg checks
+  // real flatpak install dirs via GLib.file_test, which the virtual fs mock
+  // always reports as absent unless explicitly set up.
 
-    expect(entries).toEqual([
-      {
-        label: "Others",
-        group: "simple",
-        items: [{ label: "GNOME Web", command: ["epiphany"], icon: "org.gnome.Epiphany" }],
-      },
-    ]);
+  it("combines firefox-family and profile-less browsers into one sorted 'Browsers' entry", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
+    );
+
+    const entries = await getBrowserEntries({
+      showFirefoxFamily: true,
+      showChromeFamily: false,
+      showSimpleBrowsers: true,
+      enabledSpaces: new Set(),
+      profileGroupsMode: "off",
+    });
+
+    const browsersRow = entries.find((e) => e.label === "Browsers");
+    expect(browsersRow?.group).toBe("simple");
+
+    const labels = browsersRow?.items.map((i) => i.label) ?? [];
+    expect(labels).toContain("Firefox (classic)");
+    expect(labels).toContain("GNOME Web");
+    expect(labels).toContain("qutebrowser");
+    expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
   });
 
-  it("returns nothing when no simple browser is installed", async () => {
-    const entries = await resolveSimpleBrowsers([]);
-    expect(entries).toEqual([]);
+  it("omits simple browsers from the row when their toggle is off, keeping firefox-family entries", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
+    );
+
+    const entries = await getBrowserEntries({
+      showFirefoxFamily: true,
+      showChromeFamily: false,
+      showSimpleBrowsers: false,
+      enabledSpaces: new Set(),
+      profileGroupsMode: "off",
+    });
+
+    const browsersRow = entries.find((e) => e.label === "Browsers");
+    const labels = browsersRow?.items.map((i) => i.label) ?? [];
+    expect(labels).toContain("Firefox (classic)");
+    expect(labels).not.toContain("GNOME Web");
+  });
+
+  it("omits firefox-family entries from the row when their toggle is off, keeping simple browsers", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
+    );
+
+    const entries = await getBrowserEntries({
+      showFirefoxFamily: false,
+      showChromeFamily: false,
+      showSimpleBrowsers: true,
+      enabledSpaces: new Set(),
+      profileGroupsMode: "off",
+    });
+
+    const browsersRow = entries.find((e) => e.label === "Browsers");
+    const labels = browsersRow?.items.map((i) => i.label) ?? [];
+    expect(labels).not.toContain("Firefox (classic)");
+    expect(labels).toContain("GNOME Web");
   });
 });
 

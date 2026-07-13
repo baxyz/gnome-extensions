@@ -26,7 +26,11 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       switchRow("Chrome family", "Chromium, Edge, Brave, Falkon…", "show-chrome-family"),
     );
     profilesGroup.add(
-      switchRow("Profile-less browsers", "GNOME Web, qutebrowser…", "show-simple-browsers"),
+      switchRow(
+        "Browsers row",
+        "Every installed browser as a single icon (default profile) — GNOME Web, qutebrowser… included",
+        "show-simple-browsers",
+      ),
     );
 
     const spacesGroup = new Adw.PreferencesGroup({ title: "Workspaces & Profile Groups" });
