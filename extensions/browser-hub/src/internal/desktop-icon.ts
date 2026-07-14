@@ -6,11 +6,15 @@ import { getDesktopAppInfo } from "./gio";
 function desktopIdFor(pkg: ResolvedBrowserPkg): string {
   switch (pkg.manager) {
     case PackageManager.Native:
-      return `${pkg.binary}.desktop`;
+      return pkg.desktopId ?? `${pkg.binary}.desktop`;
     case PackageManager.Flatpak:
       return `${pkg.appId}.desktop`;
     case PackageManager.Snap:
-      return `${pkg.name}.desktop`;
+      // snapd registers desktop files as "<snap>_<snap>.desktop" under
+      // /var/lib/snapd/desktop/applications (confirmed for Brave: snapd
+      // renamed "brave.desktop" from inside the snap to "brave_brave.desktop"
+      // — see snapcrafters/brave#4) — plain "<snap>.desktop" never matches.
+      return `${pkg.name}_${pkg.name}.desktop`;
   }
 }
 

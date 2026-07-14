@@ -13,7 +13,9 @@ function resolvePkgUncached(pkg: BrowserPkg): ResolvedBrowserPkg | null {
   switch (pkg.manager) {
     case PackageManager.Native: {
       const binary = [pkg.binary].flat().find((b) => GLib.find_program_in_path(b) !== null);
-      return binary !== undefined ? { manager: PackageManager.Native, binary } : null;
+      return binary !== undefined
+        ? { manager: PackageManager.Native, binary, desktopId: pkg.desktopId }
+        : null;
     }
     case PackageManager.Flatpak:
       return GLib.file_test(`/var/lib/flatpak/app/${pkg.appId}`, GLib.FileTest.IS_DIR) ||

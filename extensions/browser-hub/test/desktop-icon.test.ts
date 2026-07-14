@@ -37,13 +37,26 @@ describe("resolveDesktopIcon", () => {
     expect(desktopAppInfoNew).toHaveBeenCalledWith("org.mozilla.firefox.desktop");
   });
 
-  it("guesses '<name>.desktop' for a Snap package", () => {
+  it("guesses '<name>_<name>.desktop' for a Snap package (snapd's real naming, e.g. brave_brave.desktop)", () => {
     const icon = {};
-    installedApps.set("brave.desktop", icon);
+    installedApps.set("brave_brave.desktop", icon);
     const pkg = { manager: PackageManager.Snap, name: "brave" } as const;
 
     expect(resolveDesktopIcon(pkg)).toBe(icon);
-    expect(desktopAppInfoNew).toHaveBeenCalledWith("brave.desktop");
+    expect(desktopAppInfoNew).toHaveBeenCalledWith("brave_brave.desktop");
+  });
+
+  it("uses the explicit desktopId override for a Native package instead of guessing from the binary", () => {
+    const icon = {};
+    installedApps.set("org.gnome.Epiphany.desktop", icon);
+    const pkg = {
+      manager: PackageManager.Native,
+      binary: "epiphany",
+      desktopId: "org.gnome.Epiphany.desktop",
+    } as const;
+
+    expect(resolveDesktopIcon(pkg)).toBe(icon);
+    expect(desktopAppInfoNew).toHaveBeenCalledWith("org.gnome.Epiphany.desktop");
   });
 
   it("returns undefined when the guessed desktop id matches no installed app", () => {

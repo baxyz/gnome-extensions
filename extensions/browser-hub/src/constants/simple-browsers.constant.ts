@@ -6,7 +6,13 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "GNOME Web",
-    pkg: { manager: PackageManager.Native, binary: "epiphany" },
+    // Desktop file is "org.gnome.Epiphany.desktop" (GNOME's reverse-DNS app
+    // id), not "epiphany.desktop" — the binary name doesn't match here.
+    pkg: {
+      manager: PackageManager.Native,
+      binary: "epiphany",
+      desktopId: "org.gnome.Epiphany.desktop",
+    },
   },
   {
     type: BrowserType.Simple,
