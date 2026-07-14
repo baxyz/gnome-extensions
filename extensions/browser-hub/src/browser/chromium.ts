@@ -25,7 +25,10 @@ export function parseProfiles(content: string): ChromiumProfile[] {
   const lastUsed = json?.profile?.last_used;
   return Object.entries(cache).map(([dir, info]) => ({
     dir,
-    name: info.name ?? dir,
+    // `||`, not `??`: Opera (unlike Chrome) can write an empty string for
+    // "name" rather than omitting the key entirely — `??` only catches
+    // null/undefined and would let that blank string through as a label.
+    name: info.name || dir,
     isDefault: dir === lastUsed,
     bgColor: info.background_color != null ? argbToRgb(info.background_color) : undefined,
   }));

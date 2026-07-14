@@ -138,7 +138,7 @@ describe("chromium Local State parsing", () => {
     expect(argbToRgb(0xff112233)).toBe("rgb(17,34,51)");
   });
 
-  it("marks the last_used profile as default and falls back to dir for a missing name", () => {
+  it("marks the last_used profile as default", () => {
     const localState = JSON.stringify({
       profile: {
         last_used: "Profile 2",
@@ -153,6 +153,26 @@ describe("chromium Local State parsing", () => {
     expect(profiles).toEqual([
       { dir: "Default", name: "Person 1", isDefault: false, bgColor: undefined },
       { dir: "Profile 2", name: "Person 2", isDefault: true, bgColor: "rgb(17,34,51)" },
+    ]);
+  });
+
+  it("falls back to dir when name is missing entirely", () => {
+    const localState = JSON.stringify({
+      profile: { info_cache: { Default: {} } },
+    });
+
+    expect(parseChromiumProfiles(localState)).toEqual([
+      { dir: "Default", name: "Default", isDefault: false, bgColor: undefined },
+    ]);
+  });
+
+  it("falls back to dir when name is an empty string (Opera writes this instead of omitting the key)", () => {
+    const localState = JSON.stringify({
+      profile: { info_cache: { Default: { name: "" } } },
+    });
+
+    expect(parseChromiumProfiles(localState)).toEqual([
+      { dir: "Default", name: "Default", isDefault: false, bgColor: undefined },
     ]);
   });
 
