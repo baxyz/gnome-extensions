@@ -1,3 +1,4 @@
+import { createSortByStringFn } from "@helpers4/array";
 import { settle } from "@helpers4/promise";
 import {
   CHROMIUM_BROWSERS,
@@ -5,7 +6,7 @@ import {
   FIREFOX_BROWSERS,
   SIMPLE_BROWSERS,
 } from "../constants";
-import type { ResolvedBrowserEntry } from "../taxonomy";
+import type { BrowserPkg, ResolvedBrowserEntry } from "../taxonomy";
 import type { FirefoxOptions } from "../taxonomy";
 import { SpaceType } from "../taxonomy/space-type.enum";
 import { buildBaseCommand, filterAvailable, filterPresent, resolveDesktopIcon } from "../internal";
@@ -36,6 +37,44 @@ const ALL_ON: BrowserSettings = {
 };
 
 /**
+ * One entry per family with profiles (Firefox/Chromium/Falkon): its toggle,
+ * its raw configs (reused by resolveBrowsersRow below so a new family only
+ * needs to be registered here once), and its detailed-section resolver.
+ */
+type ProfiledFamily = {
+  enabled: (settings: BrowserSettings) => boolean;
+  configs: readonly { label: string; path: string; pkg: BrowserPkg }[];
+  resolve: (settings: BrowserSettings) => Promise<ResolvedBrowserEntry[]>;
+};
+
+const PROFILED_FAMILIES: readonly ProfiledFamily[] = [
+  {
+    enabled: (s) => s.showFirefoxFamily,
+    configs: FIREFOX_BROWSERS,
+    resolve: (s) => resolveFirefoxBrowsers(FIREFOX_BROWSERS, s),
+  },
+  {
+    enabled: (s) => s.showChromeFamily,
+    configs: CHROMIUM_BROWSERS,
+    resolve: () => resolveChromiumBrowsers(CHROMIUM_BROWSERS),
+  },
+  {
+    enabled: (s) => s.showChromeFamily,
+    configs: FALKON_BROWSERS,
+    resolve: () => resolveFalkonBrowsers(FALKON_BROWSERS),
+  },
+];
+
+/**
+ * collapseSingleProfileBrowsers only takes effect when showProfiledBrowsers
+ * is also on — otherwise a single-profile browser hidden from its detailed
+ * section wouldn't appear anywhere at all.
+ */
+function shouldCollapseSingleProfileBrowsers(settings: BrowserSettings): boolean {
+  return settings.showProfiledBrowsers && settings.collapseSingleProfileBrowsers;
+}
+
+/**
  * A family entry with exactly one profile and no active spaces/workspaces
  * under it — collapseSingleProfileBrowsers hides these from their detailed
  * section since the "Browsers" row already covers them with a single icon.
@@ -54,10 +93,7 @@ function isSingleProfileEntry(entry: ResolvedBrowserEntry): boolean {
  */
 function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
   const withProfilesConfigs = settings.showProfiledBrowsers
-    ? [
-        ...(settings.showFirefoxFamily ? FIREFOX_BROWSERS : []),
-        ...(settings.showChromeFamily ? [...CHROMIUM_BROWSERS, ...FALKON_BROWSERS] : []),
-      ]
+    ? PROFILED_FAMILIES.filter((f) => f.enabled(settings)).flatMap((f) => f.configs)
     : [];
   const available = [
     ...filterPresent(withProfilesConfigs),
@@ -71,7 +107,7 @@ function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
       command: buildBaseCommand(b.pkg),
       icon: resolveDesktopIcon(b.pkg),
     }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .sort(createSortByStringFn("label"));
   return [{ label: "Browsers", group: "simple", items }];
 }
 
@@ -80,26 +116,18 @@ function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
  * family's detailed section (profiles, colors, spaces) plus the flat
  * "Browsers" quick-launch row. If a family resolver fails, its error is
  * logged but other families' entries are still returned.
- *
- * collapseSingleProfileBrowsers is a sub-setting of showProfiledBrowsers (it
- * only takes effect when that's also on) — otherwise a single-profile
- * browser hidden from its detailed section wouldn't appear anywhere.
  */
 export async function getBrowserEntries(
   settings: BrowserSettings = ALL_ON,
 ): Promise<ResolvedBrowserEntry[]> {
-  const { fulfilled, rejected } = await settle([
-    settings.showFirefoxFamily
-      ? resolveFirefoxBrowsers(FIREFOX_BROWSERS, settings)
-      : Promise.resolve([]),
-    settings.showChromeFamily ? resolveChromiumBrowsers(CHROMIUM_BROWSERS) : Promise.resolve([]),
-    settings.showChromeFamily ? resolveFalkonBrowsers(FALKON_BROWSERS) : Promise.resolve([]),
-  ]);
+  const { fulfilled, rejected } = await settle(
+    PROFILED_FAMILIES.map((f) => (f.enabled(settings) ? f.resolve(settings) : Promise.resolve([]))),
+  );
   for (const reason of rejected) {
     logError(reason as object, "[browser-hub] a browser family failed to resolve");
   }
 
-  const collapsing = settings.showProfiledBrowsers && settings.collapseSingleProfileBrowsers;
+  const collapsing = shouldCollapseSingleProfileBrowsers(settings);
   const detailedEntries = fulfilled
     .flat()
     .filter((entry) => !collapsing || !isSingleProfileEntry(entry));
