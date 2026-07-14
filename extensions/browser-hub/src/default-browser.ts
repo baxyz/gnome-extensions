@@ -27,13 +27,28 @@ function detectPkg(desktopId: string, executable: string): ResolvedBrowserPkg {
   return { manager: PackageManager.Native, binary: executable };
 }
 
+// The OS default-browser association only changes via the "Change default
+// browser" button (opens gnome-control-center, external to this process) or
+// real system config edits — never as a side effect of any BrowserSettings
+// change. Cache it like pkg/icon resolution (see internal/pkg.ts,
+// internal/desktop-icon.ts) instead of re-running two syscalls on every
+// redraw, including purely cosmetic ones.
+let cachedDefaultBrowser: DefaultBrowserInfo | null | undefined;
+
+/** Clears the default browser cache. Called on extension disable and manual refresh. */
+export function clearDefaultBrowserCache(): void {
+  cachedDefaultBrowser = undefined;
+}
+
 export function getDefaultBrowser(): DefaultBrowserInfo | null {
+  if (cachedDefaultBrowser !== undefined) return cachedDefaultBrowser;
   const appInfo = Gio.AppInfo.get_default_for_uri_scheme("http");
-  if (!appInfo) return null;
-  const name = appInfo.get_name();
-  const desktopId = appInfo.get_id();
-  const executable = appInfo.get_executable();
-  if (!name || !desktopId || !executable) return null;
-  const command = buildBaseCommand(detectPkg(desktopId, executable));
-  return { name, command };
+  const name = appInfo?.get_name();
+  const desktopId = appInfo?.get_id();
+  const executable = appInfo?.get_executable();
+  cachedDefaultBrowser =
+    name && desktopId && executable
+      ? { name, command: buildBaseCommand(detectPkg(desktopId, executable)) }
+      : null;
+  return cachedDefaultBrowser;
 }

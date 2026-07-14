@@ -60,6 +60,29 @@ export function filterAvailable<T extends { pkg: BrowserPkg }>(
   });
 }
 
+// getBrowserEntries resolves each profiled family AND the combined "Browsers"
+// row from the same underlying configs in one tick (see browser/resolve-all.ts)
+// — without this cache, the same path gets `GLib.file_test`'d twice per
+// refresh. Keyed by (test flag, path) since the same path can legitimately be
+// checked under different tests (e.g. Falkon uses IS_DIR, the Browsers row
+// uses the default EXISTS).
+let pathPresenceCache = new Map<string, boolean>();
+
+/** Clears the path-presence cache. Called on extension disable and manual refresh. */
+export function clearPathPresenceCache(): void {
+  pathPresenceCache = new Map();
+}
+
+function pathIsPresent(path: string, test: number): boolean {
+  const cacheKey = `${test}:${path}`;
+  let present = pathPresenceCache.get(cacheKey);
+  if (present === undefined) {
+    present = GLib.file_test(path, test);
+    pathPresenceCache.set(cacheKey, present);
+  }
+  return present;
+}
+
 /**
  * Filters browsers to only those whose packages are available AND whose
  * additional path (e.g., profiles.ini, Local State) exists.
@@ -68,7 +91,7 @@ export function filterPresent<T extends { pkg: BrowserPkg; path: string }>(
   browsers: T[],
   test: number = GLib.FileTest.EXISTS,
 ): (Omit<T, "pkg"> & { pkg: ResolvedBrowserPkg })[] {
-  return filterAvailable(browsers).filter((b) => GLib.file_test(b.path, test));
+  return filterAvailable(browsers).filter((b) => pathIsPresent(b.path, test));
 }
 
 /** Returns the base argv for launching this package — append extra args, never string-concatenate. */
