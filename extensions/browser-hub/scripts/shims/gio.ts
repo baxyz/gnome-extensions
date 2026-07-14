@@ -113,6 +113,11 @@ export default {
       return {
         get_string: (key: string): string | null => fields[key] ?? null,
         has_key: (key: string): boolean => key in fields,
+        // Real Gio.DesktopAppInfo.get_icon() returns a themed/file Gio.Icon;
+        // check-browsers.ts never renders it (no St under Node), so a plain
+        // stub carrying the .desktop file's "Icon=" name is enough to prove
+        // resolution succeeded without crashing.
+        get_icon: (): { name: string } | null => (fields["Icon"] ? { name: fields["Icon"] } : null),
       };
     },
   },
