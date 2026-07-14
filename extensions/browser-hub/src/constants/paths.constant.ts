@@ -24,3 +24,17 @@ export function snapDataDir(name: string): string {
   }
   return `${HOME_DIR}/snap/${name}/${revision}`;
 }
+
+/**
+ * $SNAP_USER_COMMON — a fixed, unversioned per-user directory (unlike the
+ * numbered revision dirs snapDataDir() resolves) that some snaps use
+ * specifically so their data survives a revision upgrade instead of being
+ * left behind in the old revision's directory. Confirmed for Mozilla's
+ * Firefox snap: its actual profiles.ini lives under
+ * ~/snap/firefox/common/.mozilla/firefox/, not under ~/snap/firefox/<rev>/ —
+ * the per-revision path silently went stale after the very first snap
+ * refresh past whatever revision was current when the profile was created.
+ */
+export function snapCommonDir(name: string): string {
+  return `${HOME_DIR}/snap/${name}/common`;
+}

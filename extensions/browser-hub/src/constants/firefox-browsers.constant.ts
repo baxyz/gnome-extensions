@@ -1,6 +1,6 @@
 import { BrowserType, PackageManager, SpaceType } from "../taxonomy";
 import type { FirefoxBrowserConfig } from "../taxonomy";
-import { HOME_DIR, XDG_CONFIG_HOME, snapDataDir } from "./paths.constant";
+import { HOME_DIR, XDG_CONFIG_HOME, snapCommonDir, snapDataDir } from "./paths.constant";
 
 /**
  * Most Firefox-family browsers follow the same packaging shapes: an XDG path
@@ -28,8 +28,15 @@ function expandFirefoxVariants(v: {
   /** Relative to HOME_DIR, e.g. ".librewolf/profiles.ini". Also used for the Flatpak path. */
   classic?: string;
   flatpakId?: string;
-  /** relativePath is relative to the snap's own per-user data dir — see snapDataDir(). */
-  snap?: { name: string; relativePath: string };
+  /**
+   * relativePath is relative to the snap's own per-user data dir. Set
+   * `commonDir` when the snap persists its profile under $SNAP_USER_COMMON
+   * (a fixed, unversioned dir — see snapCommonDir()) instead of the default
+   * per-revision dir (see snapDataDir()) — confirmed necessary for Firefox,
+   * whose profiles.ini lives under ~/snap/firefox/common/, not
+   * ~/snap/firefox/<revision>/, so the latter goes stale after any update.
+   */
+  snap?: { name: string; relativePath: string; commonDir?: boolean };
 }): FirefoxBrowserConfig[] {
   const configs: FirefoxBrowserConfig[] = [];
   const binary = v.binary ?? v.label.toLowerCase();
@@ -63,10 +70,11 @@ function expandFirefoxVariants(v: {
     });
   }
   if (v.snap) {
+    const dataDir = v.snap.commonDir ? snapCommonDir(v.snap.name) : snapDataDir(v.snap.name);
     configs.push({
       ...common,
       label: `${v.label} (snap)`,
-      path: `${snapDataDir(v.snap.name)}/${v.snap.relativePath}`,
+      path: `${dataDir}/${v.snap.relativePath}`,
       pkg: { manager: PackageManager.Snap, name: v.snap.name },
     });
   }
@@ -80,7 +88,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     xdg: "mozilla/firefox/profiles.ini",
     classic: ".mozilla/firefox/profiles.ini",
     flatpakId: "org.mozilla.firefox",
-    snap: { name: "firefox", relativePath: ".mozilla/firefox/profiles.ini" },
+    snap: { name: "firefox", relativePath: ".mozilla/firefox/profiles.ini", commonDir: true },
     binary: "firefox",
   }),
 
