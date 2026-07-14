@@ -273,8 +273,11 @@ function buildProfileMenuItem({
   // Groups); "dot" renders as its own indicator after the label instead
   // (currently Chromium) — a color is never shown both ways at once. Badge
   // uses a single tint (no background/padding) so the icon slot never grows
-  // wider than a plain, uncolored icon.
-  if (item.color?.mode === "badge") {
+  // wider than a plain, uncolored icon. Only meaningful when there's an
+  // actual icon to tint — item.icon is undefined for profiles that carry a
+  // color but no mappable avatar (see resolve-icon.ts), and the color is
+  // dropped for those rather than shown some other way, for now.
+  if (item.icon && item.color?.mode === "badge") {
     const tint = safeCssColor(item.color.bgColor);
     if (tint) iconSlot.set_style(`color: ${tint};`);
   }

@@ -267,6 +267,39 @@ describe("resolveFirefoxBrowsers", () => {
     expect(personal?.isDefault).toBe(false);
   });
 
+  it("still shows a badge color when a Profile Groups member has only a foreground theme color (no background)", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
+    );
+    setDir("/home/user/.mozilla/firefox/Profile Groups", ["group.sqlite"]);
+    setFile(
+      "/home/user/.mozilla/firefox/Profile Groups/group.sqlite",
+      // A group DB needs >= 2 rows to be treated as a real Profile Groups
+      // install (see firefox-spaces.ts) — "Personal" has no theme color at
+      // all, only "Work" (the one under test) has a foreground-only color.
+      JSON.stringify([
+        { path: "abc.default", name: "Work", avatar: "star", themeFg: "#ffffff" },
+        { path: "xyz.second", name: "Personal", avatar: "book" },
+      ]),
+    );
+
+    const entries = await resolveFirefoxBrowsers(
+      [
+        {
+          type: BrowserType.Firefox,
+          label: "Firefox",
+          path: "/home/user/.mozilla/firefox/profiles.ini",
+          pkg,
+        },
+      ],
+      { enabledSpaces: new Set(), profileGroupsMode: "profiles" },
+    );
+
+    const work = entries[0].items.find((i) => i.label === "Work");
+    expect(work?.color).toEqual({ mode: "badge", bgColor: "#ffffff" });
+  });
+
   it("nests Profile Groups selectable profiles as spaces under one item in 'spaces' mode", async () => {
     setFile(
       "/home/user/.mozilla/firefox/profiles.ini",
