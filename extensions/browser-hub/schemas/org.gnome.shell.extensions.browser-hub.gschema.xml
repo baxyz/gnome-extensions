@@ -17,14 +17,14 @@
 
     <key name="show-simple-browsers" type="b">
       <default>true</default>
-      <summary>Show the Browsers quick-launch row</summary>
-      <description>Display a "Browsers" row listing every installed browser as a single icon (its default profile, no profile picker) — includes profile-less browsers (GNOME Web, qutebrowser, …) alongside Firefox/Chrome-family ones already shown in their own detailed section above.</description>
+      <summary>Show profile-less browsers in the Browsers row</summary>
+      <description>Include profile-less browsers (GNOME Web, qutebrowser, …) as single icons in the "Browsers" row. Independent of "show-profiled-browsers" below — the "Browsers" row itself stays visible as long as either setting is on.</description>
     </key>
 
     <key name="show-profiled-browsers" type="b">
       <default>true</default>
-      <summary>Include profile-based browsers in the Browsers row</summary>
-      <description>Also list Firefox/Chrome-family browsers (Firefox, Chromium, Brave, Falkon, …) as single icons in the "Browsers" row, in addition to their own detailed section above.</description>
+      <summary>Show profile-based browsers in the Browsers row</summary>
+      <description>Also list Firefox/Chrome-family browsers (Firefox, Chromium, Brave, Falkon, …) as single icons in the "Browsers" row, in addition to their own detailed section above. Independent of "show-simple-browsers" above.</description>
     </key>
 
     <key name="collapse-single-profile-browsers" type="b">

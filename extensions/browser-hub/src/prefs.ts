@@ -27,8 +27,8 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     );
     profilesGroup.add(
       switchRow(
-        "Browsers row",
-        "Every installed browser as a single icon (default profile) — GNOME Web, qutebrowser… included",
+        "Profile-less browsers in Browsers row",
+        "GNOME Web, qutebrowser… as single icons in the Browsers row",
         "show-simple-browsers",
       ),
     );
