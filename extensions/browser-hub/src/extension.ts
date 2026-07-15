@@ -134,6 +134,26 @@ class BrowserProfilesIndicator extends Button {
       this._alive = false;
     });
 
+    // getDefaultBrowser() is cached (see default-browser.ts) for the
+    // extension's lifetime — otherwise correct, but the OS default-browser
+    // association can change via this menu's own "change default browser"
+    // button, which just opens gnome-control-center with no callback when it
+    // closes. Bust the cache on every menu open so the toolbar never shows a
+    // default browser that's gone stale since the last time it was shown.
+    // this.menu is typed as PopupMenu | PopupDummyMenu — a union whose two
+    // `connect` overloads don't unify for an ad-hoc signal name, so it's
+    // called through a minimal cast (same pattern as menu.ts's tooltip()).
+    (
+      this.menu as unknown as {
+        connect(sig: "open-state-changed", cb: (menu: unknown, isOpen: boolean) => void): number;
+      }
+    ).connect("open-state-changed", (_menu, isOpen) => {
+      if (isOpen) {
+        clearDefaultBrowserCache();
+        this.redrawMenu();
+      }
+    });
+
     this.add_child(
       new St.Icon({
         icon_name: "web-browser-symbolic",
