@@ -75,7 +75,8 @@ export function clearPathPresenceCache(): void {
   pathPresenceCache = new Map();
 }
 
-function pathIsPresent(path: string, test: number): boolean {
+/** Cached GLib.file_test — use this instead of calling GLib.file_test directly for any presence check. */
+export function pathIsPresent(path: string, test: number): boolean {
   const cacheKey = `${test}:${path}`;
   let present = pathPresenceCache.get(cacheKey);
   if (present === undefined) {

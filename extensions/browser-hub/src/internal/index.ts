@@ -14,6 +14,7 @@ export {
   clearPkgResolutionCache,
   filterAvailable,
   filterPresent,
+  pathIsPresent,
   resolvePkg,
 } from "./pkg";
 export { compareByDefault } from "./sort";
