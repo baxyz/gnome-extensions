@@ -23,6 +23,13 @@ async function listSqliteFiles(dirPath: string): Promise<string[]> {
   return entries.filter((e) => e.name.endsWith(".sqlite")).map((e) => `${dirPath}/${e.name}`);
 }
 
+type MatchedGroup = {
+  dbPath: string;
+  /** Every toolkit basename in this group's own rows — not just the first found. */
+  matchedBasenames: string[];
+  selectable: FirefoxSelectableProfile[];
+};
+
 /**
  * For each Profile Groups SQLite that contains >1 selectable profile, find which
  * toolkit profile folder it belongs to (by matching one of its paths) and return
@@ -37,45 +44,64 @@ export async function readFirefoxSelectableProfiles(
 ): Promise<Map<string, FirefoxSelectableProfile[]>> {
   const profileGroupsDir = `${firefoxRoot}/Profile Groups`;
   const dbFiles = await listSqliteFiles(profileGroupsDir);
-  const result = new Map<string, FirefoxSelectableProfile[]>();
   const toolkitSet = new Set(toolkitBasenames);
 
-  await Promise.all(
-    dbFiles.map(async (dbPath) => {
+  // Read every db first, then combine in a stable (sorted by path) order —
+  // Promise.all settles in unspecified order, and if two db files somehow
+  // matched the same toolkit folder (e.g. a stale database left over from a
+  // profile migration), "whichever happens to finish reading first wins"
+  // would make the selectable-profile list for that folder a coin flip
+  // across runs instead of a function of the actual file contents.
+  const perFile = await Promise.all(
+    dbFiles.map(async (dbPath): Promise<MatchedGroup> => {
+      const empty: MatchedGroup = { dbPath, matchedBasenames: [], selectable: [] };
       try {
         const data = await readFileAsync(dbPath);
         const rows = readTable(data, "Profiles");
+        if (rows.length <= 1) return empty;
 
-        if (rows.length <= 1) return;
-
-        let matchedBasename: string | undefined;
-        for (const row of rows) {
-          if (typeof row.path !== "string") continue;
+        // Every toolkit profile that's actually part of this group, not just
+        // the first one found — a group can have more than one of its
+        // members independently listed in profiles.ini too.
+        const matchedBasenames = rows.flatMap((row) => {
+          if (typeof row.path !== "string") return [];
           const rb = GLib.path_get_basename(row.path);
-          if (toolkitSet.has(rb)) {
-            matchedBasename = rb;
-            break;
-          }
-        }
-        if (!matchedBasename) return;
+          return toolkitSet.has(rb) ? [rb] : [];
+        });
+        if (matchedBasenames.length === 0) return empty;
 
-        result.set(
-          matchedBasename,
-          rows
-            .filter((row) => typeof row.path === "string" && typeof row.name === "string")
-            .map((row) => ({
-              name: row.name as string,
-              dir: `${firefoxRoot}/${row.path}`,
-              avatar: str(row.avatar),
-              themeFg: str(row.themeFg),
-              themeBg: str(row.themeBg),
-            })),
-        );
+        const selectable = rows
+          .filter((row) => typeof row.path === "string" && typeof row.name === "string")
+          .map((row) => ({
+            name: row.name as string,
+            dir: `${firefoxRoot}/${row.path}`,
+            avatar: str(row.avatar),
+            themeFg: str(row.themeFg),
+            themeBg: str(row.themeBg),
+          }));
+        return { dbPath, matchedBasenames, selectable };
       } catch (e: unknown) {
         logIfUnexpected(e, `[browser-hub] failed to read Profile Groups database at ${dbPath}`);
+        return empty;
       }
     }),
   );
+
+  const result = new Map<string, FirefoxSelectableProfile[]>();
+  for (const { dbPath, matchedBasenames, selectable } of perFile.sort((a, b) =>
+    a.dbPath.localeCompare(b.dbPath),
+  )) {
+    for (const basename of matchedBasenames) {
+      if (result.has(basename)) {
+        console.log(
+          `[browser-hub] multiple Profile Groups databases claim toolkit profile ` +
+            `"${basename}" — keeping the first one found (${dbPath} ignored for it)`,
+        );
+        continue;
+      }
+      result.set(basename, selectable);
+    }
+  }
 
   return result;
 }

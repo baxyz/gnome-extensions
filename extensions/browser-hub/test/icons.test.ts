@@ -18,6 +18,14 @@ vi.mock("gi://St", () => ({
   },
 }));
 
+// resolve-icon.ts's zenIconName uses GLib.path_get_basename to strip Zen's
+// chrome://.../<name>.svg URI down to a bare name.
+vi.mock("gi://GLib", () => ({
+  default: {
+    path_get_basename: (p: string) => p.split("/").filter(Boolean).pop() ?? "",
+  },
+}));
+
 const { SPACE_FALLBACK_ICON, resolveFirefoxIcon, resolveZenIcon } = await import("../src/icons");
 
 // Firefox's 28 standard avatars, from browser/components/profiles/SelectableProfile.sys.mjs

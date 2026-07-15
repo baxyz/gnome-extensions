@@ -124,7 +124,7 @@ function resolveProfileGroupsAsFlatItems(
     label: sp.name,
     command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
     // Mark default only on the sp whose folder matches this toolkit profile
-    isDefault: isDefault && sp.dir.split("/").at(-1) === folderBasename,
+    isDefault: isDefault && GLib.path_get_basename(sp.dir) === folderBasename,
     ...spColors(sp, "profile"),
   }));
 }
@@ -134,6 +134,7 @@ function resolveProfileGroupsAsSpaces(
   name: string,
   selectable: FirefoxSelectableProfile[],
   isDefault: boolean,
+  folderBasename: string,
   baseCommand: string[],
 ): ResolvedBrowserItem[] {
   return [
@@ -144,6 +145,9 @@ function resolveProfileGroupsAsSpaces(
       spaces: selectable.map((sp) => ({
         name: sp.name,
         command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
+        // Mark default only on the sp whose folder matches this toolkit
+        // profile — same comparison as resolveProfileGroupsAsFlatItems.
+        isDefault: GLib.path_get_basename(sp.dir) === folderBasename,
         ...spColors(sp, "space"),
       })),
     },
@@ -213,7 +217,7 @@ async function resolveOneProfile(
     }
     return profileGroupsMode === "profiles"
       ? resolveProfileGroupsAsFlatItems(selectable, isDefault, folderBasename, baseCommand)
-      : resolveProfileGroupsAsSpaces(name, selectable, isDefault, baseCommand);
+      : resolveProfileGroupsAsSpaces(name, selectable, isDefault, folderBasename, baseCommand);
   }
 
   return hasZenWorkspaces
@@ -256,18 +260,30 @@ export async function resolveFirefoxBrowsers(
             )
           : new Map<string, FirefoxSelectableProfile[]>();
 
+      // A Profile Groups member can itself be independently listed in
+      // profiles.ini as its own toolkit profile. If so, selectableMap maps
+      // BOTH toolkit profiles to the exact same selectable array (see
+      // firefox-spaces.ts) — render that group once, from whichever toolkit
+      // profile is encountered first, not once per toolkit profile that
+      // happens to belong to it.
+      const renderedGroups = new Set<FirefoxSelectableProfile[]>();
       const items = (
         await Promise.all(
-          profiles.map((profile) =>
-            resolveOneProfile(
+          profiles.map((profile) => {
+            const selectable = selectableMap.get(profile.folderBasename);
+            if (selectable) {
+              if (renderedGroups.has(selectable)) return [];
+              renderedGroups.add(selectable);
+            }
+            return resolveOneProfile(
               profile,
               selectableMap,
               profileGroupsMode,
               baseCommand,
               b.spaceType,
               enabledSpaces,
-            ),
-          ),
+            );
+          }),
         )
       ).flat();
       items.sort(compareByDefault);

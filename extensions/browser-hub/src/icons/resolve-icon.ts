@@ -1,4 +1,5 @@
 import St from "gi://St";
+import GLib from "gi://GLib";
 import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "./icon-catalog";
 
 /** Plain filled dot — used when a space/workspace has no mappable, present icon. */
@@ -60,7 +61,7 @@ export function resolveFirefoxIcon(
  * which correctly still misses the mapping table and falls back below.
  */
 function zenIconName(icon: string): string {
-  return icon.endsWith(".svg") ? (icon.split("/").pop() ?? icon).replace(/\.svg$/, "") : icon;
+  return icon.endsWith(".svg") ? GLib.path_get_basename(icon).replace(/\.svg$/, "") : icon;
 }
 
 /**
