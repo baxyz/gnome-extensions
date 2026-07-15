@@ -28,7 +28,8 @@ for (const entry of entries) {
   for (const item of entry.items) {
     const def = item.isDefault ? " *" : "";
     const itemIcon = typeof item.icon === "string" ? item.icon : undefined;
-    console.log(`  - ${item.label}${def}${meta(itemIcon, undefined, item.color?.bgColor)}`);
+    const itemFg = item.color?.mode === "badge" ? item.color.fgColor : undefined;
+    console.log(`  - ${item.label}${def}${meta(itemIcon, itemFg, item.color?.bgColor)}`);
     console.log(`    ${item.command.join(" ")}`);
     for (const space of item.spaces ?? []) {
       const spaceDef = space.isDefault ? " *" : "";

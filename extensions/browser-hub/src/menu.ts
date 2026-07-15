@@ -252,6 +252,14 @@ function buildSimpleBrowserRow({
   return row;
 }
 
+const PROFILE_ICON_SIZE = 16;
+// Uniform padding on every side of a badge's background pill. The icon is
+// shrunk by exactly this much on each side (see buildProfileMenuItem) so the
+// pill's total footprint (icon + padding) matches a plain, unbadged icon's
+// size instead of growing past it — the icon still renders at its normal
+// aspect ratio, just smaller, never stretched or squished.
+const BADGE_PADDING = 2;
+
 /**
  * Builds a profile menu item with icon, color dot, and optional space buttons.
  */
@@ -269,27 +277,39 @@ function buildProfileMenuItem({
   const menuItem = new PopupMenuItem(item.label);
   if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
 
+  const badgeBg =
+    item.icon && item.color?.mode === "badge" ? safeCssColor(item.color.bgColor) : undefined;
+  const iconSize = badgeBg ? PROFILE_ICON_SIZE - BADGE_PADDING * 2 : PROFILE_ICON_SIZE;
   // item.icon is undefined only when neither an avatar nor the browser's own
   // .desktop icon could be resolved — nothing to show but a reserved blank
   // slot (keeps labels aligned across entries).
   const iconSlot = item.icon
     ? new St.Icon({
         ...iconProps(item.icon),
-        icon_size: 16,
+        icon_size: iconSize,
         style_class: "browser-hub-profile-icon",
       })
     : new St.Widget({ style_class: "browser-hub-profile-icon" });
-  // "badge" tints the icon itself via its fg color (currently Firefox Profile
-  // Groups); "dot" renders as its own indicator after the label instead
-  // (currently Chromium) — a color is never shown both ways at once. Badge
-  // uses a single tint (no background/padding) so the icon slot never grows
-  // wider than a plain, uncolored icon. Only meaningful when there's an
-  // actual icon to tint — item.icon is undefined for profiles that carry a
-  // color but no mappable avatar (see resolve-icon.ts), and the color is
-  // dropped for those rather than shown some other way, for now.
+  // "badge" tints the icon via its fg color and, when a bg color is also
+  // known, adds a colored pill behind it (never the reverse — bgColor alone
+  // would tint the icon glyph with what's meant to be a background hue,
+  // illegible on a dark popup); "dot" renders as its own indicator after the
+  // label instead (currently Chromium) — a color is never shown both ways at
+  // once. Only meaningful when there's an actual icon to tint — item.icon is
+  // undefined for profiles that carry a color but no mappable avatar (see
+  // resolve-icon.ts), and the color is dropped for those rather than shown
+  // some other way, for now.
   if (item.icon && item.color?.mode === "badge") {
-    const tint = safeCssColor(item.color.bgColor);
-    if (tint) iconSlot.set_style(`color: ${tint};`);
+    const fg = safeCssColor(item.color.fgColor);
+    const style: string[] = [];
+    if (fg) style.push(`color: ${fg}`);
+    if (badgeBg)
+      style.push(
+        `background-color: ${badgeBg}`,
+        "border-radius: 999px",
+        `padding: ${BADGE_PADDING}px`,
+      );
+    if (style.length > 0) iconSlot.set_style(`${style.join("; ")};`);
   }
   menuItem.insert_child_below(iconSlot, menuItem.label);
 

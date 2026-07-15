@@ -83,13 +83,15 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
 /**
  * Firefox theme colors only ever render as an icon badge, never a dot (that's
  * Chromium-only). themeBg and themeFg are independently-optional SQLite
- * columns — prefer themeBg (the profile's own brand color) but fall back to
- * themeFg so a profile with only a foreground theme color still gets a tint
- * instead of silently losing its color entirely.
+ * columns — pass both through as-is; menu.ts always uses fgColor as the icon
+ * tint (bgColor alone would tint the icon with what's meant to be a
+ * background hue, illegible on a dark popup) and bgColor as the pill behind
+ * it, when present.
  */
 function toBadgeColor(sp: FirefoxSelectableProfile): ColorPresentation | undefined {
-  const tint = sp.themeBg ?? sp.themeFg;
-  return tint ? { mode: "badge", bgColor: tint } : undefined;
+  return sp.themeFg || sp.themeBg
+    ? { mode: "badge", fgColor: sp.themeFg, bgColor: sp.themeBg }
+    : undefined;
 }
 
 function spColors(

@@ -267,7 +267,7 @@ describe("resolveFirefoxBrowsers", () => {
     expect(personal?.isDefault).toBe(false);
   });
 
-  it("still shows a badge color when a Profile Groups member has only a foreground theme color (no background)", async () => {
+  it("passes through a foreground-only theme color as fgColor, with no bgColor pill", async () => {
     setFile(
       "/home/user/.mozilla/firefox/profiles.ini",
       profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
@@ -297,7 +297,43 @@ describe("resolveFirefoxBrowsers", () => {
     );
 
     const work = entries[0].items.find((i) => i.label === "Work");
-    expect(work?.color).toEqual({ mode: "badge", bgColor: "#ffffff" });
+    expect(work?.color).toEqual({ mode: "badge", fgColor: "#ffffff" });
+  });
+
+  it("passes through both a foreground and background theme color", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
+    );
+    setDir("/home/user/.mozilla/firefox/Profile Groups", ["group.sqlite"]);
+    setFile(
+      "/home/user/.mozilla/firefox/Profile Groups/group.sqlite",
+      JSON.stringify([
+        {
+          path: "abc.default",
+          name: "Work",
+          avatar: "star",
+          themeFg: "#ffffff",
+          themeBg: "#20123a",
+        },
+        { path: "xyz.second", name: "Personal", avatar: "book" },
+      ]),
+    );
+
+    const entries = await resolveFirefoxBrowsers(
+      [
+        {
+          type: BrowserType.Firefox,
+          label: "Firefox",
+          path: "/home/user/.mozilla/firefox/profiles.ini",
+          pkg,
+        },
+      ],
+      { enabledSpaces: new Set(), profileGroupsMode: "profiles" },
+    );
+
+    const work = entries[0].items.find((i) => i.label === "Work");
+    expect(work?.color).toEqual({ mode: "badge", fgColor: "#ffffff", bgColor: "#20123a" });
   });
 
   it("nests Profile Groups selectable profiles as spaces under one item in 'spaces' mode", async () => {

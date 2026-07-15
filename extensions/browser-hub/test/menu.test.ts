@@ -265,7 +265,7 @@ describe("fillMenu", () => {
     expect(iconSlot.props.icon_name).toBe("firefox-symbolic");
   });
 
-  it("applies color.mode 'badge' as a single fg tint on the icon itself, no background/padding (Firefox Profile Groups)", () => {
+  it("applies color.mode 'badge' fgColor as an icon tint with no fgColor bgColor pill", () => {
     const menu = makeFakeMenu();
     fillMenu({
       title: "t",
@@ -278,7 +278,7 @@ describe("fillMenu", () => {
               label: "Work",
               command: ["firefox"],
               icon: "starred-symbolic",
-              color: { mode: "badge", bgColor: "#20123a" },
+              color: { mode: "badge", fgColor: "#ffffff" },
             },
           ],
         },
@@ -290,7 +290,40 @@ describe("fillMenu", () => {
 
     const profileItem = menu.items[2] as FakePopupMenuItem;
     const iconSlot = profileItem.children[0] as FakeIcon;
-    expect(iconSlot.style).toBe("color: #20123a;");
+    expect(iconSlot.style).toBe("color: #ffffff;");
+    expect(iconSlot.props.icon_size).toBe(16); // no pill — full size, nothing to shrink for
+  });
+
+  it("applies color.mode 'badge' bgColor as a background pill, shrinking the icon so the total footprint matches a plain icon", () => {
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [
+        {
+          label: "Firefox",
+          items: [
+            {
+              label: "Work",
+              command: ["firefox"],
+              icon: "starred-symbolic",
+              color: { mode: "badge", fgColor: "#ffffff", bgColor: "#20123a" },
+            },
+          ],
+        },
+      ],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const profileItem = menu.items[2] as FakePopupMenuItem;
+    const iconSlot = profileItem.children[0] as FakeIcon;
+    expect(iconSlot.style).toBe(
+      "color: #ffffff; background-color: #20123a; border-radius: 999px; padding: 2px;",
+    );
+    // 16px plain icon vs 12px icon + 2px padding each side = 16px total footprint either way.
+    expect(iconSlot.props.icon_size).toBe(12);
   });
 
   it("renders color.mode 'dot' as a separate indicator, not an icon badge (Chromium)", () => {

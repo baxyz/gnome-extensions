@@ -4,8 +4,12 @@ import type Gio from "gi://Gio";
  * How a profile item's own color should be presented, if it has one at all —
  * absent means no color data (Falkon, plain Firefox profiles).
  */
+// fgColor tints the icon glyph itself; bgColor (if known) adds a colored pill
+// behind it. bgColor alone (no fgColor) would tint an icon-shaped hole in the
+// pill using the pill's own color — illegible — so menu.ts always renders
+// fgColor as the tint and bgColor only as the pill.
 export type ColorPresentation =
-  | { mode: "badge"; bgColor: string } // tints the icon itself (Firefox Profile Groups)
+  | { mode: "badge"; fgColor?: string; bgColor?: string } // Firefox Profile Groups
   | { mode: "dot"; bgColor: string }; // rendered as a separate dot after the label (Chromium)
 
 /**
