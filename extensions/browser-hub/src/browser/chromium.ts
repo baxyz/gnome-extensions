@@ -23,15 +23,23 @@ export function parseProfiles(content: string): ChromiumProfile[] {
   const json = safeJsonParse<LocalState>(content);
   const cache = json?.profile?.info_cache ?? {};
   const lastUsed = json?.profile?.last_used;
-  return Object.entries(cache).map(([dir, info]) => ({
-    dir,
-    // `||`, not `??`: Opera (unlike Chrome) can write an empty string for
-    // "name" rather than omitting the key entirely — `??` only catches
-    // null/undefined and would let that blank string through as a label.
-    name: info.name || dir,
-    isDefault: dir === lastUsed,
-    bgColor: info.background_color != null ? argbToRgb(info.background_color) : undefined,
-  }));
+  // flatMap + a shape guard, not map: a crash mid-write can leave a single
+  // info_cache entry null/malformed (valid JSON, wrong shape) — skip just
+  // that entry instead of throwing and losing every healthy profile too.
+  return Object.entries(cache).flatMap(([dir, info]) => {
+    if (info == null || typeof info !== "object") return [];
+    return [
+      {
+        dir,
+        // `||`, not `??`: Opera (unlike Chrome) can write an empty string for
+        // "name" rather than omitting the key entirely — `??` only catches
+        // null/undefined and would let that blank string through as a label.
+        name: info.name || dir,
+        isDefault: dir === lastUsed,
+        bgColor: info.background_color != null ? argbToRgb(info.background_color) : undefined,
+      },
+    ];
+  });
 }
 
 /** Chromium's account color always renders as-is — unlike Firefox's theme color

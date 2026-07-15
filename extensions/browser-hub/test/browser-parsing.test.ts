@@ -180,6 +180,24 @@ describe("chromium Local State parsing", () => {
     expect(() => parseChromiumProfiles("{not json")).not.toThrow();
     expect(parseChromiumProfiles("{not json")).toEqual([]);
   });
+
+  it("skips a null/malformed info_cache entry instead of losing every profile in the file", () => {
+    // A crash mid-write can leave one entry null/wrong-shaped while the rest
+    // of Local State is intact valid JSON — only the bad entry should be lost.
+    const localState = JSON.stringify({
+      profile: {
+        info_cache: {
+          Default: { name: "Person 1" },
+          "Profile 2": null,
+        },
+      },
+    });
+
+    expect(() => parseChromiumProfiles(localState)).not.toThrow();
+    expect(parseChromiumProfiles(localState)).toEqual([
+      { dir: "Default", name: "Person 1", isDefault: false, bgColor: undefined },
+    ]);
+  });
 });
 
 describe("buildBaseCommand", () => {
