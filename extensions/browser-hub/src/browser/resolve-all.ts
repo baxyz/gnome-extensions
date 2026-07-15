@@ -68,7 +68,10 @@ const PROFILED_FAMILIES: readonly ProfiledFamily[] = [
 /**
  * collapseSingleProfileBrowsers only takes effect when showProfiledBrowsers
  * is also on — otherwise a single-profile browser hidden from its detailed
- * section wouldn't appear anywhere at all.
+ * section wouldn't appear anywhere at all. This mirrors the gschema-level
+ * relationship declared in settings-keys.ts's SUB_SETTING_PARENTS (also
+ * consumed by prefs.ts for the UI sensitivity bind) — keep both in sync when
+ * adding a new sub-setting.
  */
 function shouldCollapseSingleProfileBrowsers(settings: BrowserSettings): boolean {
   return settings.showProfiledBrowsers && settings.collapseSingleProfileBrowsers;
@@ -80,7 +83,7 @@ function shouldCollapseSingleProfileBrowsers(settings: BrowserSettings): boolean
  * section since the "Browsers" row already covers them with a single icon.
  */
 function isSingleProfileEntry(entry: ResolvedBrowserEntry): boolean {
-  return entry.items.length === 1 && (entry.items[0].spaces?.length ?? 0) <= 1;
+  return entry.items.length === 1 && (entry.items[0].spaces?.length ?? 0) === 0;
 }
 
 /**
@@ -132,5 +135,16 @@ export async function getBrowserEntries(
     .flat()
     .filter((entry) => !collapsing || !isSingleProfileEntry(entry));
 
-  return [...detailedEntries, ...resolveBrowsersRow(settings)];
+  // resolveBrowsersRow is synchronous, so it can't go through settle() above
+  // with the family promises — but it must still be isolated the same way:
+  // a throw here (e.g. a future browser config with a malformed pkg) must
+  // not discard the family sections already resolved just above.
+  let browsersRow: ResolvedBrowserEntry[] = [];
+  try {
+    browsersRow = resolveBrowsersRow(settings);
+  } catch (e: unknown) {
+    logError(e as object, "[browser-hub] the Browsers row failed to resolve");
+  }
+
+  return [...detailedEntries, ...browsersRow];
 }
