@@ -78,6 +78,8 @@ export default {
 
   path_get_basename: (path: string): string => path.split("/").at(-1) ?? path,
 
+  file_read_link: (path: string): string => fs.readlinkSync(path),
+
   path_get_dirname: (path: string): string => {
     const parts = path.split("/");
     return parts.length > 1 ? parts.slice(0, -1).join("/") || "/" : ".";
