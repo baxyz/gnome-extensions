@@ -35,6 +35,12 @@ export default defineConfig({
       ...base.build?.rollupOptions,
       output: {
         ...base.build?.rollupOptions?.output,
+        // GNOME extension submissions (EGO) are reviewed as the built dist/
+        // output, not the TypeScript source — rolldown's default cross-chunk
+        // export linking renames every export to a single letter (`export {
+        // resolveZenIcon as r }`) purely to shave bytes off inter-chunk glue,
+        // even with minify:false. Keep those names readable for review.
+        minifyInternalExports: false,
         // This build runs on rolldown (Vite 8's default bundler), not classic
         // Rollup — its native codeSplitting API, not the manualChunks compat
         // shim (which silently merges small groups back into their sole
