@@ -277,8 +277,19 @@ function buildProfileMenuItem({
   const menuItem = new PopupMenuItem(item.label);
   if (item.isDefault) menuItem.label.add_style_class_name("browser-hub-default");
 
-  const badgeBg =
-    item.icon && item.color?.mode === "badge" ? safeCssColor(item.color.bgColor) : undefined;
+  // "badge" tints the icon via its fg color and, when a bg color is also
+  // known, adds a colored pill behind it (never the reverse — bgColor alone
+  // would tint the icon glyph with what's meant to be a background hue,
+  // illegible on a dark popup); "dot" renders as its own indicator after the
+  // label instead (currently Chromium) — a color is never shown both ways at
+  // once. Only meaningful when there's an actual icon to tint — item.icon is
+  // undefined for profiles that carry a color but no mappable avatar (see
+  // resolve-icon.ts), and the color is dropped for those rather than shown
+  // some other way, for now. Computed once so the icon-size shrink below and
+  // the style applied further down can never disagree about whether this
+  // item actually gets a badge.
+  const badge = item.icon && item.color?.mode === "badge" ? item.color : undefined;
+  const badgeBg = badge ? safeCssColor(badge.bgColor) : undefined;
   const iconSize = badgeBg ? PROFILE_ICON_SIZE - BADGE_PADDING * 2 : PROFILE_ICON_SIZE;
   // item.icon is undefined only when neither an avatar nor the browser's own
   // .desktop icon could be resolved — nothing to show but a reserved blank
@@ -290,17 +301,8 @@ function buildProfileMenuItem({
         style_class: "browser-hub-profile-icon",
       })
     : new St.Widget({ style_class: "browser-hub-profile-icon" });
-  // "badge" tints the icon via its fg color and, when a bg color is also
-  // known, adds a colored pill behind it (never the reverse — bgColor alone
-  // would tint the icon glyph with what's meant to be a background hue,
-  // illegible on a dark popup); "dot" renders as its own indicator after the
-  // label instead (currently Chromium) — a color is never shown both ways at
-  // once. Only meaningful when there's an actual icon to tint — item.icon is
-  // undefined for profiles that carry a color but no mappable avatar (see
-  // resolve-icon.ts), and the color is dropped for those rather than shown
-  // some other way, for now.
-  if (item.icon && item.color?.mode === "badge") {
-    const fg = safeCssColor(item.color.fgColor);
+  if (badge) {
+    const fg = safeCssColor(badge.fgColor);
     const style: string[] = [];
     if (fg) style.push(`color: ${fg}`);
     if (badgeBg)
