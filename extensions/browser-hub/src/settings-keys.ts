@@ -21,3 +21,16 @@ export const ENTRY_AFFECTING_KEYS = new Set<string>([
 
 /** Settings keys that only affect how the menu is drawn, not what it contains. */
 export const COSMETIC_KEYS = new Set<string>(["show-default-browser-edit"]);
+
+/**
+ * Sub-setting gschema key -> its parent key. A sub-setting only takes effect
+ * when its parent is also on (see BrowserSettings's shouldCollapseSingle-
+ * ProfileBrowsers in browser/resolve-all.ts for the corresponding runtime
+ * check on the parsed settings, and prefs.ts for the UI sensitivity bind) —
+ * this table is the single place recording WHICH keys are paired this way,
+ * so adding a new sub-setting means updating one table instead of hand-
+ * duplicating the relationship in both resolve-all.ts and prefs.ts.
+ */
+export const SUB_SETTING_PARENTS: Readonly<Record<string, string>> = {
+  "collapse-single-profile-browsers": "show-profiled-browsers",
+};

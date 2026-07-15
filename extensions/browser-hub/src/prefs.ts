@@ -3,6 +3,7 @@ import Gio from "gi://Gio";
 import Gtk from "gi://Gtk";
 import { ExtensionPreferences } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 import { SpaceType } from "./taxonomy/space-type.enum";
+import { SUB_SETTING_PARENTS } from "./settings-keys";
 import type { ProfileGroupsMode } from "./browser";
 
 const PROFILE_GROUP_MODES: ProfileGroupsMode[] = ["spaces", "profiles", "off"];
@@ -44,10 +45,10 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       "For a browser with only one profile and no active spaces, show it only in the Browsers row",
       "collapse-single-profile-browsers",
     );
-    // Sub-setting of "show-profiled-browsers" — meaningless (and visually
-    // grey it out) when the parent switch is off.
+    // Sub-setting of its parent (see SUB_SETTING_PARENTS in settings-keys.ts)
+    // — meaningless (and visually greyed out) when the parent switch is off.
     settings.bind(
-      "show-profiled-browsers",
+      SUB_SETTING_PARENTS["collapse-single-profile-browsers"],
       collapseSingleProfileRow,
       "sensitive",
       Gio.SettingsBindFlags.GET,
