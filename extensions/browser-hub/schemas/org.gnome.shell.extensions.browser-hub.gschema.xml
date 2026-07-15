@@ -27,10 +27,10 @@
       <description>Also list Firefox/Chrome-family browsers (Firefox, Chromium, Brave, Falkon, …) as single icons in the "Browsers" row, in addition to their own detailed section above. Independent of "show-simple-browsers" above.</description>
     </key>
 
-    <key name="collapse-single-profile-browsers" type="b">
-      <default>true</default>
-      <summary>Hide single-profile browsers' detailed section</summary>
-      <description>Sub-setting of "show-profiled-browsers" (has no effect when that is off). For a Firefox/Chrome-family browser with only one profile and no active spaces/workspaces, hide its one-item detailed section and only show it in the "Browsers" row.</description>
+    <key name="show-single-profile-detail" type="b">
+      <default>false</default>
+      <summary>Show single-profile browsers' detailed section</summary>
+      <description>Sub-setting of "show-profiled-browsers" (has no effect when that is off). By default, a Firefox/Chrome-family browser with only one profile and no active spaces/workspaces has its one-item detailed section hidden and is shown only in the "Browsers" row; turning this on keeps its detailed section too.</description>
     </key>
 
     <key name="firefox-profile-groups-mode" type="s">

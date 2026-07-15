@@ -40,20 +40,20 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
         "show-profiled-browsers",
       ),
     );
-    const collapseSingleProfileRow = switchRow(
-      "Hide single-profile browsers’ section",
-      "A browser with only one profile (and no active spaces) is shown only in the “Browsers” row above",
-      "collapse-single-profile-browsers",
+    const showSingleProfileDetailRow = switchRow(
+      "Show single-profile browsers’ section",
+      "Off by default: a browser with only one profile (and no active spaces) is shown only in the “Browsers” row above",
+      "show-single-profile-detail",
     );
     // Sub-setting of its parent (see SUB_SETTING_PARENTS in settings-keys.ts)
     // — meaningless (and visually greyed out) when the parent switch is off.
     settings.bind(
-      SUB_SETTING_PARENTS["collapse-single-profile-browsers"],
-      collapseSingleProfileRow,
+      SUB_SETTING_PARENTS["show-single-profile-detail"],
+      showSingleProfileDetailRow,
       "sensitive",
       Gio.SettingsBindFlags.GET,
     );
-    profilesGroup.add(collapseSingleProfileRow);
+    profilesGroup.add(showSingleProfileDetailRow);
 
     const spacesGroup = new Adw.PreferencesGroup({ title: "Workspaces & Profile Groups" });
 

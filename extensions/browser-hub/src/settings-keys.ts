@@ -14,7 +14,7 @@ export const ENTRY_AFFECTING_KEYS = new Set<string>([
   "show-chrome-family",
   "show-simple-browsers",
   "show-profiled-browsers",
-  "collapse-single-profile-browsers",
+  "show-single-profile-detail",
   "firefox-profile-groups-mode",
   ...SPACE_TYPE_VALUES,
 ]);
@@ -32,5 +32,5 @@ export const COSMETIC_KEYS = new Set<string>(["show-default-browser-edit"]);
  * duplicating the relationship in both resolve-all.ts and prefs.ts.
  */
 export const SUB_SETTING_PARENTS: Readonly<Record<string, string>> = {
-  "collapse-single-profile-browsers": "show-profiled-browsers",
+  "show-single-profile-detail": "show-profiled-browsers",
 };

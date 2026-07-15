@@ -40,7 +40,11 @@ export default class BrowserProfilesExtension extends Extension {
       showChromeFamily: settings.get_boolean("show-chrome-family"),
       showSimpleBrowsers: settings.get_boolean("show-simple-browsers"),
       showProfiledBrowsers: settings.get_boolean("show-profiled-browsers"),
-      collapseSingleProfileBrowsers: settings.get_boolean("collapse-single-profile-browsers"),
+      // Gschema key is the positive/"show" framing (consistent with every
+      // other switch, default off); BrowserSettings/resolve-all.ts keep the
+      // "collapse" framing since that's what the resolution logic actually
+      // does — inverted right here, at the one boundary between the two.
+      collapseSingleProfileBrowsers: !settings.get_boolean("show-single-profile-detail"),
       enabledSpaces: new Set(SPACE_TYPE_VALUES.filter((key) => settings.get_boolean(key))),
       profileGroupsMode: settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
     });
