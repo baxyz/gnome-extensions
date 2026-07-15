@@ -209,7 +209,18 @@ describe("resolveFirefoxBrowsers", () => {
     );
     setFile(
       "/home/user/.zen/abc.default/zen-sessions.jsonlz4",
-      JSON.stringify({ spaces: [{ uuid: "u1", name: "Work", icon: "briefcase" }] }),
+      // Real stored format (confirmed against the project's own
+      // sample/zen-sessions.json) — a full chrome://.../<name>.svg URI, not
+      // a bare name. "briefcase" has no Adwaita equivalent (see icon-catalog.ts).
+      JSON.stringify({
+        spaces: [
+          {
+            uuid: "u1",
+            name: "Work",
+            icon: "chrome://browser/skin/zen-icons/selectable/briefcase.svg",
+          },
+        ],
+      }),
     );
 
     const entries = await resolveFirefoxBrowsers([
@@ -230,6 +241,37 @@ describe("resolveFirefoxBrowsers", () => {
         command: ["zen-browser", "-P", "default", "--zen-workspace", "Work", "-no-remote"],
       },
     ]);
+  });
+
+  it("resolves a mapped Zen workspace icon from the real chrome://.../<name>.svg format, end to end", async () => {
+    setFile(
+      "/home/user/.zen/profiles.ini",
+      profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
+    );
+    setFile(
+      "/home/user/.zen/abc.default/zen-sessions.jsonlz4",
+      JSON.stringify({
+        spaces: [
+          {
+            uuid: "u1",
+            name: "Night",
+            icon: "chrome://browser/skin/zen-icons/selectable/moon.svg",
+          },
+        ],
+      }),
+    );
+
+    const entries = await resolveFirefoxBrowsers([
+      {
+        type: BrowserType.Firefox,
+        label: "Zen",
+        path: "/home/user/.zen/profiles.ini",
+        pkg: { manager: PackageManager.Native, binary: "zen-browser" },
+        spaceType: SpaceType.ZenWorkspaces,
+      },
+    ]);
+
+    expect(entries[0].items[0].spaces?.[0].icon).toBe("weather-clear-night-symbolic");
   });
 
   it("flattens Profile Groups selectable profiles as top-level items in 'profiles' mode", async () => {

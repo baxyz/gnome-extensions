@@ -197,12 +197,31 @@ describe("resolveFirefoxIcon", () => {
 });
 
 describe("resolveZenIcon", () => {
-  it("resolves a known Zen-only icon id", () => {
+  it("resolves the real stored format — a full chrome://.../<name>.svg URI, not a bare name", () => {
+    // Confirmed against the project's own sample/zen-sessions.json: Zen never
+    // stores just "moon", it stores the full selectable-icon path.
+    expect(resolveZenIcon("chrome://browser/skin/zen-icons/selectable/moon.svg")).toBe(
+      ZEN_WORKSPACE_ICONS.moon,
+    );
+  });
+
+  it("still resolves a bare name directly, for robustness", () => {
     expect(resolveZenIcon("moon")).toBe(ZEN_WORKSPACE_ICONS.moon);
   });
 
-  it("falls back to the neutral dot for an unmapped or missing id", () => {
-    expect(resolveZenIcon("rocket")).toBe(SPACE_FALLBACK_ICON);
+  it("falls back to the neutral dot for an unmapped curated icon", () => {
+    expect(resolveZenIcon("chrome://browser/skin/zen-icons/selectable/rocket.svg")).toBe(
+      SPACE_FALLBACK_ICON,
+    );
+  });
+
+  it("falls back to the neutral dot for a custom emoji/text workspace icon (not a curated .svg)", () => {
+    // Zen's own "ZenEmojiPicker" lets users pick a plain emoji/text character
+    // instead of a curated icon — never a mappable name, always falls back.
+    expect(resolveZenIcon("🎨")).toBe(SPACE_FALLBACK_ICON);
+  });
+
+  it("falls back to the neutral dot for a missing id", () => {
     expect(resolveZenIcon(undefined)).toBe(SPACE_FALLBACK_ICON);
   });
 });

@@ -52,11 +52,23 @@ export function resolveFirefoxIcon(
 }
 
 /**
+ * Zen stores a workspace's curated icon as a full URI —
+ * "chrome://browser/skin/zen-icons/selectable/<name>.svg" — not the bare
+ * <name> our mapping table is keyed by. Custom workspace icons (Zen's own
+ * "ZenEmojiPicker" also lets users pick a plain emoji/text character, not
+ * just a curated icon) never match this pattern and pass through unchanged,
+ * which correctly still misses the mapping table and falls back below.
+ */
+function zenIconName(icon: string): string {
+  return icon.endsWith(".svg") ? (icon.split("/").pop() ?? icon).replace(/\.svg$/, "") : icon;
+}
+
+/**
  * Resolves a Zen Browser workspace icon id to a real, present GNOME icon name.
  * Zen icons are only ever used for spaces, so there's a single fallback:
  * the same neutral dot used for unmapped Firefox spaces.
  */
 export function resolveZenIcon(icon: string | undefined): string {
-  const mapped = icon ? ZEN_WORKSPACE_ICONS[icon] : undefined;
+  const mapped = icon ? ZEN_WORKSPACE_ICONS[zenIconName(icon)] : undefined;
   return firstExistingIcon(mapped) ?? SPACE_FALLBACK_ICON;
 }

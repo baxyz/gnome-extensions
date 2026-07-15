@@ -17,14 +17,13 @@
  *
  * Unmapped Firefox avatars (browser/components/profiles/SelectableProfile.sys.mjs):
  *   barbell, bike, briefcase, canvas, craft, diamond, flower, hammer,
- *   heart-rate, leaf, lightbulb, makeup, paw-print, present, shopping,
- *   soccer, sparkle-single
+ *   heart-rate, lightbulb, makeup, paw-print, present, shopping, soccer
  *
  * Unmapped Zen workspace icons (zen-browser/desktop zen-icons/common/selectable):
- *   airplane, american-football, baseball, basket, bed, bell, briefcase,
+ *   airplane, american-football, baseball, basket, bed, briefcase,
  *   brush, bug, cafe, card, circle, cloud, coins, cutlery, egg,
  *   extension-puzzle, fast-food, fish, flag, flame, globe, globe-1,
- *   ice-cream, inbox, key, layers, logo-github, logo-usd, map, megaphone,
+ *   ice-cream, inbox, layers, logo-github, logo-usd, map, megaphone,
  *   nuclear, paw, pizza, planet, present, rocket, school, shapes, shirt,
  *   skull, square, stats-chart, tada, ticket, triangle, wallet, water, weight
  */
@@ -35,10 +34,12 @@ export const FIREFOX_AVATAR_ICONS: Readonly<Record<string, string>> = {
   folder: "folder-symbolic",
   heart: "emote-love-symbolic",
   history: "document-open-recent-symbolic", // approximate
+  leaf: "emoji-nature-symbolic", // approximate, broad category icon
   message: "chat-message-new-symbolic",
   "musical-note": "audio-x-generic-symbolic", // approximate
   palette: "applications-graphics-symbolic", // approximate
   plane: "airplane-mode-symbolic", // approximate
+  "sparkle-single": "starred-symbolic", // approximate
   star: "starred-symbolic",
   "video-game-controller": "input-gaming-symbolic",
   "default-favicon": "avatar-default-symbolic",
@@ -46,6 +47,7 @@ export const FIREFOX_AVATAR_ICONS: Readonly<Record<string, string>> = {
 
 // Zen workspace icons — see zen-browser/desktop's zen-icons/common/selectable/*.svg.
 export const ZEN_WORKSPACE_ICONS: Readonly<Record<string, string>> = {
+  bell: "alarm-symbolic", // approximate
   book: "accessories-dictionary-symbolic",
   bookmark: "bookmark-new-symbolic",
   build: "applications-engineering-symbolic", // approximate
@@ -62,6 +64,7 @@ export const ZEN_WORKSPACE_ICONS: Readonly<Record<string, string>> = {
   "grid-3x3": "view-grid-symbolic", // approximate
   heart: "emote-love-symbolic",
   image: "image-x-generic-symbolic",
+  key: "dialog-password-symbolic", // approximate
   leaf: "emoji-nature-symbolic", // approximate, broad category icon
   lightning: "weather-storm-symbolic", // approximate
   location: "mark-location-symbolic",
