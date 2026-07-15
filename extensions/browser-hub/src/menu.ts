@@ -1,4 +1,5 @@
 import St from "gi://St";
+import Clutter from "gi://Clutter";
 import type Gio from "gi://Gio";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -217,6 +218,10 @@ function buildToolbar({
 
 /**
  * Builds a menu item row for simple (profile-less) browsers with icon buttons.
+ * Uses Clutter.FlowLayout (not a plain BoxLayout) so buttons wrap onto
+ * additional rows on their own once they no longer fit the popup's width,
+ * instead of forcing the menu wider or clipping — GNOME's own mechanism for
+ * this, no manual width math needed.
  */
 function buildSimpleBrowserRow({
   title,
@@ -230,15 +235,20 @@ function buildSimpleBrowserRow({
   closeMenu: () => void;
 }): PopupMenuItem {
   const row = makeIconRow();
+  const flow = new St.Widget({
+    x_expand: true,
+    layout_manager: new Clutter.FlowLayout({ orientation: Clutter.Orientation.HORIZONTAL }),
+  });
   for (const item of items) {
     const cmd = item.command;
-    row.add_child(
+    flow.add_child(
       makeIconButton(item.label, item.icon, 24, () => {
         launchBrowser({ command: cmd, title, notify });
         closeMenu();
       }),
     );
   }
+  row.add_child(flow);
   return row;
 }
 

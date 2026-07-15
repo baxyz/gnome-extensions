@@ -65,6 +65,19 @@ vi.mock("gi://St", () => ({
   },
 }));
 
+class FakeFlowLayout {
+  props: Record<string, unknown>;
+  constructor(props: Record<string, unknown> = {}) {
+    this.props = props;
+  }
+}
+vi.mock("gi://Clutter", () => ({
+  default: {
+    FlowLayout: FakeFlowLayout,
+    Orientation: { HORIZONTAL: 0, VERTICAL: 1 },
+  },
+}));
+
 class FakeLabel extends FakeWidget {
   text: string;
   constructor(text: string) {
@@ -162,6 +175,33 @@ describe("fillMenu", () => {
     const iconSlot = profileItem.children[0];
     expect(iconSlot).toBeInstanceOf(FakeWidget);
     expect(iconSlot).not.toBeInstanceOf(FakeIcon);
+  });
+
+  it("wraps the 'Browsers' row's icon buttons in a Clutter.FlowLayout container so they wrap onto new lines", () => {
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [
+        {
+          label: "Browsers",
+          group: "simple",
+          items: [
+            { label: "GNOME Web", command: ["epiphany"] },
+            { label: "qutebrowser", command: ["qutebrowser"] },
+          ],
+        },
+      ],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const row = menu.items[2] as FakePopupMenuItem; // [0] toolbar, [1] separator, [2] row
+    expect(row.children).toHaveLength(1); // one flow container, not one child per button
+    const flow = row.children[0];
+    expect(flow.props.layout_manager).toBeInstanceOf(FakeFlowLayout);
+    expect(flow.children).toHaveLength(2);
   });
 
   it("shows the browser's icon before the separator label when the entry has one", () => {
