@@ -25,6 +25,17 @@ function notFoundError(): { matches: (domain: unknown, code: number) => boolean 
 }
 
 const FAKE_ICON = { __fakeIcon: true };
+// Set to true only by the one test simulating a crash reachable from
+// resolveBrowsersRow (GNOME Web's real desktopId, org.gnome.Epiphany.desktop)
+// — reset every test so it doesn't break every other test that expects
+// GNOME Web to resolve normally.
+let epiphanyIconThrows = false;
+
+// logError is a GJS ambient global — no test here previously exercised a
+// genuine rejected/thrown path, so it was never stubbed. Stub it so a test
+// that deliberately forces a throw asserts on the resolved return value
+// instead of failing on an unrelated "logError is not defined".
+globalThis.logError = () => {};
 
 vi.mock("gi://GLib", () => ({
   default: {
@@ -100,8 +111,22 @@ vi.mock("gi://Gio", () => ({
     // browser icon lands on the entry, not on every profile item) — every
     // other guessed desktop id (the "firefox"/"chromium"/"falkon" binaries
     // used throughout this file) matches nothing, same as before.
+    // "org.gnome.Epiphany.desktop" (GNOME Web's real desktopId) throws when
+    // epiphanyIconThrows is set — used by one test to simulate a crash
+    // reachable only from resolveBrowsersRow (SIMPLE_BROWSERS entries are
+    // never touched by the family resolvers).
     DesktopAppInfo: {
-      new: (id: string) => (id === "iconbrowser.desktop" ? { get_icon: () => FAKE_ICON } : null),
+      new: (id: string) => {
+        if (id === "iconbrowser.desktop") return { get_icon: () => FAKE_ICON };
+        if (id === "org.gnome.Epiphany.desktop" && epiphanyIconThrows) {
+          return {
+            get_icon: () => {
+              throw new Error("simulated icon crash");
+            },
+          };
+        }
+        return null;
+      },
     },
   },
 }));
@@ -133,12 +158,24 @@ const { resolveFirefoxBrowsers } = await import("../src/browser/firefox");
 const { resolveChromiumBrowsers } = await import("../src/browser/chromium");
 const { resolveFalkonBrowsers } = await import("../src/browser/falkon");
 const { getBrowserEntries } = await import("../src/browser");
+const { clearPkgResolutionCache, clearPathPresenceCache, clearDesktopIconCache } =
+  await import("../src/internal");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 const { BrowserType } = await import("../src/taxonomy/browser-type.enum");
 const { SpaceType } = await import("../src/taxonomy/space-type.enum");
 
 beforeEach(() => {
   resetFs();
+  // pkgResolutionCache/pathPresenceCache/desktopIconCache (internal/pkg.ts,
+  // internal/desktop-icon.ts) are module-level singletons that outlive any
+  // single test — without clearing them here, a later test whose fixture
+  // flips a path from present to absent (or vice versa) after resetFs()
+  // would silently read an earlier test's stale cached answer instead of
+  // the freshly-mocked filesystem state.
+  clearPkgResolutionCache();
+  clearPathPresenceCache();
+  clearDesktopIconCache();
+  epiphanyIconThrows = false;
 });
 
 describe("resolveFirefoxBrowsers", () => {
@@ -241,6 +278,28 @@ describe("resolveFirefoxBrowsers", () => {
         command: ["zen-browser", "-P", "default", "--zen-workspace", "Work", "-no-remote"],
       },
     ]);
+  });
+
+  it("resolves the profile itself even when its zen-sessions.jsonlz4 has a malformed (non-array) spaces value", async () => {
+    setFile(
+      "/home/user/.zen/profiles.ini",
+      profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
+    );
+    // Valid JSON, wrong shape — e.g. left behind by a crash mid-save.
+    setFile("/home/user/.zen/abc.default/zen-sessions.jsonlz4", JSON.stringify({ spaces: 0 }));
+
+    const entries = await resolveFirefoxBrowsers([
+      {
+        type: BrowserType.Firefox,
+        label: "Zen",
+        path: "/home/user/.zen/profiles.ini",
+        pkg: { manager: PackageManager.Native, binary: "zen-browser" },
+        spaceType: SpaceType.ZenWorkspaces,
+      },
+    ]);
+
+    expect(entries[0].items[0].label).toBe("default");
+    expect(entries[0].items[0].spaces).toBeUndefined();
   });
 
   it("resolves a mapped Zen workspace icon from the real chrome://.../<name>.svg format, end to end", async () => {
@@ -407,6 +466,85 @@ describe("resolveFirefoxBrowsers", () => {
     expect(entries[0].items).toHaveLength(1);
     expect(entries[0].items[0].label).toBe("default");
     expect(entries[0].items[0].spaces?.map((s) => s.name).sort()).toEqual(["Personal", "Work"]);
+    // "Work"'s folder (abc.default) matches this toolkit profile's own
+    // folder — only it should be marked default among the nested spaces.
+    const work = entries[0].items[0].spaces?.find((s) => s.name === "Work");
+    const personal = entries[0].items[0].spaces?.find((s) => s.name === "Personal");
+    expect(work?.isDefault).toBe(true);
+    expect(personal?.isDefault).toBe(false);
+  });
+
+  it("renders a Profile Groups member's group only once, even when a second member is also its own separately-listed toolkit profile", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      profilesIni([
+        { name: "default", path: "abc.default", isDefault: true },
+        { name: "second", path: "xyz.second" },
+      ]),
+    );
+    setDir("/home/user/.mozilla/firefox/Profile Groups", ["group.sqlite"]);
+    setFile(
+      "/home/user/.mozilla/firefox/Profile Groups/group.sqlite",
+      JSON.stringify([
+        { path: "abc.default", name: "Work", avatar: "star" },
+        { path: "xyz.second", name: "Personal", avatar: "book" },
+      ]),
+    );
+
+    const entries = await resolveFirefoxBrowsers(
+      [
+        {
+          type: BrowserType.Firefox,
+          label: "Firefox",
+          path: "/home/user/.mozilla/firefox/profiles.ini",
+          pkg,
+        },
+      ],
+      { enabledSpaces: new Set(), profileGroupsMode: "profiles" },
+    );
+
+    // Both toolkit profiles (abc.default AND xyz.second) map to the SAME
+    // selectable group — it must render once (2 items total), not once per
+    // toolkit profile that happens to belong to it (which would be 4).
+    expect(entries[0].items.map((i) => i.label).sort()).toEqual(["Personal", "Work"]);
+  });
+
+  it("deterministically picks the alphabetically-first Profile Groups database when two conflict over the same toolkit profile", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
+    );
+    setDir("/home/user/.mozilla/firefox/Profile Groups", ["a.sqlite", "b.sqlite"]);
+    setFile(
+      "/home/user/.mozilla/firefox/Profile Groups/a.sqlite",
+      JSON.stringify([
+        { path: "abc.default", name: "FromA1", avatar: "star" },
+        { path: "xyz.other-a", name: "FromA2", avatar: "book" },
+      ]),
+    );
+    setFile(
+      "/home/user/.mozilla/firefox/Profile Groups/b.sqlite",
+      JSON.stringify([
+        { path: "abc.default", name: "FromB1", avatar: "star" },
+        { path: "xyz.other-b", name: "FromB2", avatar: "book" },
+      ]),
+    );
+
+    const entries = await resolveFirefoxBrowsers(
+      [
+        {
+          type: BrowserType.Firefox,
+          label: "Firefox",
+          path: "/home/user/.mozilla/firefox/profiles.ini",
+          pkg,
+        },
+      ],
+      { enabledSpaces: new Set(), profileGroupsMode: "profiles" },
+    );
+
+    // "a.sqlite" sorts before "b.sqlite" — its group wins deterministically,
+    // regardless of which db file's read happened to settle first.
+    expect(entries[0].items.map((i) => i.label).sort()).toEqual(["FromA1", "FromA2"]);
   });
 
   it("ignores Profile Groups entirely when profileGroupsMode is 'off'", async () => {
@@ -596,6 +734,30 @@ describe("Browsers row (getBrowserEntries)", () => {
   // real flatpak install dirs via GLib.file_test, which the virtual fs mock
   // always reports as absent unless explicitly set up.
 
+  it("still returns already-resolved family sections even if the Browsers row itself throws", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
+    );
+
+    // showSimpleBrowsers pulls GNOME Web (Epiphany) into resolveBrowsersRow,
+    // where its icon lookup is rigged to throw (see the Gio mock above) —
+    // simulating a bug reachable only from the row's own unsettled .map().
+    epiphanyIconThrows = true;
+    const entries = await getBrowserEntries({
+      showFirefoxFamily: true,
+      showChromeFamily: false,
+      showSimpleBrowsers: true,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: false,
+      enabledSpaces: new Set(),
+      profileGroupsMode: "off",
+    });
+
+    expect(entries.some((e) => e.label === "Firefox (classic)")).toBe(true);
+    expect(entries.find((e) => e.label === "Browsers")).toBeUndefined();
+  });
+
   it("combines firefox-family and profile-less browsers into one sorted 'Browsers' entry", async () => {
     setFile(
       "/home/user/.mozilla/firefox/profiles.ini",
@@ -770,5 +932,33 @@ describe("getBrowserEntries", () => {
 
     const firefoxEntry = entries.find((e) => e.label === "Firefox (classic)");
     expect(firefoxEntry?.items.map((i) => i.label).sort()).toEqual(["default", "work"]);
+  });
+
+  it("does not collapse a single Zen profile that has exactly one active workspace", async () => {
+    // Regression test: isSingleProfileEntry used to accept `spaces.length <= 1`
+    // (should be `=== 0` per its own "no active spaces" docstring), so a
+    // profile with exactly one workspace was wrongly treated as collapsible.
+    setFile(
+      "/home/user/.zen/profiles.ini",
+      "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
+    );
+    setFile(
+      "/home/user/.zen/abc.default/zen-sessions.jsonlz4",
+      JSON.stringify({ spaces: [{ uuid: "u1", name: "Work", icon: "briefcase" }] }),
+    );
+
+    const entries = await getBrowserEntries({
+      showFirefoxFamily: true,
+      showChromeFamily: false,
+      showSimpleBrowsers: false,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: true,
+      enabledSpaces: new Set([SpaceType.ZenWorkspaces]),
+      profileGroupsMode: "off",
+    });
+
+    const zenEntry = entries.find((e) => e.label === "Zen (classic)");
+    expect(zenEntry).toBeDefined();
+    expect(zenEntry?.items[0].spaces).toHaveLength(1);
   });
 });
