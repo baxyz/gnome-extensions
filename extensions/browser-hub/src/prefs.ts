@@ -21,28 +21,28 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
 
     const profilesGroup = new Adw.PreferencesGroup({ title: "Profiles" });
     profilesGroup.add(
-      switchRow("Firefox family", "Zen, Firefox, LibreWolf, Floorp…", "show-firefox-family"),
+      switchRow("Show Firefox family", "Zen, Firefox, LibreWolf, Floorp…", "show-firefox-family"),
     );
     profilesGroup.add(
-      switchRow("Chrome family", "Chromium, Edge, Brave, Falkon…", "show-chrome-family"),
+      switchRow("Show Chrome family", "Chromium, Edge, Brave, Falkon…", "show-chrome-family"),
     );
     profilesGroup.add(
       switchRow(
-        "Profile-less browsers in Browsers row",
-        "GNOME Web, qutebrowser… as single icons in the Browsers row",
+        "Show simple browsers in the “Browsers” row",
+        "GNOME Web, qutebrowser… listed as single icons",
         "show-simple-browsers",
       ),
     );
     profilesGroup.add(
       switchRow(
-        "Profile browsers in Browsers row",
-        "Also list Firefox/Chrome-family browsers as single icons in the Browsers row",
+        "Show profile browsers in the “Browsers” row",
+        "Firefox/Chrome-family browsers listed here too, alongside their section above",
         "show-profiled-browsers",
       ),
     );
     const collapseSingleProfileRow = switchRow(
-      "Collapse single-profile browsers",
-      "For a browser with only one profile and no active spaces, show it only in the Browsers row",
+      "Hide single-profile browsers’ section",
+      "A browser with only one profile (and no active spaces) is shown only in the “Browsers” row above",
       "collapse-single-profile-browsers",
     );
     // Sub-setting of its parent (see SUB_SETTING_PARENTS in settings-keys.ts)
@@ -91,7 +91,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
 
     spacesGroup.add(
       switchRow(
-        "Zen workspaces",
+        "Show Zen workspaces",
         "Workspace buttons under each Zen profile",
         SpaceType.ZenWorkspaces,
       ),
@@ -100,8 +100,8 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     const toolbarGroup = new Adw.PreferencesGroup({ title: "Toolbar" });
     toolbarGroup.add(
       switchRow(
-        "Show edit button",
-        "Display the pencil button next to the default browser name",
+        "Show “change default browser” button",
+        "A pencil icon next to the default browser name that opens Default Applications",
         "show-default-browser-edit",
       ),
     );

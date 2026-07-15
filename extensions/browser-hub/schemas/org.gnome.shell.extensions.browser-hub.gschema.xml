@@ -29,8 +29,8 @@
 
     <key name="collapse-single-profile-browsers" type="b">
       <default>true</default>
-      <summary>Collapse single-profile browsers into the Browsers row</summary>
-      <description>Sub-setting of "show-profiled-browsers" (has no effect when that is off). For a Firefox/Chrome-family browser with only one profile and no active spaces/workspaces, hide its one-item detailed section and only show it in the Browsers row.</description>
+      <summary>Hide single-profile browsers' detailed section</summary>
+      <description>Sub-setting of "show-profiled-browsers" (has no effect when that is off). For a Firefox/Chrome-family browser with only one profile and no active spaces/workspaces, hide its one-item detailed section and only show it in the "Browsers" row.</description>
     </key>
 
     <key name="firefox-profile-groups-mode" type="s">
