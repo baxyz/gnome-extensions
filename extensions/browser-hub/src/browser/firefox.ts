@@ -18,7 +18,7 @@ import {
   resolveDesktopIcon,
 } from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
-import { readZenSpaces } from "./zen";
+import { readZenSpaces, zenSpaceColor } from "./zen";
 import { resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../icons";
 
 /** Represents a single profile from Firefox's profiles.ini file. */
@@ -164,6 +164,7 @@ async function resolveZenWorkspaceItem(
   const spaces = (await readZenSpaces(dir)).map((space) => ({
     ...space,
     icon: resolveZenIcon(space.icon),
+    bgColor: zenSpaceColor(space.theme),
     command: [...baseCommand, "-P", name, "--zen-workspace", space.name, "-no-remote"],
   }));
   return {

@@ -333,6 +333,69 @@ describe("resolveFirefoxBrowsers", () => {
     expect(entries[0].items[0].spaces?.[0].icon).toBe("weather-clear-night-symbolic");
   });
 
+  it("extracts a Zen workspace's gradient theme as bgColor, preferring the primary color", async () => {
+    setFile(
+      "/home/user/.zen/profiles.ini",
+      profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
+    );
+    setFile(
+      "/home/user/.zen/abc.default/zen-sessions.jsonlz4",
+      JSON.stringify({
+        spaces: [
+          {
+            uuid: "u1",
+            name: "Work",
+            icon: "chrome://browser/skin/zen-icons/selectable/briefcase.svg",
+            theme: {
+              type: "gradient",
+              gradientColors: [
+                { c: [10, 20, 30], isPrimary: false },
+                { c: [40, 50, 60], isPrimary: true },
+              ],
+            },
+          },
+        ],
+      }),
+    );
+
+    const entries = await resolveFirefoxBrowsers([
+      {
+        type: BrowserType.Firefox,
+        label: "Zen",
+        path: "/home/user/.zen/profiles.ini",
+        pkg: { manager: PackageManager.Native, binary: "zen-browser" },
+        spaceType: SpaceType.ZenWorkspaces,
+      },
+    ]);
+
+    expect(entries[0].items[0].spaces?.[0].bgColor).toBe("rgb(40,50,60)");
+  });
+
+  it("leaves bgColor undefined for a Zen workspace with no gradient theme", async () => {
+    setFile(
+      "/home/user/.zen/profiles.ini",
+      profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
+    );
+    setFile(
+      "/home/user/.zen/abc.default/zen-sessions.jsonlz4",
+      JSON.stringify({
+        spaces: [{ uuid: "u1", name: "Work", icon: "chrome://.../briefcase.svg" }],
+      }),
+    );
+
+    const entries = await resolveFirefoxBrowsers([
+      {
+        type: BrowserType.Firefox,
+        label: "Zen",
+        path: "/home/user/.zen/profiles.ini",
+        pkg: { manager: PackageManager.Native, binary: "zen-browser" },
+        spaceType: SpaceType.ZenWorkspaces,
+      },
+    ]);
+
+    expect(entries[0].items[0].spaces?.[0].bgColor).toBeUndefined();
+  });
+
   it("flattens Profile Groups selectable profiles as top-level items in 'profiles' mode", async () => {
     setFile(
       "/home/user/.mozilla/firefox/profiles.ini",

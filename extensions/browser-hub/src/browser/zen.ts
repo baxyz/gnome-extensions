@@ -6,6 +6,19 @@ import { decoder, logIfUnexpected, pathIsPresent, readFileAsync } from "../inter
 
 type ZenSessions = { spaces?: ZenSpaceData[] };
 
+/**
+ * Zen's own workspace accent color — a "gradient" theme's colors, one of
+ * which is flagged primary (falls back to the first if none is). Only
+ * "gradient" is understood; any other/future theme type yields no color
+ * rather than a guessed one.
+ */
+export function zenSpaceColor(theme: ZenSpaceData["theme"]): string | undefined {
+  if (theme?.type !== "gradient" || !theme.gradientColors?.length) return undefined;
+  const primary = theme.gradientColors.find((g) => g.isPrimary) ?? theme.gradientColors[0];
+  const [r, g, b] = primary.c;
+  return `rgb(${r},${g},${b})`;
+}
+
 function readArchive(archivePath: string): Promise<ZenSpaceData[]> {
   return readFileAsync(archivePath)
     .then((contents) => {

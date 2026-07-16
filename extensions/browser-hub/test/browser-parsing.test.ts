@@ -46,6 +46,7 @@ vi.mock("gi://St", () => ({
 
 const { parseProfiles: parseFirefoxProfiles } = await import("../src/browser/firefox");
 const { parseProfiles: parseChromiumProfiles } = await import("../src/browser/chromium");
+const { zenSpaceColor } = await import("../src/browser/zen");
 const { argbToRgb } = await import("@helpers4/color");
 const { buildBaseCommand } = await import("../src/internal/pkg");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
@@ -130,6 +131,40 @@ describe("firefox profiles.ini parsing", () => {
     ].join("\n");
 
     expect(parseFirefoxProfiles(ini, "/home/user/.mozilla/firefox")).toEqual([]);
+  });
+});
+
+describe("zenSpaceColor", () => {
+  it("prefers the color flagged isPrimary over the first one", () => {
+    const color = zenSpaceColor({
+      type: "gradient",
+      gradientColors: [
+        { c: [10, 20, 30], isPrimary: false },
+        { c: [40, 50, 60], isPrimary: true },
+      ],
+    });
+    expect(color).toBe("rgb(40,50,60)");
+  });
+
+  it("falls back to the first color when none is flagged isPrimary", () => {
+    const color = zenSpaceColor({
+      type: "gradient",
+      gradientColors: [{ c: [10, 20, 30] }, { c: [40, 50, 60] }],
+    });
+    expect(color).toBe("rgb(10,20,30)");
+  });
+
+  it("returns undefined for a non-gradient theme type", () => {
+    expect(zenSpaceColor({ type: "solid", gradientColors: [{ c: [1, 2, 3] }] })).toBeUndefined();
+  });
+
+  it("returns undefined when gradientColors is empty or missing", () => {
+    expect(zenSpaceColor({ type: "gradient", gradientColors: [] })).toBeUndefined();
+    expect(zenSpaceColor({ type: "gradient" })).toBeUndefined();
+  });
+
+  it("returns undefined when theme itself is absent", () => {
+    expect(zenSpaceColor(undefined)).toBeUndefined();
   });
 });
 
