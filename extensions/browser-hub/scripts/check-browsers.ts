@@ -25,15 +25,20 @@ function meta(icon?: string, fgColor?: string, bgColor?: string): string {
 }
 
 // item.icon is a plain icon-theme name (string, Firefox avatars) for family
-// entries, or a real Gio.Icon (Browsers row / .desktop-fetched) for others —
-// Gio.Icon.to_string() serializes any icon subtype (themed name, file path,
-// bytes) generically, so this reports presence either way instead of only
-// ever showing something for the string case.
+// entries, or a real Gio.Icon (Browsers row / .desktop-fetched) for others.
+// Real GJS returns a GThemedIcon (get_names) or GFileIcon/GBytesIcon
+// (to_string serializes any subtype); the Node dev-shim (scripts/shims/gio.ts)
+// instead returns a plain `{ name }` stub. Try all three so icon presence is
+// visible either way instead of only ever showing something for a string.
 function iconDescriptor(icon: string | Gio.Icon | undefined): string | undefined {
   if (icon === undefined) return undefined;
   if (typeof icon === "string") return icon;
-  const withToString = icon as unknown as { to_string?: () => string | null };
-  return withToString.to_string?.() ?? "(icon, no string form)";
+  const obj = icon as unknown as {
+    to_string?: () => string | null;
+    get_names?: () => string[];
+    name?: string;
+  };
+  return obj.to_string?.() ?? obj.get_names?.()?.join(",") ?? obj.name ?? "(icon, no string form)";
 }
 
 for (const entry of entries) {

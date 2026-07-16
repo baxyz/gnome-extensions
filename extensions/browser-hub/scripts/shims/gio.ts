@@ -73,6 +73,12 @@ const DESKTOP_SEARCH_DIRS = [
   `${os.homedir()}/.local/share/applications`,
   `${os.homedir()}/.local/share/flatpak/exports/share/applications`,
   "/var/lib/flatpak/exports/share/applications",
+  // snapd copies/renames each snap's own .desktop file into here as
+  // "<snap>_<snap>.desktop" (see desktop-icon.ts's desktopIdFor) — confirmed
+  // present here on a real system for Brave/Firefox/Opera snaps, missing
+  // from this list caused pnpm check to report no icon for every snap
+  // browser regardless of whether the real file existed.
+  "/var/lib/snapd/desktop/applications",
   "/usr/share/applications",
   "/usr/local/share/applications",
 ];
