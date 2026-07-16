@@ -7,7 +7,6 @@ import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/she
 import type { BrowserSpace, ResolvedBrowserEntry, ResolvedBrowserItem } from "./taxonomy";
 import type { DefaultBrowserInfo } from "./default-browser";
 import { launchBrowser } from "./internal";
-import { SPACE_FALLBACK_ICON } from "./icons";
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
 function tooltip(btn: St.Button, text: string): void {
@@ -68,11 +67,11 @@ function makeSpaceGroup(
       accessible_name: space.name,
       style_class: "button browser-hub-space-dot-btn",
     });
-    // space.icon is always resolved by fetch time (see src/icons/) — never a
-    // raw id, never missing. The neutral fallback renders smaller than a real
-    // icon so it reads as a discreet placeholder rather than a bold glyph.
-    const iconSize = space.icon === SPACE_FALLBACK_ICON ? 8 : 16;
-    btn.set_child(new St.Icon({ icon_name: space.icon, icon_size: iconSize }));
+    // Same icon_size for the fallback dot and a real icon — a smaller
+    // fallback used to read as a "discreet placeholder" but actually just
+    // made every space button a different width depending on which spaces
+    // had real icons.
+    btn.set_child(new St.Icon({ icon_name: space.icon, icon_size: 16 }));
     const bgColor = safeCssColor(space.bgColor);
     const fgColor = safeCssColor(space.fgColor);
     if (bgColor || fgColor) {
@@ -253,12 +252,14 @@ function buildSimpleBrowserRow({
 }
 
 const PROFILE_ICON_SIZE = 16;
-// Uniform padding on every side of a badge's background pill. The icon is
-// shrunk by exactly this much on each side (see buildProfileMenuItem) so the
-// pill's total footprint (icon + padding) matches a plain, unbadged icon's
-// size instead of growing past it — the icon still renders at its normal
-// aspect ratio, just smaller, never stretched or squished.
-const BADGE_PADDING = 2;
+// Horizontal padding on the badge's background pill. The icon is shrunk by
+// exactly this much on each side (see buildProfileMenuItem) so the pill's
+// total WIDTH still matches a plain, unbadged icon's width — this is the
+// axis that has to line up for every row's label to stay aligned. Vertical
+// padding doesn't affect alignment, so it's free to be more generous and is
+// kept separate on purpose.
+const BADGE_PADDING_X = 1;
+const BADGE_PADDING_Y = 3;
 
 /**
  * Builds a profile menu item with icon, color dot, and optional space buttons.
@@ -290,7 +291,7 @@ function buildProfileMenuItem({
   // item actually gets a badge.
   const badge = item.icon && item.color?.mode === "badge" ? item.color : undefined;
   const badgeBg = badge ? safeCssColor(badge.bgColor) : undefined;
-  const iconSize = badgeBg ? PROFILE_ICON_SIZE - BADGE_PADDING * 2 : PROFILE_ICON_SIZE;
+  const iconSize = badgeBg ? PROFILE_ICON_SIZE - BADGE_PADDING_X * 2 : PROFILE_ICON_SIZE;
   // item.icon is undefined only when neither an avatar nor the browser's own
   // .desktop icon could be resolved — nothing to show but a reserved blank
   // slot (keeps labels aligned across entries).
@@ -308,8 +309,8 @@ function buildProfileMenuItem({
     if (badgeBg)
       style.push(
         `background-color: ${badgeBg}`,
-        "border-radius: 999px",
-        `padding: ${BADGE_PADDING}px`,
+        "border-radius: 4px",
+        `padding: ${BADGE_PADDING_Y}px ${BADGE_PADDING_X}px`,
       );
     if (style.length > 0) iconSlot.set_style(`${style.join("; ")};`);
   }

@@ -320,10 +320,10 @@ describe("fillMenu", () => {
     const profileItem = menu.items[2] as FakePopupMenuItem;
     const iconSlot = profileItem.children[0] as FakeIcon;
     expect(iconSlot.style).toBe(
-      "color: #ffffff; background-color: #20123a; border-radius: 999px; padding: 2px;",
+      "color: #ffffff; background-color: #20123a; border-radius: 4px; padding: 3px 1px;",
     );
-    // 16px plain icon vs 12px icon + 2px padding each side = 16px total footprint either way.
-    expect(iconSlot.props.icon_size).toBe(12);
+    // 16px plain icon vs 14px icon + 1px horizontal padding each side = 16px total width either way.
+    expect(iconSlot.props.icon_size).toBe(14);
   });
 
   it("renders color.mode 'dot' as a separate indicator, not an icon badge (Chromium)", () => {
@@ -357,7 +357,7 @@ describe("fillMenu", () => {
     expect(dot.style).toContain("background-color: rgb(17,34,51)");
   });
 
-  it("renders space buttons with a smaller icon size for the neutral fallback dot", () => {
+  it("renders space buttons with the same icon size for real icons and the neutral fallback dot", () => {
     const menu = makeFakeMenu();
     fillMenu({
       title: "t",
@@ -394,7 +394,7 @@ describe("fillMenu", () => {
     const spaceGroup = profileItem.children.at(-1) as FakeBoxLayout;
     const [workBtn, untitledBtn] = spaceGroup.children as FakeButton[];
     expect((workBtn.children[0] as FakeIcon).props.icon_size).toBe(16);
-    expect((untitledBtn.children[0] as FakeIcon).props.icon_size).toBe(8);
+    expect((untitledBtn.children[0] as FakeIcon).props.icon_size).toBe(16);
   });
 
   it("launches the item's command via Gio.Subprocess when a profile menu item is activated", () => {

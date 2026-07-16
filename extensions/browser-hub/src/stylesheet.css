@@ -3,9 +3,13 @@
   font-weight: bold;
 }
 
-/* Fixed-width icon slot left of profile label — keeps labels aligned across entries */
+/* Fixed-width icon slot left of profile label — keeps labels aligned across
+   entries. Matches PROFILE_ICON_SIZE (menu.ts) exactly in px: an em-based
+   width is font-size-dependent and doesn't reliably equal the icon's actual
+   rendered width, which left the blank fallback slot a different width than
+   a real/badge icon next to it. */
 .browser-hub-profile-icon {
-  min-width: 1.5em;
+  min-width: 16px;
   margin-right: 0.3em;
 }
 
