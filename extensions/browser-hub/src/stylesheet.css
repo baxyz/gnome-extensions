@@ -6,10 +6,14 @@
 /* Fixed-width icon slot left of profile label — keeps labels aligned across
    entries. Matches PROFILE_ICON_SIZE (menu.ts) exactly in px: an em-based
    width is font-size-dependent and doesn't reliably equal the icon's actual
-   rendered width, which left the blank fallback slot a different width than
-   a real/badge icon next to it. */
+   rendered width. Uses `width`, not `min-width`: the blank fallback is an
+   empty St.Widget with no content of its own, so a *minimum* width is only
+   ever a floor for its natural (here: zero) size — nothing forces it up to
+   that floor in a non-expanding BoxLayout child, leaving it a few pixels
+   narrower than a real icon next to it. An exact `width` has no natural
+   size to fall back to. */
 .browser-hub-profile-icon {
-  min-width: 16px;
+  width: 16px;
   margin-right: 0.3em;
 }
 
