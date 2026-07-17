@@ -65,19 +65,6 @@ vi.mock("gi://St", () => ({
   },
 }));
 
-class FakeFlowLayout {
-  props: Record<string, unknown>;
-  constructor(props: Record<string, unknown> = {}) {
-    this.props = props;
-  }
-}
-vi.mock("gi://Clutter", () => ({
-  default: {
-    FlowLayout: FakeFlowLayout,
-    Orientation: { HORIZONTAL: 0, VERTICAL: 1 },
-  },
-}));
-
 class FakeLabel extends FakeWidget {
   text: string;
   constructor(text: string) {
@@ -177,7 +164,7 @@ describe("fillMenu", () => {
     expect(iconSlot).not.toBeInstanceOf(FakeIcon);
   });
 
-  it("wraps the 'Browsers' row's icon buttons in a Clutter.FlowLayout container so they wrap onto new lines", () => {
+  it("puts the 'Browsers' row's icon buttons on a single line when they fit", () => {
     const menu = makeFakeMenu();
     fillMenu({
       title: "t",
@@ -198,10 +185,33 @@ describe("fillMenu", () => {
     });
 
     const row = menu.items[2] as FakePopupMenuItem; // [0] toolbar, [1] separator, [2] row
-    expect(row.children).toHaveLength(1); // one flow container, not one child per button
-    const flow = row.children[0];
-    expect(flow.props.layout_manager).toBeInstanceOf(FakeFlowLayout);
-    expect(flow.children).toHaveLength(2);
+    const container = row.children[0];
+    expect(container.children).toHaveLength(1); // one line, not one child per button
+    const line = container.children[0];
+    expect(line).toBeInstanceOf(FakeBoxLayout);
+    expect(line.children).toHaveLength(2);
+  });
+
+  it("wraps the 'Browsers' row's icon buttons onto additional lines past the per-line cap", () => {
+    const menu = makeFakeMenu();
+    const items = Array.from({ length: 7 }, (_, i) => ({
+      label: `Browser ${i}`,
+      command: [`browser${i}`],
+    }));
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [{ label: "Browsers", group: "simple", items }],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const row = menu.items[2] as FakePopupMenuItem;
+    const container = row.children[0];
+    expect(container.children).toHaveLength(2); // 6 on the first line, 1 on the second
+    expect(container.children[0].children).toHaveLength(6);
+    expect(container.children[1].children).toHaveLength(1);
   });
 
   it("shows the browser's icon before the separator label when the entry has one", () => {

@@ -1,5 +1,4 @@
 import St from "gi://St";
-import Clutter from "gi://Clutter";
 import type Gio from "gi://Gio";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -215,13 +214,18 @@ function buildToolbar({
   return toolbar;
 }
 
-/**
- * Builds a menu item row for simple (profile-less) browsers with icon buttons.
- * Uses Clutter.FlowLayout (not a plain BoxLayout) so buttons wrap onto
- * additional rows on their own once they no longer fit the popup's width,
- * instead of forcing the menu wider or clipping — GNOME's own mechanism for
- * this, no manual width math needed.
- */
+// Buttons per line in the "Browsers" row before wrapping to a new one. A
+// fixed chunk size rather than Clutter.FlowLayout's automatic width-based
+// reflow (tried first: with 6-7+ installed browsers the flat row grew wider
+// than the popup) — FlowLayout's width-for-height negotiation turned out to
+// render the whole row empty under real GNOME Shell despite resolving items
+// correctly, a failure mode the mocked test suite couldn't catch since it
+// stubs Clutter.FlowLayout with a no-op class rather than exercising
+// Clutter's real layout engine. Chosen low enough to fit a typical popup
+// width at this button's actual size (24px icon + 8px padding each side).
+const BROWSERS_ROW_ITEMS_PER_LINE = 6;
+
+/** Builds a menu item row for simple (profile-less) browsers with icon buttons. */
 function buildSimpleBrowserRow({
   title,
   items,
@@ -234,20 +238,21 @@ function buildSimpleBrowserRow({
   closeMenu: () => void;
 }): PopupMenuItem {
   const row = makeIconRow();
-  const flow = new St.Widget({
-    x_expand: true,
-    layout_manager: new Clutter.FlowLayout({ orientation: Clutter.Orientation.HORIZONTAL }),
-  });
-  for (const item of items) {
-    const cmd = item.command;
-    flow.add_child(
-      makeIconButton(item.label, item.icon, 24, () => {
-        launchBrowser({ command: cmd, title, notify });
-        closeMenu();
-      }),
-    );
+  const container = new St.BoxLayout({ vertical: true, x_expand: true });
+  for (let i = 0; i < items.length; i += BROWSERS_ROW_ITEMS_PER_LINE) {
+    const line = new St.BoxLayout({});
+    for (const item of items.slice(i, i + BROWSERS_ROW_ITEMS_PER_LINE)) {
+      const cmd = item.command;
+      line.add_child(
+        makeIconButton(item.label, item.icon, 24, () => {
+          launchBrowser({ command: cmd, title, notify });
+          closeMenu();
+        }),
+      );
+    }
+    container.add_child(line);
   }
-  row.add_child(flow);
+  row.add_child(container);
   return row;
 }
 
