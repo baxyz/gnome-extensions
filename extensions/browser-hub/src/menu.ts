@@ -238,9 +238,13 @@ function buildSimpleBrowserRow({
   closeMenu: () => void;
 }): PopupMenuItem {
   const row = makeIconRow();
-  const container = new St.BoxLayout({ vertical: true, x_expand: true });
+  const container = new St.BoxLayout({
+    vertical: true,
+    x_expand: true,
+    style_class: "browser-hub-browsers-lines",
+  });
   for (let i = 0; i < items.length; i += BROWSERS_ROW_ITEMS_PER_LINE) {
-    const line = new St.BoxLayout({});
+    const line = new St.BoxLayout({ style_class: "browser-hub-browsers-line" });
     for (const item of items.slice(i, i + BROWSERS_ROW_ITEMS_PER_LINE)) {
       const cmd = item.command;
       line.add_child(

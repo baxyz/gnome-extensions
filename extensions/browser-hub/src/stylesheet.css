@@ -52,6 +52,16 @@
   padding: 8px;
 }
 
+/* Vertical gap between wrapped lines of the "Browsers" row */
+.browser-hub-browsers-lines {
+  spacing: 4px;
+}
+
+/* Horizontal gap between icon buttons on one line of the "Browsers" row */
+.browser-hub-browsers-line {
+  spacing: 4px;
+}
+
 /* Square icon buttons for toolbar (refresh & settings) */
 .browser-hub-toolbar-btn {
   padding: 4px 6px;
