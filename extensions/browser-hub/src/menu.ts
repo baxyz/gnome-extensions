@@ -301,27 +301,29 @@ function buildProfileMenuItem({
   const badge = item.icon && item.color?.mode === "badge" ? item.color : undefined;
   const badgeBg = badge ? safeCssColor(badge.bgColor) : undefined;
   const iconSize = badgeBg ? PROFILE_ICON_SIZE - BADGE_PADDING_X * 2 : PROFILE_ICON_SIZE;
-  // item.icon is undefined only when neither an avatar nor the browser's own
-  // .desktop icon could be resolved — nothing to show but a reserved blank
-  // slot (keeps labels aligned across entries).
-  const iconSlot = item.icon
-    ? new St.Icon({
-        ...iconProps(item.icon),
-        icon_size: iconSize,
-        style_class: "browser-hub-profile-icon",
-      })
-    : new St.Widget({ style_class: "browser-hub-profile-icon" });
-  if (badge) {
-    const fg = safeCssColor(badge.fgColor);
-    const style: string[] = [];
-    if (fg) style.push(`color: ${fg}`);
-    if (badgeBg)
-      style.push(
-        `background-color: ${badgeBg}`,
-        "border-radius: 4px",
-        `padding: ${BADGE_PADDING_Y}px ${BADGE_PADDING_X}px`,
-      );
-    if (style.length > 0) iconSlot.set_style(`${style.join("; ")};`);
+  // St.Bin, not St.Icon/St.Widget directly: a Bin is built to always occupy
+  // its own configured size regardless of its child (or lack of one), which
+  // a bare St.Widget doesn't reliably do for an empty placeholder — that gap
+  // was the source of a previous width mismatch between this blank slot and
+  // an actual icon next to it. item.icon is undefined only when neither an
+  // avatar nor the browser's own .desktop icon could be resolved — nothing
+  // to show but a reserved blank slot (keeps labels aligned across entries).
+  const iconSlot = new St.Bin({ style_class: "browser-hub-profile-icon" });
+  if (item.icon) {
+    const icon = new St.Icon({ ...iconProps(item.icon), icon_size: iconSize });
+    if (badge) {
+      const fg = safeCssColor(badge.fgColor);
+      const style: string[] = [];
+      if (fg) style.push(`color: ${fg}`);
+      if (badgeBg)
+        style.push(
+          `background-color: ${badgeBg}`,
+          "border-radius: 4px",
+          `padding: ${BADGE_PADDING_Y}px ${BADGE_PADDING_X}px`,
+        );
+      if (style.length > 0) icon.set_style(`${style.join("; ")};`);
+    }
+    iconSlot.set_child(icon);
   }
   menuItem.insert_child_below(iconSlot, menuItem.label);
 

@@ -50,6 +50,7 @@ class FakeWidget {
 class FakeIcon extends FakeWidget {}
 class FakeButton extends FakeWidget {}
 class FakeBoxLayout extends FakeWidget {}
+class FakeBin extends FakeWidget {}
 
 vi.mock("gi://St", () => ({
   default: {
@@ -57,6 +58,7 @@ vi.mock("gi://St", () => ({
     Icon: FakeIcon,
     Button: FakeButton,
     BoxLayout: FakeBoxLayout,
+    Bin: FakeBin,
     IconTheme: class {
       has_icon() {
         return true;
@@ -147,7 +149,7 @@ describe("fillMenu", () => {
     expect((separatorAndMessage[1] as FakePopupMenuItem).label.text).toBe("No browsers found");
   });
 
-  it("renders a blank icon slot (not St.Icon) for a profile item with no icon", () => {
+  it("renders an empty St.Bin icon slot (not St.Icon) for a profile item with no icon", () => {
     const menu = makeFakeMenu();
     fillMenu({
       title: "t",
@@ -160,8 +162,8 @@ describe("fillMenu", () => {
 
     const profileItem = menu.items[2] as FakePopupMenuItem; // [0] toolbar, [1] separator, [2] item
     const iconSlot = profileItem.children[0];
-    expect(iconSlot).toBeInstanceOf(FakeWidget);
-    expect(iconSlot).not.toBeInstanceOf(FakeIcon);
+    expect(iconSlot).toBeInstanceOf(FakeBin);
+    expect(iconSlot.children).toHaveLength(0);
   });
 
   it("puts the 'Browsers' row's icon buttons on a single line when they fit", () => {
@@ -270,9 +272,11 @@ describe("fillMenu", () => {
     });
 
     const profileItem = menu.items[2] as FakePopupMenuItem;
-    const iconSlot = profileItem.children[0] as FakeIcon;
-    expect(iconSlot).toBeInstanceOf(FakeIcon);
-    expect(iconSlot.props.icon_name).toBe("firefox-symbolic");
+    const iconSlot = profileItem.children[0] as FakeBin;
+    expect(iconSlot).toBeInstanceOf(FakeBin);
+    const icon = iconSlot.children[0] as FakeIcon;
+    expect(icon).toBeInstanceOf(FakeIcon);
+    expect(icon.props.icon_name).toBe("firefox-symbolic");
   });
 
   it("applies color.mode 'badge' fgColor as an icon tint with no fgColor bgColor pill", () => {
@@ -299,9 +303,9 @@ describe("fillMenu", () => {
     });
 
     const profileItem = menu.items[2] as FakePopupMenuItem;
-    const iconSlot = profileItem.children[0] as FakeIcon;
-    expect(iconSlot.style).toBe("color: #ffffff;");
-    expect(iconSlot.props.icon_size).toBe(16); // no pill — full size, nothing to shrink for
+    const icon = (profileItem.children[0] as FakeBin).children[0] as FakeIcon;
+    expect(icon.style).toBe("color: #ffffff;");
+    expect(icon.props.icon_size).toBe(16); // no pill — full size, nothing to shrink for
   });
 
   it("applies color.mode 'badge' bgColor as a background pill, shrinking the icon so the total footprint matches a plain icon", () => {
@@ -328,12 +332,12 @@ describe("fillMenu", () => {
     });
 
     const profileItem = menu.items[2] as FakePopupMenuItem;
-    const iconSlot = profileItem.children[0] as FakeIcon;
-    expect(iconSlot.style).toBe(
+    const icon = (profileItem.children[0] as FakeBin).children[0] as FakeIcon;
+    expect(icon.style).toBe(
       "color: #ffffff; background-color: #20123a; border-radius: 4px; padding: 3px 1px;",
     );
     // 16px plain icon vs 14px icon + 1px horizontal padding each side = 16px total width either way.
-    expect(iconSlot.props.icon_size).toBe(14);
+    expect(icon.props.icon_size).toBe(14);
   });
 
   it("renders color.mode 'dot' as a separate indicator, not an icon badge (Chromium)", () => {
@@ -360,8 +364,8 @@ describe("fillMenu", () => {
     });
 
     const profileItem = menu.items[2] as FakePopupMenuItem;
-    const iconSlot = profileItem.children[0] as FakeIcon;
-    expect(iconSlot.style).toBeUndefined(); // no badge on the icon itself
+    const icon = (profileItem.children[0] as FakeBin).children[0] as FakeIcon;
+    expect(icon.style).toBeUndefined(); // no badge on the icon itself
     const dot = profileItem.children.at(-1) as FakeWidget;
     expect(dot.props.style_class).toBe("browser-hub-profile-dot");
     expect(dot.style).toContain("background-color: rgb(17,34,51)");
