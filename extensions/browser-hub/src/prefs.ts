@@ -7,7 +7,7 @@ import { SUB_SETTING_PARENTS } from "./settings-keys";
 import type { ProfileGroupsMode } from "./browser";
 
 const PROFILE_GROUP_MODES: ProfileGroupsMode[] = ["spaces", "profiles", "off"];
-const PROFILE_GROUP_LABELS = ["Spaces", "Profiles", "Hide"];
+const PROFILE_GROUP_LABELS = ["Profiles", "Spaces", "Hide"];
 
 export default class BrowserHubPreferences extends ExtensionPreferences {
   async fillPreferencesWindow(window: Adw.PreferencesWindow): Promise<void> {
@@ -62,7 +62,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     bindToParent("show-single-profile-detail", singleProfileRow);
     profilesGroup.add(singleProfileRow);
 
-    const profileGroupsGroup = new Adw.PreferencesGroup({ title: "Firefox Profile Groups" });
+    const profileGroupsGroup = new Adw.PreferencesGroup({ title: "Spaces" });
 
     const profileGroupsToggles = new Adw.ToggleGroup();
     for (const label of PROFILE_GROUP_LABELS) {
@@ -95,7 +95,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     window.connect("destroy", () => settings.disconnect(profileGroupsModeChangedId));
 
     const profileGroupsRow = new Adw.ActionRow({
-      title: "Firefox profile groups",
+      title: "Show Firefox profile groups",
       subtitle: "Profiles from Firefox's new in-browser switcher (128+)",
     });
     profileGroupsRow.add_suffix(profileGroupsToggles);
