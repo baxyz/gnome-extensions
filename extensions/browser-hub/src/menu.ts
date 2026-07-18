@@ -357,6 +357,7 @@ export function fillMenu({
   onSettings,
   onRefresh,
   defaultBrowser,
+  showToolbar = true,
   showDefaultBrowserEdit = true,
 }: {
   title: string;
@@ -366,6 +367,7 @@ export function fillMenu({
   onSettings: () => void;
   onRefresh: () => void;
   defaultBrowser?: DefaultBrowserInfo | null;
+  showToolbar?: boolean;
   showDefaultBrowserEdit?: boolean;
 }): void {
   if ("removeAll" in menu) {
@@ -378,18 +380,22 @@ export function fillMenu({
 
   const closeMenu = () => (menu as { close(): void }).close();
 
-  // Build and add toolbar
-  menu.addMenuItem(
-    buildToolbar({
-      title,
-      defaultBrowser,
-      showDefaultBrowserEdit,
-      notify,
-      onRefresh,
-      onSettings,
-      closeMenu,
-    }),
-  );
+  // Off, this hides the whole row — including Refresh and Settings, so
+  // there's no in-menu way back into preferences (the GNOME Extensions app
+  // still works). A deliberate tradeoff, not an oversight.
+  if (showToolbar) {
+    menu.addMenuItem(
+      buildToolbar({
+        title,
+        defaultBrowser,
+        showDefaultBrowserEdit,
+        notify,
+        onRefresh,
+        onSettings,
+        closeMenu,
+      }),
+    );
+  }
 
   // Handle empty state
   if (entries.length === 0) {

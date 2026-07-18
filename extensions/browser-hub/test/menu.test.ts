@@ -463,4 +463,22 @@ describe("fillMenu", () => {
     const btnGroup2 = toolbar2.children[0] as FakeBoxLayout;
     expect(btnGroup2.children).toHaveLength(1); // launch only
   });
+
+  it("omits the whole toolbar row when showToolbar is false", () => {
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      defaultBrowser: { name: "Firefox", command: ["firefox"] },
+      showToolbar: false,
+    });
+
+    // With no toolbar, the first item is straight into the entries: the
+    // category separator, not a toolbar row.
+    expect(menu.items[0]).toBeInstanceOf(FakePopupSeparatorMenuItem);
+  });
 });

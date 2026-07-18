@@ -7,7 +7,7 @@ import { SUB_SETTING_PARENTS } from "./settings-keys";
 import type { ProfileGroupsMode } from "./browser";
 
 const PROFILE_GROUP_MODES: ProfileGroupsMode[] = ["spaces", "profiles", "off"];
-const PROFILE_GROUP_LABELS = ["Space buttons", "Individual profiles", "Off"];
+const PROFILE_GROUP_LABELS = ["Spaces", "Profiles", "Hide"];
 
 export default class BrowserHubPreferences extends ExtensionPreferences {
   async fillPreferencesWindow(window: Adw.PreferencesWindow): Promise<void> {
@@ -19,6 +19,34 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       return r;
     };
 
+    // A sub-setting row's "sensitive" is bound to its parent's own value (see
+    // SUB_SETTING_PARENTS in settings-keys.ts) — greyed out and inert
+    // whenever the parent switch is off, regardless of which group either
+    // row is displayed in.
+    const bindToParent = (key: string, row: Adw.SwitchRow): void => {
+      settings.bind(SUB_SETTING_PARENTS[key], row, "sensitive", Gio.SettingsBindFlags.GET);
+    };
+
+    // -- Toolbar --------------------------------------------------------------
+
+    const toolbarGroup = new Adw.PreferencesGroup({ title: "Toolbar" });
+    toolbarGroup.add(
+      switchRow(
+        "Show toolbar",
+        "The top row: default browser, Refresh, and Settings",
+        "show-toolbar",
+      ),
+    );
+    const editBtnRow = switchRow(
+      "Show “change default browser” button",
+      "A pencil icon next to the default browser name that opens Default Applications",
+      "show-default-browser-edit",
+    );
+    bindToParent("show-default-browser-edit", editBtnRow);
+    toolbarGroup.add(editBtnRow);
+
+    // -- Profiles ---------------------------------------------------------------
+
     const profilesGroup = new Adw.PreferencesGroup({ title: "Profiles" });
     profilesGroup.add(
       switchRow("Show Firefox family", "Zen, Firefox, LibreWolf, Floorp…", "show-firefox-family"),
@@ -26,70 +54,54 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     profilesGroup.add(
       switchRow("Show Chrome family", "Chromium, Edge, Brave, Falkon…", "show-chrome-family"),
     );
-    profilesGroup.add(
-      switchRow(
-        "Show simple browsers in the “Browsers” row",
-        "GNOME Web, qutebrowser… listed as single icons",
-        "show-simple-browsers",
-      ),
-    );
-    profilesGroup.add(
-      switchRow(
-        "Show profile browsers in the “Browsers” row",
-        "Firefox/Chrome-family browsers listed here too, alongside their section above",
-        "show-profiled-browsers",
-      ),
-    );
-    const showSingleProfileDetailRow = switchRow(
-      "Show single-profile browsers’ section",
-      "Off by default: a browser with only one profile (and no active spaces) is shown only in the “Browsers” row above",
+    const singleProfileRow = switchRow(
+      "Show single-profile browsers",
+      "Off by default: a browser with only one profile (and no active spaces) is shown only in the Browsers section below",
       "show-single-profile-detail",
     );
-    // Sub-setting of its parent (see SUB_SETTING_PARENTS in settings-keys.ts)
-    // — meaningless (and visually greyed out) when the parent switch is off.
-    settings.bind(
-      SUB_SETTING_PARENTS["show-single-profile-detail"],
-      showSingleProfileDetailRow,
-      "sensitive",
-      Gio.SettingsBindFlags.GET,
-    );
-    profilesGroup.add(showSingleProfileDetailRow);
+    bindToParent("show-single-profile-detail", singleProfileRow);
+    profilesGroup.add(singleProfileRow);
 
-    const spacesGroup = new Adw.PreferencesGroup({ title: "Workspaces & Profile Groups" });
+    const profileGroupsGroup = new Adw.PreferencesGroup({ title: "Firefox Profile Groups" });
 
-    const profileGroupsRow = new Adw.ComboRow({
-      title: "Firefox profile groups",
-      subtitle:
-        "Profiles from Firefox's new in-browser switcher (128+) — separate from the classic Profile Manager",
-      model: Gtk.StringList.new(PROFILE_GROUP_LABELS),
-      selected: Math.max(
-        0,
-        PROFILE_GROUP_MODES.indexOf(
-          settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
-        ),
+    const profileGroupsToggles = new Adw.ToggleGroup();
+    for (const label of PROFILE_GROUP_LABELS) {
+      profileGroupsToggles.add(new Adw.Toggle({ label }));
+    }
+    profileGroupsToggles.valign = Gtk.Align.CENTER;
+    profileGroupsToggles.active = Math.max(
+      0,
+      PROFILE_GROUP_MODES.indexOf(
+        settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
       ),
-    });
-    profileGroupsRow.connect("notify::selected", () => {
-      const mode = PROFILE_GROUP_MODES[profileGroupsRow.selected] ?? "spaces";
+    );
+    profileGroupsToggles.connect("notify::active", () => {
+      const mode = PROFILE_GROUP_MODES[profileGroupsToggles.active] ?? "spaces";
       settings.set_string("firefox-profile-groups-mode", mode);
     });
     // ExtensionPreferences.getSettings() returns a cached, extension-lifetime
     // Gio.Settings instance shared across every time this window is opened —
     // without an explicit disconnect, reopening Preferences repeatedly piles
-    // up listeners that each close over a since-disposed profileGroupsRow.
+    // up listeners that each close over a since-disposed profileGroupsToggles.
     const profileGroupsModeChangedId = settings.connect(
       "changed::firefox-profile-groups-mode",
       () => {
         const idx = PROFILE_GROUP_MODES.indexOf(
           settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
         );
-        profileGroupsRow.selected = Math.max(0, idx);
+        profileGroupsToggles.active = Math.max(0, idx);
       },
     );
     window.connect("destroy", () => settings.disconnect(profileGroupsModeChangedId));
-    spacesGroup.add(profileGroupsRow);
 
-    spacesGroup.add(
+    const profileGroupsRow = new Adw.ActionRow({
+      title: "Firefox profile groups",
+      subtitle: "Profiles from Firefox's new in-browser switcher (128+)",
+    });
+    profileGroupsRow.add_suffix(profileGroupsToggles);
+    profileGroupsGroup.add(profileGroupsRow);
+
+    profileGroupsGroup.add(
       switchRow(
         "Show Zen workspaces",
         "Workspace buttons under each Zen profile",
@@ -97,19 +109,29 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       ),
     );
 
-    const toolbarGroup = new Adw.PreferencesGroup({ title: "Toolbar" });
-    toolbarGroup.add(
+    // -- Browsers ---------------------------------------------------------------
+
+    const browsersGroup = new Adw.PreferencesGroup({ title: "Browsers" });
+    browsersGroup.add(
       switchRow(
-        "Show “change default browser” button",
-        "A pencil icon next to the default browser name that opens Default Applications",
-        "show-default-browser-edit",
+        "Show simple browsers",
+        "GNOME Web, qutebrowser… listed as single icons",
+        "show-simple-browsers",
+      ),
+    );
+    browsersGroup.add(
+      switchRow(
+        "Show profile browsers",
+        "Firefox/Chrome-family browsers listed here too, alongside their section above",
+        "show-profiled-browsers",
       ),
     );
 
     const page = new Adw.PreferencesPage();
-    page.add(profilesGroup);
-    page.add(spacesGroup);
     page.add(toolbarGroup);
+    page.add(profilesGroup);
+    page.add(profileGroupsGroup);
+    page.add(browsersGroup);
     window.add(page);
   }
 }

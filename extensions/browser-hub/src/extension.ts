@@ -53,7 +53,10 @@ export default class BrowserProfilesExtension extends Extension {
       this.metadata.name,
       () => this.openPreferences(),
       readSettings,
-      () => settings.get_boolean("show-default-browser-edit"),
+      () => ({
+        showToolbar: settings.get_boolean("show-toolbar"),
+        showDefaultBrowserEdit: settings.get_boolean("show-default-browser-edit"),
+      }),
     );
 
     this._settingsChangedId = settings.connect("changed", (_settings, key: string) => {
@@ -115,7 +118,7 @@ class BrowserProfilesIndicator extends Button {
   private _alive = true;
   private _onSettings: () => void;
   private _readSettings: () => BrowserSettings;
-  private _readShowEditBtn: () => boolean;
+  private _readToolbarSettings: () => { showToolbar: boolean; showDefaultBrowserEdit: boolean };
   // Bumped on every refreshEntries() call so a slow, older scan can't clobber
   // the menu after a newer one has already resolved (out-of-order settling).
   private _refreshSeq = 0;
@@ -125,14 +128,14 @@ class BrowserProfilesIndicator extends Button {
     title: string,
     onSettings: () => void,
     readSettings: () => BrowserSettings,
-    readShowEditBtn: () => boolean,
+    readToolbarSettings: () => { showToolbar: boolean; showDefaultBrowserEdit: boolean },
   ) {
     super(0.0, title);
 
     this._title = title;
     this._onSettings = onSettings;
     this._readSettings = readSettings;
-    this._readShowEditBtn = readShowEditBtn;
+    this._readToolbarSettings = readToolbarSettings;
 
     this.connect("destroy", () => {
       this._alive = false;
@@ -187,6 +190,7 @@ class BrowserProfilesIndicator extends Button {
   }
 
   private _draw(): void {
+    const { showToolbar, showDefaultBrowserEdit } = this._readToolbarSettings();
     fillMenu({
       title: this._title,
       menu: this.menu,
@@ -203,7 +207,8 @@ class BrowserProfilesIndicator extends Button {
         this.refreshEntries();
       },
       defaultBrowser: getDefaultBrowser(),
-      showDefaultBrowserEdit: this._readShowEditBtn(),
+      showToolbar,
+      showDefaultBrowserEdit,
     });
   }
 }

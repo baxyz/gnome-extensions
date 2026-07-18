@@ -50,10 +50,16 @@
       <description>Display workspace buttons under each Zen Browser profile entry.</description>
     </key>
 
+    <key name="show-toolbar" type="b">
+      <default>true</default>
+      <summary>Show toolbar</summary>
+      <description>Show the top row: the default browser quick-launch button, its edit pencil, Refresh, and Settings. Turning this off hides all four — Settings will then need to be reached another way (e.g. the GNOME Extensions app).</description>
+    </key>
+
     <key name="show-default-browser-edit" type="b">
       <default>true</default>
       <summary>Show default browser edit button</summary>
-      <description>Display the pencil button next to the default browser name that opens Default Applications settings.</description>
+      <description>Sub-setting of "show-toolbar" (has no effect when that is off). Display the pencil button next to the default browser name that opens Default Applications settings.</description>
     </key>
 
   </schema>
