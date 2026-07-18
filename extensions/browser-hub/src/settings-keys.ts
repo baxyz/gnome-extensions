@@ -32,6 +32,5 @@ export const COSMETIC_KEYS = new Set<string>(["show-toolbar", "show-default-brow
  * duplicating the relationship in both resolve-all.ts and prefs.ts.
  */
 export const SUB_SETTING_PARENTS: Readonly<Record<string, string>> = {
-  "show-single-profile-detail": "show-profiled-browsers",
   "show-default-browser-edit": "show-toolbar",
 };

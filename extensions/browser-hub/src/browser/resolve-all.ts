@@ -66,15 +66,12 @@ const PROFILED_FAMILIES: readonly ProfiledFamily[] = [
 ];
 
 /**
- * collapseSingleProfileBrowsers only takes effect when showProfiledBrowsers
- * is also on — otherwise a single-profile browser hidden from its detailed
- * section wouldn't appear anywhere at all. This mirrors the gschema-level
- * relationship declared in settings-keys.ts's SUB_SETTING_PARENTS (also
- * consumed by prefs.ts for the UI sensitivity bind) — keep both in sync when
- * adding a new sub-setting.
+ * Whether to collapse single-profile browsers in their detailed section.
+ * When true, single-profile browsers are hidden from their detailed section
+ * and only appear in the Browsers row (if showProfiledBrowsers is enabled).
  */
 function shouldCollapseSingleProfileBrowsers(settings: BrowserSettings): boolean {
-  return settings.showProfiledBrowsers && settings.collapseSingleProfileBrowsers;
+  return settings.collapseSingleProfileBrowsers;
 }
 
 /**

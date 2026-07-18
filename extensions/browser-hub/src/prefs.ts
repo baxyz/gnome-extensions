@@ -59,7 +59,6 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       "Off by default: a browser with only one profile (and no active spaces) is shown only in the Browsers section below",
       "show-single-profile-detail",
     );
-    bindToParent("show-single-profile-detail", singleProfileRow);
     profilesGroup.add(singleProfileRow);
 
     const profileGroupsGroup = new Adw.PreferencesGroup({ title: "Spaces" });
