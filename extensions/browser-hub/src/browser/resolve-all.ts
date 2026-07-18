@@ -1,4 +1,4 @@
-import { createSortByStringFn } from "@helpers4/array";
+import { createSortByStringFn, isEmpty } from "@helpers4/array";
 import { settle } from "@helpers4/promise";
 import {
   CHROMIUM_BROWSERS,
@@ -99,7 +99,7 @@ function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
     ...filterPresent(withProfilesConfigs),
     ...(settings.showSimpleBrowsers ? filterAvailable(SIMPLE_BROWSERS) : []),
   ];
-  if (available.length === 0) return [];
+  if (isEmpty(available)) return [];
 
   const items = available
     .map((b) => ({

@@ -6,6 +6,7 @@ import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/she
 import type { BrowserSpace, ResolvedBrowserEntry, ResolvedBrowserItem } from "./taxonomy";
 import type { DefaultBrowserInfo } from "./default-browser";
 import { launchBrowser } from "./internal";
+import { chunk, isEmpty } from "@helpers4/array";
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
 function tooltip(btn: St.Button, text: string): void {
@@ -243,9 +244,9 @@ function buildSimpleBrowserRow({
     x_expand: true,
     style_class: "browser-hub-browsers-lines",
   });
-  for (let i = 0; i < items.length; i += BROWSERS_ROW_ITEMS_PER_LINE) {
+  for (const lineItems of chunk(items, BROWSERS_ROW_ITEMS_PER_LINE)) {
     const line = new St.BoxLayout({ style_class: "browser-hub-browsers-line" });
-    for (const item of items.slice(i, i + BROWSERS_ROW_ITEMS_PER_LINE)) {
+    for (const item of lineItems) {
       const cmd = item.command;
       line.add_child(
         makeIconButton(item.label, item.icon, 24, () => {
@@ -398,7 +399,7 @@ export function fillMenu({
   }
 
   // Handle empty state
-  if (entries.length === 0) {
+  if (isEmpty(entries)) {
     menu.addMenuItem(new PopupSeparatorMenuItem());
     menu.addMenuItem(new PopupMenuItem("No browsers found", { reactive: false }));
     return;

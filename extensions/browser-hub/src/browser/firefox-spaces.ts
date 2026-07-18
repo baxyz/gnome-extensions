@@ -1,5 +1,6 @@
 import GLib from "gi://GLib";
 import { readTable } from "sqlite-reader";
+import { isEmpty } from "@helpers4/array";
 import { listDirEntries, logIfUnexpected, readFileAsync } from "../internal";
 
 export interface FirefoxSelectableProfile {
@@ -68,7 +69,7 @@ export async function readFirefoxSelectableProfiles(
           const rb = GLib.path_get_basename(row.path);
           return toolkitSet.has(rb) ? [rb] : [];
         });
-        if (matchedBasenames.length === 0) return empty;
+        if (isEmpty(matchedBasenames)) return empty;
 
         const selectable = rows
           .filter((row) => typeof row.path === "string" && typeof row.name === "string")
