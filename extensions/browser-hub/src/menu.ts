@@ -398,10 +398,18 @@ export function fillMenu({
     );
   }
 
-  // Handle empty state
+  // Handle empty state. No separator above this — there's nothing here to
+  // separate the message from (the toolbar's own buttons already read as
+  // distinct content), unlike the labeled separator before each real entry
+  // group further down.
   if (isEmpty(entries)) {
-    menu.addMenuItem(new PopupSeparatorMenuItem());
-    menu.addMenuItem(new PopupMenuItem("No browsers found", { reactive: false }));
+    // Every toggle disabled in Settings is a far more likely cause of this
+    // than a genuine absence of any installed browser — lead with that.
+    menu.addMenuItem(
+      new PopupMenuItem("Nothing to show — check Settings, or install a browser", {
+        reactive: false,
+      }),
+    );
     return;
   }
 

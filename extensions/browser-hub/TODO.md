@@ -19,7 +19,7 @@
 
 ## UX
 
-- [ ] Message "No browsers found" plus utile (`menu.ts`) — ex. "No browsers
+- [x] Message "No browsers found" plus utile (`menu.ts`) — ex. "No browsers
       found. Install a browser or check your settings."
 
 ## Avant publication sur extensions.gnome.org

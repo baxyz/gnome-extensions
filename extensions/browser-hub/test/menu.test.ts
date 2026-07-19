@@ -140,13 +140,15 @@ beforeEach(() => {
 });
 
 describe("fillMenu", () => {
-  it("shows 'No browsers found' when entries is empty", () => {
+  it("shows an empty-state message with no separator when entries is empty", () => {
     const menu = makeFakeMenu();
     fillMenu({ title: "t", menu, entries: [], notify, onSettings: noop, onRefresh: noop });
 
-    const separatorAndMessage = menu.items.slice(1); // [0] is the toolbar row
-    expect(separatorAndMessage[0]).toBeInstanceOf(FakePopupSeparatorMenuItem);
-    expect((separatorAndMessage[1] as FakePopupMenuItem).label.text).toBe("No browsers found");
+    const message = menu.items[1]; // [0] is the toolbar row, nothing separates the message from it
+    expect(message).not.toBeInstanceOf(FakePopupSeparatorMenuItem);
+    expect((message as FakePopupMenuItem).label.text).toBe(
+      "Nothing to show — check Settings, or install a browser",
+    );
   });
 
   it("renders an empty St.Bin icon slot (not St.Icon) for a profile item with no icon", () => {
