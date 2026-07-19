@@ -24,12 +24,11 @@ export const COSMETIC_KEYS = new Set<string>(["show-toolbar", "show-default-brow
 
 /**
  * Sub-setting gschema key -> its parent key. A sub-setting only takes effect
- * when its parent is also on (see BrowserSettings's shouldCollapseSingle-
- * ProfileBrowsers in browser/resolve-all.ts for the corresponding runtime
- * check on the parsed settings, and prefs.ts for the UI sensitivity bind) —
- * this table is the single place recording WHICH keys are paired this way,
- * so adding a new sub-setting means updating one table instead of hand-
- * duplicating the relationship in both resolve-all.ts and prefs.ts.
+ * when its parent is also on — bound as prefs.ts's UI sensitivity ("sensitive"
+ * follows the parent's own value, greying the row out when the parent is off).
+ * This table is the single place recording WHICH keys are paired this way,
+ * so adding a new sub-setting means updating one place instead of hand-
+ * duplicating the relationship elsewhere.
  */
 export const SUB_SETTING_PARENTS: Readonly<Record<string, string>> = {
   "show-default-browser-edit": "show-toolbar",

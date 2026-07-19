@@ -956,7 +956,7 @@ describe("getBrowserEntries", () => {
     expect(browsersRow?.items.map((i) => i.label)).toContain("Firefox (classic)");
   });
 
-  it("does not collapse a single-profile browser when showProfiledBrowsers is off (sub-setting has no effect)", async () => {
+  it("collapses a single-profile browser even when showProfiledBrowsers is off — collapseSingleProfileBrowsers is independent of it", async () => {
     setFile(
       "/home/user/.mozilla/firefox/profiles.ini",
       "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
@@ -972,8 +972,11 @@ describe("getBrowserEntries", () => {
       profileGroupsMode: "off",
     });
 
-    expect(entries.some((e) => e.label === "Firefox (classic)")).toBe(true);
-    expect(entries.find((e) => e.label === "Browsers")).toBeUndefined();
+    // With showProfiledBrowsers off, the Browsers row doesn't list it either
+    // — collapsing it here means this single-profile browser has no way to
+    // be launched from the menu at all. A known, accepted tradeoff of
+    // keeping collapseSingleProfileBrowsers independent of showProfiledBrowsers.
+    expect(entries).toEqual([]);
   });
 
   it("does not collapse a browser with multiple profiles even when both settings are on", async () => {
