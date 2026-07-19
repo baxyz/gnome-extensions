@@ -2,7 +2,13 @@ import { settle } from "@helpers4/promise";
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../taxonomy";
-import { buildBaseCommand, filterPresent, listDirEntries, resolveDesktopIcon } from "../internal";
+import {
+  buildBaseCommand,
+  filterPresent,
+  listDirEntries,
+  resolveDesktopIcon,
+  tagError,
+} from "../internal";
 
 async function listProfileDirs(dirPath: string): Promise<string[]> {
   const entries = await listDirEntries(
@@ -17,14 +23,18 @@ export async function resolveFalkonBrowsers(
 ): Promise<ResolvedBrowserEntry[]> {
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers, GLib.FileTest.IS_DIR).map(async (b) => {
-      return {
-        label: b.label,
-        items: (await listProfileDirs(b.path)).map((name) => ({
-          label: name,
-          command: [...buildBaseCommand(b.pkg), "--profile", name],
-        })),
-        icon: resolveDesktopIcon(b.pkg),
-      };
+      try {
+        return {
+          label: b.label,
+          items: (await listProfileDirs(b.path)).map((name) => ({
+            label: name,
+            command: [...buildBaseCommand(b.pkg), "--profile", name],
+          })),
+          icon: resolveDesktopIcon(b.pkg),
+        };
+      } catch (e) {
+        tagError(b.label, e);
+      }
     }),
   );
   for (const reason of rejected) {

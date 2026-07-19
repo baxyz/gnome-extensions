@@ -9,6 +9,7 @@ import {
   logIfUnexpected,
   readTextFileAsync,
   resolveDesktopIcon,
+  tagError,
 } from "../internal";
 
 export type ChromiumProfile = { name: string; dir: string; isDefault: boolean; bgColor?: string };
@@ -62,16 +63,20 @@ export async function resolveChromiumBrowsers(
 ): Promise<ResolvedBrowserEntry[]> {
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers).map(async (b) => {
-      const profiles = await readProfiles(b.path);
-      const items = profiles
-        .map((profile) => ({
-          label: profile.name,
-          command: [...buildBaseCommand(b.pkg), `--profile-directory=${profile.dir}`],
-          isDefault: profile.isDefault,
-          color: toDotColor(profile.bgColor),
-        }))
-        .sort(compareByDefault);
-      return { label: b.label, items, icon: resolveDesktopIcon(b.pkg) };
+      try {
+        const profiles = await readProfiles(b.path);
+        const items = profiles
+          .map((profile) => ({
+            label: profile.name,
+            command: [...buildBaseCommand(b.pkg), `--profile-directory=${profile.dir}`],
+            isDefault: profile.isDefault,
+            color: toDotColor(profile.bgColor),
+          }))
+          .sort(compareByDefault);
+        return { label: b.label, items, icon: resolveDesktopIcon(b.pkg) };
+      } catch (e) {
+        tagError(b.label, e);
+      }
     }),
   );
   for (const reason of rejected) {

@@ -53,6 +53,10 @@ function newFile(filePath: string) {
       return makeEnumerator(res.filePath);
     },
 
+    query_info: (_attrs: string, _flags: number, _cancel: null) => ({
+      get_size: () => fs.statSync(filePath).size,
+    }),
+
     load_contents_async: (_cancel: null, cb: (src: null, res: unknown) => void) => {
       try {
         _contents = new Uint8Array(fs.readFileSync(filePath));

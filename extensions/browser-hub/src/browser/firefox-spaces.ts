@@ -16,12 +16,29 @@ export interface FirefoxSelectableProfile {
 
 const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
 
+// A stale .sqlite left behind by e.g. a profile migration is harmless on its
+// own, but nothing bounds how many could accumulate over years of use —
+// cap how many get read so a directory with hundreds of them can't turn a
+// menu-open into a long stall. Sorted first so which ones get kept is
+// deterministic (directory-listing order isn't guaranteed stable), not a
+// coin flip across runs.
+const MAX_SQLITE_FILES = 50;
+
 async function listSqliteFiles(dirPath: string): Promise<string[]> {
   const entries = await listDirEntries(
     dirPath,
     `[browser-hub] failed to list Profile Groups directory ${dirPath}`,
   );
-  return entries.filter((e) => e.name.endsWith(".sqlite")).map((e) => `${dirPath}/${e.name}`);
+  const files = entries
+    .filter((e) => e.name.endsWith(".sqlite"))
+    .map((e) => `${dirPath}/${e.name}`)
+    .sort();
+  if (files.length > MAX_SQLITE_FILES) {
+    console.log(
+      `[browser-hub] ${dirPath} has ${files.length} .sqlite files, only reading the first ${MAX_SQLITE_FILES}`,
+    );
+  }
+  return files.slice(0, MAX_SQLITE_FILES);
 }
 
 type MatchedGroup = {

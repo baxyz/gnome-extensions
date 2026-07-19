@@ -5,6 +5,7 @@ export {
   logIfUnexpected,
   readFileAsync,
   readTextFileAsync,
+  tagError,
 } from "./gio";
 export type { DesktopAppInfo, DirEntry } from "./gio";
 export { clearDesktopIconCache, resolveDesktopIcon } from "./desktop-icon";

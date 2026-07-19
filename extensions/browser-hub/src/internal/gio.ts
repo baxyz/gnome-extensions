@@ -4,29 +4,63 @@ import GLib from "gi://GLib";
 export const decoder = new TextDecoder();
 
 /**
- * Logs `e` unless it's a "file doesn't exist" error — that's the expected,
- * silent case for browsers/profiles/session files that simply aren't there
- * yet. Anything else (permission denied, corrupt/undecodable content) is a
- * real signal that was previously swallowed with no diagnostic trail.
+ * Rethrows `e` with `label` prepended to its message and the original error
+ * preserved as `.cause` — used to tag a per-browser resolution failure with
+ * which browser it was before it reaches a settle()-based error log that
+ * would otherwise report only "a Firefox-family browser failed to resolve"
+ * with no way to tell which one.
  */
-export function logIfUnexpected(e: unknown, context: string): void {
-  const isNotFound =
+export function tagError(label: string, e: unknown): never {
+  throw new Error(`${label}: ${e instanceof Error ? e.message : String(e)}`, { cause: e });
+}
+
+function matchesIOError(e: unknown, code: number): boolean {
+  return (
     typeof e === "object" &&
     e !== null &&
     "matches" in e &&
     typeof (e as { matches: unknown }).matches === "function" &&
-    (e as { matches: (domain: unknown, code: number) => boolean }).matches(
-      Gio.IOErrorEnum,
-      Gio.IOErrorEnum.NOT_FOUND,
-    );
-  if (!isNotFound) {
-    logError(e as object, context);
-  }
+    (e as { matches: (domain: unknown, code: number) => boolean }).matches(Gio.IOErrorEnum, code)
+  );
 }
+
+/**
+ * Logs `e` unless it's a "file doesn't exist" error — that's the expected,
+ * silent case for browsers/profiles/session files that simply aren't there
+ * yet. A permission error is distinguished from other unexpected failures
+ * (corrupt/undecodable content, a bug) since it points at a specific,
+ * actionable fix (file ownership/permissions) rather than a code issue.
+ */
+export function logIfUnexpected(e: unknown, context: string): void {
+  if (matchesIOError(e, Gio.IOErrorEnum.NOT_FOUND)) return;
+  if (matchesIOError(e, Gio.IOErrorEnum.PERMISSION_DENIED)) {
+    console.warn(`[browser-hub] permission denied: ${context}`);
+    return;
+  }
+  logError(e as object, context);
+}
+
+// profiles.ini / Local State / zen-sessions.jsonlz4 / a Profile Groups
+// .sqlite are all normally well under 1MB even with dozens of profiles —
+// this is generous enough to never trip on real data, but still stops a
+// corrupted or unexpectedly huge file from being read whole into memory
+// and stalling the menu.
+const MAX_READABLE_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export function readFileAsync(path: string): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const file = Gio.File.new_for_path(path);
+    let size: number;
+    try {
+      size = file.query_info("standard::size", Gio.FileQueryInfoFlags.NONE, null).get_size();
+    } catch (e) {
+      reject(e);
+      return;
+    }
+    if (size > MAX_READABLE_FILE_SIZE) {
+      reject(new Error(`refusing to read ${path}: ${size} bytes exceeds the read size limit`));
+      return;
+    }
     file.load_contents_async(null, (_source, result) => {
       try {
         const [, contents] = file.load_contents_finish(result);

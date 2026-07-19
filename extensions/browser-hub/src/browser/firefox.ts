@@ -16,6 +16,7 @@ import {
   logIfUnexpected,
   readTextFileAsync,
   resolveDesktopIcon,
+  tagError,
 } from "../internal";
 import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./firefox-spaces";
 import { readZenSpaces, zenSpaceColor } from "./zen";
@@ -249,46 +250,50 @@ export async function resolveFirefoxBrowsers(
 ): Promise<ResolvedBrowserEntry[]> {
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers).map(async (b) => {
-      const baseCommand = buildBaseCommand(b.pkg);
-      const browserIcon = resolveDesktopIcon(b.pkg);
-      const profiles = await readProfiles(b.path);
-      const firefoxRoot = GLib.path_get_dirname(b.path);
-      const selectableMap =
-        profileGroupsMode !== "off"
-          ? await readFirefoxSelectableProfiles(
-              firefoxRoot,
-              profiles.map((p) => p.folderBasename),
-            )
-          : new Map<string, FirefoxSelectableProfile[]>();
+      try {
+        const baseCommand = buildBaseCommand(b.pkg);
+        const browserIcon = resolveDesktopIcon(b.pkg);
+        const profiles = await readProfiles(b.path);
+        const firefoxRoot = GLib.path_get_dirname(b.path);
+        const selectableMap =
+          profileGroupsMode !== "off"
+            ? await readFirefoxSelectableProfiles(
+                firefoxRoot,
+                profiles.map((p) => p.folderBasename),
+              )
+            : new Map<string, FirefoxSelectableProfile[]>();
 
-      // A Profile Groups member can itself be independently listed in
-      // profiles.ini as its own toolkit profile. If so, selectableMap maps
-      // BOTH toolkit profiles to the exact same selectable array (see
-      // firefox-spaces.ts) — render that group once, from whichever toolkit
-      // profile is encountered first, not once per toolkit profile that
-      // happens to belong to it.
-      const renderedGroups = new Set<FirefoxSelectableProfile[]>();
-      const items = (
-        await Promise.all(
-          profiles.map((profile) => {
-            const selectable = selectableMap.get(profile.folderBasename);
-            if (selectable) {
-              if (renderedGroups.has(selectable)) return [];
-              renderedGroups.add(selectable);
-            }
-            return resolveOneProfile(
-              profile,
-              selectableMap,
-              profileGroupsMode,
-              baseCommand,
-              b.spaceType,
-              enabledSpaces,
-            );
-          }),
-        )
-      ).flat();
-      items.sort(compareByDefault);
-      return { label: b.label, items, icon: browserIcon };
+        // A Profile Groups member can itself be independently listed in
+        // profiles.ini as its own toolkit profile. If so, selectableMap maps
+        // BOTH toolkit profiles to the exact same selectable array (see
+        // firefox-spaces.ts) — render that group once, from whichever toolkit
+        // profile is encountered first, not once per toolkit profile that
+        // happens to belong to it.
+        const renderedGroups = new Set<FirefoxSelectableProfile[]>();
+        const items = (
+          await Promise.all(
+            profiles.map((profile) => {
+              const selectable = selectableMap.get(profile.folderBasename);
+              if (selectable) {
+                if (renderedGroups.has(selectable)) return [];
+                renderedGroups.add(selectable);
+              }
+              return resolveOneProfile(
+                profile,
+                selectableMap,
+                profileGroupsMode,
+                baseCommand,
+                b.spaceType,
+                enabledSpaces,
+              );
+            }),
+          )
+        ).flat();
+        items.sort(compareByDefault);
+        return { label: b.label, items, icon: browserIcon };
+      } catch (e) {
+        tagError(b.label, e);
+      }
     }),
   );
   for (const reason of rejected) {

@@ -6,15 +6,15 @@
 
 ## Robustesse
 
-- [ ] Limiter la taille lue pour `zen-sessions.jsonlz4`, `profiles.ini` et
+- [x] Limiter la taille lue pour `zen-sessions.jsonlz4`, `profiles.ini` et
       `Local State` (Chromium) — un fichier corrompu ou anormalement gros ne
       devrait pas pouvoir ralentir/geler un scan.
-- [ ] Limiter le nombre de fichiers `.sqlite` lus par profil (Firefox Profile
+- [x] Limiter le nombre de fichiers `.sqlite` lus par profil (Firefox Profile
       Groups).
-- [ ] Distinguer `NOT_FOUND` de `PERMISSION_DENIED` dans `logIfUnexpected`
+- [x] Distinguer `NOT_FOUND` de `PERMISSION_DENIED` dans `logIfUnexpected`
       (`src/internal/gio.ts`) — un `~/.config` illisible merite un message
       different d'un fichier simplement absent.
-- [ ] Inclure le nom du navigateur dans les erreurs de resolution
+- [x] Inclure le nom du navigateur dans les erreurs de resolution
       (`firefox.ts`/`chromium.ts`/`falkon.ts`).
 
 ## UX

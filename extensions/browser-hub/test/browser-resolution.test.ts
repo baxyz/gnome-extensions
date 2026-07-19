@@ -65,6 +65,11 @@ vi.mock("gi://Gio", () => ({
   default: {
     File: {
       new_for_path: (path: string) => ({
+        query_info(_attrs: string, _flags: number, _cancellable: null) {
+          const entry = fs.get(path);
+          if (!entry || entry.type !== "file") throw notFoundError();
+          return { get_size: () => entry.content.byteLength };
+        },
         load_contents_async(
           _cancellable: null,
           callback: (source: unknown, result: { path: string }) => void,
@@ -608,6 +613,40 @@ describe("resolveFirefoxBrowsers", () => {
     // "a.sqlite" sorts before "b.sqlite" — its group wins deterministically,
     // regardless of which db file's read happened to settle first.
     expect(entries[0].items.map((i) => i.label).sort()).toEqual(["FromA1", "FromA2"]);
+  });
+
+  it("only reads the first 50 .sqlite files (sorted) in a Profile Groups directory", async () => {
+    setFile(
+      "/home/user/.mozilla/firefox/profiles.ini",
+      profilesIni([{ name: "default", path: "abc.default", isDefault: true }]),
+    );
+    // 51 files, sorted alphabetically "file00.sqlite".."file50.sqlite" — only
+    // the last one (excluded by the cap) gets real content, so its group
+    // showing up in the result would mean the cap didn't apply.
+    const names = Array.from({ length: 51 }, (_, i) => `file${String(i).padStart(2, "0")}.sqlite`);
+    setDir("/home/user/.mozilla/firefox/Profile Groups", names);
+    setFile(
+      "/home/user/.mozilla/firefox/Profile Groups/file50.sqlite",
+      JSON.stringify([
+        { path: "abc.default", name: "ShouldBeSkipped", avatar: "star" },
+        { path: "xyz.other", name: "AlsoSkipped", avatar: "book" },
+      ]),
+    );
+
+    const entries = await resolveFirefoxBrowsers(
+      [
+        {
+          type: BrowserType.Firefox,
+          label: "Firefox",
+          path: "/home/user/.mozilla/firefox/profiles.ini",
+          pkg,
+        },
+      ],
+      { enabledSpaces: new Set(), profileGroupsMode: "profiles" },
+    );
+
+    expect(entries[0].items.map((i) => i.label)).not.toContain("ShouldBeSkipped");
+    expect(entries[0].items.map((i) => i.label)).toEqual(["default"]);
   });
 
   it("ignores Profile Groups entirely when profileGroupsMode is 'off'", async () => {

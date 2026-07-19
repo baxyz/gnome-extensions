@@ -1,0 +1,125 @@
+import { describe, it, expect, vi } from "vitest";
+
+type FakeFile = {
+  path: string;
+  size: number;
+  contents: Uint8Array;
+  present: boolean;
+};
+
+const files = new Map<string, FakeFile>();
+
+function ioError(code: number): { matches: (domain: unknown, c: number) => boolean } {
+  return { matches: (_domain: unknown, c: number) => c === code };
+}
+
+const NOT_FOUND = 1;
+const PERMISSION_DENIED = 2;
+
+vi.mock("gi://Gio", () => ({
+  default: {
+    FileQueryInfoFlags: { NONE: 0 },
+    IOErrorEnum: { NOT_FOUND, PERMISSION_DENIED },
+    File: {
+      new_for_path: (path: string) => ({
+        query_info(_attrs: string, _flags: number, _cancel: null) {
+          const f = files.get(path);
+          if (!f || !f.present) throw ioError(NOT_FOUND);
+          return { get_size: () => f.size };
+        },
+        load_contents_async(_cancel: null, cb: (src: null, res: { path: string }) => void) {
+          cb(null, { path });
+        },
+        load_contents_finish(result: { path: string }) {
+          const f = files.get(result.path);
+          if (!f || !f.present) throw ioError(NOT_FOUND);
+          if (f.size === -1) throw ioError(PERMISSION_DENIED);
+          return [true, f.contents];
+        },
+      }),
+    },
+  },
+}));
+
+// internal/gio.ts imports GLib too (unused by anything exercised here) —
+// the import itself must still resolve under Node.
+vi.mock("gi://GLib", () => ({ default: { PRIORITY_DEFAULT: 0 } }));
+
+const { logIfUnexpected, readFileAsync, tagError } = await import("../src/internal/gio");
+
+describe("logIfUnexpected", () => {
+  it("stays silent for a NOT_FOUND error", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    globalThis.logError = spy;
+
+    logIfUnexpected(ioError(NOT_FOUND), "context");
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+    spy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it("warns (not logError) for a PERMISSION_DENIED error", () => {
+    const errorSpy = vi.fn();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    globalThis.logError = errorSpy;
+
+    logIfUnexpected(ioError(PERMISSION_DENIED), "reading ~/.config/foo");
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("permission denied: reading ~/.config/foo"),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("logs any other error via logError", () => {
+    const errorSpy = vi.fn();
+    globalThis.logError = errorSpy;
+    const weirdError = new Error("disk on fire");
+
+    logIfUnexpected(weirdError, "context");
+
+    expect(errorSpy).toHaveBeenCalledWith(weirdError, "context");
+  });
+});
+
+describe("tagError", () => {
+  it("prepends the label to an Error's message and preserves it as cause", () => {
+    const original = new Error("profiles.ini not found");
+    expect(() => tagError("Firefox (classic)", original)).toThrowError(
+      "Firefox (classic): profiles.ini not found",
+    );
+    try {
+      tagError("Firefox (classic)", original);
+    } catch (e) {
+      expect((e as Error).cause).toBe(original);
+    }
+  });
+
+  it("stringifies a non-Error thrown value", () => {
+    expect(() => tagError("Chromium", "just a string")).toThrowError("Chromium: just a string");
+  });
+});
+
+describe("readFileAsync", () => {
+  it("resolves with the file's contents when under the size limit", async () => {
+    const contents = new Uint8Array([1, 2, 3]);
+    files.set("/small", { path: "/small", size: contents.byteLength, contents, present: true });
+
+    await expect(readFileAsync("/small")).resolves.toEqual(contents);
+  });
+
+  it("rejects without reading the file's contents when it exceeds the size limit", async () => {
+    files.set("/huge", {
+      path: "/huge",
+      size: 21 * 1024 * 1024,
+      contents: new Uint8Array(),
+      present: true,
+    });
+
+    await expect(readFileAsync("/huge")).rejects.toThrow(/exceeds the read size limit/);
+  });
+});
