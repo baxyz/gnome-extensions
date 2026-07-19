@@ -123,6 +123,7 @@ class BrowserProfilesIndicator extends Button {
   // the menu after a newer one has already resolved (out-of-order settling).
   private _refreshSeq = 0;
   private _lastEntries: ResolvedBrowserEntry[] = [];
+  private _menuOpenStateId: number | null = null;
 
   constructor(
     title: string,
@@ -137,10 +138,6 @@ class BrowserProfilesIndicator extends Button {
     this._readSettings = readSettings;
     this._readToolbarSettings = readToolbarSettings;
 
-    this.connect("destroy", () => {
-      this._alive = false;
-    });
-
     // getDefaultBrowser() is cached (see default-browser.ts) for the
     // extension's lifetime — otherwise correct, but the OS default-browser
     // association can change via this menu's own "change default browser"
@@ -148,16 +145,25 @@ class BrowserProfilesIndicator extends Button {
     // closes. Bust the cache on every menu open so the toolbar never shows a
     // default browser that's gone stale since the last time it was shown.
     // this.menu is typed as PopupMenu | PopupDummyMenu — a union whose two
-    // `connect` overloads don't unify for an ad-hoc signal name, so it's
-    // called through a minimal cast (same pattern as menu.ts's tooltip()).
-    (
-      this.menu as unknown as {
-        connect(sig: "open-state-changed", cb: (menu: unknown, isOpen: boolean) => void): number;
-      }
-    ).connect("open-state-changed", (_menu, isOpen) => {
+    // `connect`/`disconnect` overloads don't unify for an ad-hoc signal name,
+    // so it's called through a minimal cast (same pattern as menu.ts's
+    // tooltip()).
+    const menuSignals = this.menu as unknown as {
+      connect(sig: "open-state-changed", cb: (menu: unknown, isOpen: boolean) => void): number;
+      disconnect(id: number): void;
+    };
+    this._menuOpenStateId = menuSignals.connect("open-state-changed", (_menu, isOpen) => {
       if (isOpen) {
         clearDefaultBrowserCache();
         this.redrawMenu();
+      }
+    });
+
+    this.connect("destroy", () => {
+      this._alive = false;
+      if (this._menuOpenStateId !== null) {
+        menuSignals.disconnect(this._menuOpenStateId);
+        this._menuOpenStateId = null;
       }
     });
 
