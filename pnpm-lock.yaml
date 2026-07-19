@@ -28,17 +28,17 @@ catalogs:
       specifier: npm:@girs/gnome-shell@50
       version: 50.0.0
     '@helpers4/array':
-      specifier: 3.0.0-alpha.2
-      version: 3.0.0-alpha.2
+      specifier: ^3.0.0
+      version: 3.0.0
     '@helpers4/color':
-      specifier: 3.0.0-alpha.2
-      version: 3.0.0-alpha.2
+      specifier: ^3.0.0
+      version: 3.0.0
     '@helpers4/object':
-      specifier: 3.0.0-alpha.2
-      version: 3.0.0-alpha.2
+      specifier: ^3.0.0
+      version: 3.0.0
     '@helpers4/promise':
-      specifier: 3.0.0-alpha.2
-      version: 3.0.0-alpha.2
+      specifier: ^3.0.0
+      version: 3.0.0
     '@types/node':
       specifier: ^25.6.2
       version: 25.9.2
@@ -75,16 +75,16 @@ importers:
     dependencies:
       '@helpers4/array':
         specifier: 'catalog:'
-        version: 3.0.0-alpha.2
+        version: 3.0.0
       '@helpers4/color':
         specifier: 'catalog:'
-        version: 3.0.0-alpha.2
+        version: 3.0.0
       '@helpers4/object':
         specifier: 'catalog:'
-        version: 3.0.0-alpha.2
+        version: 3.0.0
       '@helpers4/promise':
         specifier: 'catalog:'
-        version: 3.0.0-alpha.2
+        version: 3.0.0
       mozlz4:
         specifier: ^0.2.2
         version: 0.2.2
@@ -884,20 +884,20 @@ packages:
   '@girs/xlib-2.0@2.0.0-4.0.0-rc.17':
     resolution: {integrity: sha512-LaECgnppICePEdVOYvXSvUFe8V8NUvDp0aNDRHCSA9VmqzPVNQWcik4UI/75wNOp4Mz5I8N6XkM0PGZzPgpObA==}
 
-  '@helpers4/array@3.0.0-alpha.2':
-    resolution: {integrity: sha512-yFJ+MYka6y52355qUtiOYY8vloKf6zODm5y5vtbLpk48S+AbKeKQevUK+ocLCGsMyYP94o7JcOBM9FXuRq0M5Q==}
+  '@helpers4/array@3.0.0':
+    resolution: {integrity: sha512-hozLNum3YjuZI+ZEuCDUIm599pYZan7Ene87QI25OTnKaEv90sSGQHX6Wg9+GPUb9r6tIUhBSG1TCjckj/NcdQ==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/color@3.0.0-alpha.2':
-    resolution: {integrity: sha512-Y0cGaUKlczj3L4EZS64qYRV3vE7T8LHEdimpM6wjMOXqQMo3mNsnezzRHvpoNq/omY57D4SBSRhStfHPyviBbA==}
+  '@helpers4/color@3.0.0':
+    resolution: {integrity: sha512-08stbgQiAc9fyUmEKO3DGuFrSifcxHtFJoLZwrufpB3RqhzIQ9wWSCdAePMl41ml65oH9eJyyQK50OJWlCfVnA==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/object@3.0.0-alpha.2':
-    resolution: {integrity: sha512-EFN+MG+ZU5WWX2a5BJ7e1yIEu9Wd28UgqDiabsjt405Q3MLycauUdTpJp21T2p12Zlsx2O3hqnJ1tsSuoaKtmw==}
+  '@helpers4/object@3.0.0':
+    resolution: {integrity: sha512-c+jtDRR6ldDTDY9E8dW1atSyEXEUDwaMlucKPcc0EwMPKdmc4L2Y0kqcbP2kKKlX380cLHRuPpVFCyWBcmPXpQ==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/promise@3.0.0-alpha.2':
-    resolution: {integrity: sha512-juBN3jOTGYBZHTjWC0H8Slv/YV1mpUUrSXY1l7u8QMSXdliZ04VdpeHorVT8YzcKx1mQS6PXU2wXvU8iRbc7hw==}
+  '@helpers4/promise@3.0.0':
+    resolution: {integrity: sha512-VkwNfXLHl3TR0kqS3TDy510+DPfnC0FedMCIKaQL9cll4eveUs3ZhJA/UVMQbEY29YyuxiIoR7cY0eTHBTuaGw==}
     engines: {node: '>=26.0.0'}
 
   '@jridgewell/sourcemap-codec@1.5.5':
@@ -3831,13 +3831,13 @@ snapshots:
       '@girs/gjs': 4.0.0-rc.17
       '@girs/gobject-2.0': 2.88.0-4.0.0-rc.17
 
-  '@helpers4/array@3.0.0-alpha.2': {}
+  '@helpers4/array@3.0.0': {}
 
-  '@helpers4/color@3.0.0-alpha.2': {}
+  '@helpers4/color@3.0.0': {}
 
-  '@helpers4/object@3.0.0-alpha.2': {}
+  '@helpers4/object@3.0.0': {}
 
-  '@helpers4/promise@3.0.0-alpha.2': {}
+  '@helpers4/promise@3.0.0': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 

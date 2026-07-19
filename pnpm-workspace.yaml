@@ -30,3 +30,7 @@ catalog:
 minimumReleaseAgeExclude:
   - mozlz4@0.2.2
   - sqlite-reader@0.2.1
+  - '@helpers4/array@3.0.0'
+  - '@helpers4/color@3.0.0'
+  - '@helpers4/object@3.0.0'
+  - '@helpers4/promise@3.0.0'
