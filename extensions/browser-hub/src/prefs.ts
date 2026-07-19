@@ -6,7 +6,7 @@ import { SpaceType } from "./taxonomy/space-type.enum";
 import { SUB_SETTING_PARENTS } from "./settings-keys";
 import type { ProfileGroupsMode } from "./browser";
 
-const PROFILE_GROUP_MODES: ProfileGroupsMode[] = ["spaces", "profiles", "off"];
+const PROFILE_GROUP_MODES: ProfileGroupsMode[] = ["profiles", "spaces", "off"];
 const PROFILE_GROUP_LABELS = ["Profiles", "Spaces", "Hide"];
 
 export default class BrowserHubPreferences extends ExtensionPreferences {
