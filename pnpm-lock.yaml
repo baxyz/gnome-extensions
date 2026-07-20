@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@girs/gjs':
-      specifier: 4.0.0-rc.15
-      version: 4.0.0-rc.15
+      specifier: 4.1.0
+      version: 4.1.0
     '@girs/gnome-shell':
       specifier: ^50.0.4
       version: 50.0.4
@@ -28,20 +28,20 @@ catalogs:
       specifier: npm:@girs/gnome-shell@^50.0.4
       version: 50.0.4
     '@helpers4/array':
-      specifier: ^3.0.0
-      version: 3.0.0
+      specifier: ^3.0.3
+      version: 3.0.3
     '@helpers4/color':
-      specifier: ^3.0.0
-      version: 3.0.0
+      specifier: ^3.0.3
+      version: 3.0.3
     '@helpers4/object':
-      specifier: ^3.0.0
-      version: 3.0.0
+      specifier: ^3.0.3
+      version: 3.0.3
     '@helpers4/promise':
-      specifier: ^3.0.0
-      version: 3.0.0
+      specifier: ^3.0.3
+      version: 3.0.3
     '@types/node':
-      specifier: ^25.9.5
-      version: 25.9.5
+      specifier: ^26.1.1
+      version: 26.1.1
     '@vitest/ui':
       specifier: ^4.1.10
       version: 4.1.10
@@ -75,26 +75,26 @@ importers:
     dependencies:
       '@helpers4/array':
         specifier: 'catalog:'
-        version: 3.0.0
+        version: 3.0.3
       '@helpers4/color':
         specifier: 'catalog:'
-        version: 3.0.0
+        version: 3.0.3
       '@helpers4/object':
         specifier: 'catalog:'
-        version: 3.0.0
+        version: 3.0.3
       '@helpers4/promise':
         specifier: 'catalog:'
-        version: 3.0.0
+        version: 3.0.3
       mozlz4:
-        specifier: ^0.2.2
-        version: 0.2.2
+        specifier: ^0.2.4
+        version: 0.2.4
       sqlite-reader:
-        specifier: ^0.2.1
-        version: 0.2.1
+        specifier: ^0.3.0
+        version: 0.3.0
     devDependencies:
       '@girs/gjs':
         specifier: 'catalog:'
-        version: 4.0.0-rc.15
+        version: 4.1.0
       '@girs/gnome-shell':
         specifier: 'catalog:'
         version: 50.0.4
@@ -103,7 +103,7 @@ importers:
         version: '@girs/gnome-shell@50.0.4'
       '@types/node':
         specifier: 'catalog:'
-        version: 25.9.5
+        version: 26.1.1
       '@vitest/ui':
         specifier: 'catalog:'
         version: 4.1.10(vitest@4.1.10)
@@ -124,16 +124,16 @@ importers:
         version: 7.0.2
       vite:
         specifier: 'catalog:'
-        version: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1)
+        version: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@25.9.5)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1))
+        version: 4.1.10(@types/node@26.1.1)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1))
 
   extensions/firefox-profiles:
     devDependencies:
       '@girs/gjs':
         specifier: 'catalog:'
-        version: 4.0.0-rc.15
+        version: 4.1.0
       '@girs/gnome-shell':
         specifier: 'catalog:'
         version: 50.0.4
@@ -154,7 +154,7 @@ importers:
         version: '@girs/gnome-shell@50.0.4'
       '@types/node':
         specifier: 'catalog:'
-        version: 25.9.5
+        version: 26.1.1
       '@vitest/ui':
         specifier: 'catalog:'
         version: 4.1.10(vitest@4.1.10)
@@ -172,19 +172,19 @@ importers:
         version: 7.0.2
       vite:
         specifier: 'catalog:'
-        version: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1)
+        version: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@25.9.5)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1))
+        version: 4.1.10(@types/node@26.1.1)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1))
 
   tooling:
     devDependencies:
       vite:
         specifier: 'catalog:'
-        version: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1)
+        version: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@25.9.5)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1))
+        version: 4.1.10(@types/node@26.1.1)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1))
 
 packages:
 
@@ -413,9 +413,6 @@ packages:
   '@girs/cairo-1.0@1.0.0-4.0.0-beta.40':
     resolution: {integrity: sha512-luqUsMf2cPphDc4lb8IHcw0bX8eGa4g0aQypZJypAeIs9eyHfEDHWKhLgp4I0HaQvaevbd3QBosaH7UhkArL1A==}
 
-  '@girs/cairo-1.0@1.0.0-4.0.0-rc.15':
-    resolution: {integrity: sha512-GkH1Zp/E049gntiU1enoR7sg4rqEC2uOtRJ28hl1sWkJteyGtUkDK6dQP3WE90JVyEN7eIZK4kmkXgGULqLUWA==}
-
   '@girs/cairo-1.0@1.0.0-4.0.0-rc.17':
     resolution: {integrity: sha512-CAR/TbYfxWq+pJl7H7s4dG6zH3KN1LUYy+YAFFmaopFJEaLheMN9j84gX+VsF23UwZvKVZH+PX5qk6LSrBdWjg==}
 
@@ -575,9 +572,6 @@ packages:
   '@girs/gio-2.0@2.86.4-4.0.0-beta.40':
     resolution: {integrity: sha512-TTAEE/2nCAkx01hID4n8f0ByiFJ0QwGJcY8QYmom19QXmlIWCLF/GWLeXi/7ZyKJOtChSFk8IJglS0O6zC1spw==}
 
-  '@girs/gio-2.0@2.88.0-4.0.0-rc.15':
-    resolution: {integrity: sha512-ccnwhll0WgK6u4cCN7lwD8frRWnygRHdXi6mAZXpZaYi8vcPxWz59kQLVE8Zr2wwGhWaHygeuQd4FyY9FOil4A==}
-
   '@girs/gio-2.0@2.88.0-4.0.0-rc.17':
     resolution: {integrity: sha512-OkyK3LvTjgaRIiySxZdDdOM07BFRzy7SRPj1J4YbMSZpqmkpWRhmeq7uZoZCLqQxAQk4MUdAOp17XiUGZFpibg==}
 
@@ -601,9 +595,6 @@ packages:
 
   '@girs/gjs@4.0.0-beta.40':
     resolution: {integrity: sha512-+gHGA5PJvEExpiPkpc3+DSjhWGmxHDb482h52FO64eo2EmHuLoeOKCoUJIY0PS80xOJWFRSO2dNFxZdD1bV6XA==}
-
-  '@girs/gjs@4.0.0-rc.15':
-    resolution: {integrity: sha512-rATaKfEcIFnwgTBcAzu/khOmkHG2sAOxKFq7L8hN3/j7RrF3ehlMYczKXSM3SPN3tYj8XANJF8OBZ/eKkh8Olg==}
 
   '@girs/gjs@4.0.0-rc.17':
     resolution: {integrity: sha512-8UzowTxia0CzmyW7NRLnWNeEx+ImFxi4hyuZZppSfJBHQj4/sbaQSKf672CIbtOzsbVdeKQyQ8WWzlvA8rTxzQ==}
@@ -644,9 +635,6 @@ packages:
   '@girs/glib-2.0@2.86.4-4.0.0-beta.40':
     resolution: {integrity: sha512-DTvRmZlTVpYW+JI0zMN/dybhzoqJ/I3bx3txftSQgcxXl3mKnrSI6Qzv15VTyxQSpcnD3CBxpnfYT/+QrzU9QQ==}
 
-  '@girs/glib-2.0@2.88.0-4.0.0-rc.15':
-    resolution: {integrity: sha512-7XTGnWFPXSYMdMJVFgMsbNvXpQM48ZTPU3zMOKBGlWabjW2mX73xoGK7/D8ISpddqteC5QU5adohZXhuWI5qcA==}
-
   '@girs/glib-2.0@2.88.0-4.0.0-rc.17':
     resolution: {integrity: sha512-nTZBcDY++60wLo2OfrOWAYe7Lw9BRVIEIwiQ+7CieDAzgBgpMs1QE2xY3xwfUHEBIyzsDSZMd2DW4afHXtkz3g==}
 
@@ -664,9 +652,6 @@ packages:
 
   '@girs/gmodule-2.0@2.0.0-4.0.0-beta.40':
     resolution: {integrity: sha512-srPSbc/uespMNHR2o2Gg6OYeCprW42gADIXCujpMMWl5OfJzKU0mA+R8Z/D713tDq0xp1Lz2P7hprVznf1uF3A==}
-
-  '@girs/gmodule-2.0@2.0.0-4.0.0-rc.15':
-    resolution: {integrity: sha512-QCiFhcK04FbS83zuOcNpyD06D9VL5VMzWgLwbD3guipT3YTrpyiiioBDvMEnsPRBXE1fQTulfnLzaBQz480Hag==}
 
   '@girs/gmodule-2.0@2.0.0-4.0.0-rc.17':
     resolution: {integrity: sha512-47UwefN6gjqWSZRrYLGnQumVAsughnu+gHBuDkeB4ZZCPZko4AiAb+G/WB6tTWdAy08pm+tLvlQ1vjP1eN9bQQ==}
@@ -727,9 +712,6 @@ packages:
 
   '@girs/gobject-2.0@2.86.4-4.0.0-beta.40':
     resolution: {integrity: sha512-coS5607duUekhRfl2GDC9Gt3WcgAtTNEDL0efrRBBOuORjvBrIGiGJJXB9cX4jYQ7c9FITUMVLTd+a0MMRAaXA==}
-
-  '@girs/gobject-2.0@2.88.0-4.0.0-rc.15':
-    resolution: {integrity: sha512-VxseRg9u+YRanhCSpgHTm3NFlSDbD1CbG8Ah5VRZmgqIhGGj6SAgcGglqnahav5e8/NJmUrDN801ClFo69E5Kg==}
 
   '@girs/gobject-2.0@2.88.0-4.0.0-rc.17':
     resolution: {integrity: sha512-pUkGnIrYVgRzFLWJSXU+pwWpWzrTCzbDeZLu1QzxpBT0n/t5HJnIGX3PYBnQSvXbBgVFXoSOt1pOfB7m8J2agQ==}
@@ -977,20 +959,20 @@ packages:
   '@girs/xlib-2.0@4.1.0':
     resolution: {integrity: sha512-dLV0ObD16/+909MXi41ccYZqeh5G8uvi4uSzaX4H++kgOOA0D81PBacPjxLEEGizbLw/rzf46elwy6OHyjc/8Q==}
 
-  '@helpers4/array@3.0.0':
-    resolution: {integrity: sha512-hozLNum3YjuZI+ZEuCDUIm599pYZan7Ene87QI25OTnKaEv90sSGQHX6Wg9+GPUb9r6tIUhBSG1TCjckj/NcdQ==}
+  '@helpers4/array@3.0.3':
+    resolution: {integrity: sha512-diWCI9fFs6nVk967mqY6mr/a292CsSAC4h/v6FECopXCtz6l3aLSRvabhBEAcXWRieOw8Unwnu59Kzh1lm7JgQ==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/color@3.0.0':
-    resolution: {integrity: sha512-08stbgQiAc9fyUmEKO3DGuFrSifcxHtFJoLZwrufpB3RqhzIQ9wWSCdAePMl41ml65oH9eJyyQK50OJWlCfVnA==}
+  '@helpers4/color@3.0.3':
+    resolution: {integrity: sha512-AngUByYuWSrrfFEJmbyBH0u3HgIOpF9jPa11hjqfuLARe1w1i8R/ZRsDJYmhf4DzIYysmqvkhxdzYFJxeEkGzA==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/object@3.0.0':
-    resolution: {integrity: sha512-c+jtDRR6ldDTDY9E8dW1atSyEXEUDwaMlucKPcc0EwMPKdmc4L2Y0kqcbP2kKKlX380cLHRuPpVFCyWBcmPXpQ==}
+  '@helpers4/object@3.0.3':
+    resolution: {integrity: sha512-Si3TxDrefkAFT/USENYcMCc/KPxMv0LtJHSa57XqRhTeiQPd4xEDoDpqrCMH+brVBVyfH3N1YrJF27gkYNtdFQ==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/promise@3.0.0':
-    resolution: {integrity: sha512-VkwNfXLHl3TR0kqS3TDy510+DPfnC0FedMCIKaQL9cll4eveUs3ZhJA/UVMQbEY29YyuxiIoR7cY0eTHBTuaGw==}
+  '@helpers4/promise@3.0.3':
+    resolution: {integrity: sha512-LMiVRJY+IF4ow30w4L20A6bHLdhLZBgj+RUd6Hf8q9P2kbWjfcPkDNBdVk4K9Ew5tF0Cp9N1Oz/SA8aOu4Scxg==}
     engines: {node: '>=26.0.0'}
 
   '@jridgewell/sourcemap-codec@1.5.5':
@@ -1365,8 +1347,8 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
-  '@types/node@25.9.5':
-    resolution: {integrity: sha512-OScDchr2fwuUmWdf4kZ9h7PcJiYDVInhJizG/biAq3cAvqwYktuy/TYGGdZNMtNTFUP7rnb0NU4TUdm82kt4Rg==}
+  '@types/node@26.1.1':
+    resolution: {integrity: sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw==}
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
@@ -1649,8 +1631,8 @@ packages:
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
-  mozlz4@0.2.2:
-    resolution: {integrity: sha512-5NnpOBsEcygLLou9/5rHWBVlQ2QEi5wThXk5zdobmTfIMQ4PAgTdQyDywcvtmpHqkXYlMoqv4KaXTsRzaB2oxQ==}
+  mozlz4@0.2.4:
+    resolution: {integrity: sha512-UGcPSi/I0ByiofkCfbeVXBfy/9EtoRSOKauP/JOQW3oVbXR8cnYhkhX0ycTNFe+NadEqAM/uNe+g0Cmdv7IHJg==}
     engines: {node: '>=18'}
 
   mrmime@2.0.1:
@@ -1722,8 +1704,8 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
-  sqlite-reader@0.2.1:
-    resolution: {integrity: sha512-Quw3Hg0RUCUwSAMgO63IdhKRHZxitn8C7PdhjDr/HRBF7nqQ5GYZD1Lany9royo47MYhBKHpfeyMUaoPWXpc5Q==}
+  sqlite-reader@0.3.0:
+    resolution: {integrity: sha512-gbjV+cy7hnMxKZJ+pnijMQevvj/iwKw9sjUlweWat1KTo8CjySPJzTlL3N4ZbmNcVRSXBw5sePG9olw+P5HadA==}
     engines: {node: '>=22'}
 
   stackback@0.0.2:
@@ -1768,8 +1750,8 @@ packages:
     engines: {node: '>=16.20.0'}
     hasBin: true
 
-  undici-types@7.24.6:
-    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
+  undici-types@8.3.0:
+    resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
   vite@8.1.5:
     resolution: {integrity: sha512-7ULLwsCdYx/nRyrpiEwvqb5TFHrMVZyBt+rg/OAXT7rgj/z+DtTDyKFeLAdDkubDVDKD8jOsndmy7m55XcfUsw==}
@@ -2144,12 +2126,6 @@ snapshots:
       '@girs/gjs': 4.0.0-beta.40
       '@girs/glib-2.0': 2.86.4-4.0.0-beta.40
       '@girs/gobject-2.0': 2.86.4-4.0.0-beta.40
-
-  '@girs/cairo-1.0@1.0.0-4.0.0-rc.15':
-    dependencies:
-      '@girs/gjs': 4.0.0-rc.15
-      '@girs/glib-2.0': 2.88.0-4.0.0-rc.15
-      '@girs/gobject-2.0': 2.88.0-4.0.0-rc.15
 
   '@girs/cairo-1.0@1.0.0-4.0.0-rc.17':
     dependencies:
@@ -2679,13 +2655,6 @@ snapshots:
       '@girs/gmodule-2.0': 2.0.0-4.0.0-beta.40
       '@girs/gobject-2.0': 2.86.4-4.0.0-beta.40
 
-  '@girs/gio-2.0@2.88.0-4.0.0-rc.15':
-    dependencies:
-      '@girs/gjs': 4.0.0-rc.15
-      '@girs/glib-2.0': 2.88.0-4.0.0-rc.15
-      '@girs/gmodule-2.0': 2.0.0-4.0.0-rc.15
-      '@girs/gobject-2.0': 2.88.0-4.0.0-rc.15
-
   '@girs/gio-2.0@2.88.0-4.0.0-rc.17':
     dependencies:
       '@girs/gjs': 4.0.0-rc.17
@@ -2743,13 +2712,6 @@ snapshots:
       '@girs/gio-2.0': 2.86.4-4.0.0-beta.40
       '@girs/glib-2.0': 2.86.4-4.0.0-beta.40
       '@girs/gobject-2.0': 2.86.4-4.0.0-beta.40
-
-  '@girs/gjs@4.0.0-rc.15':
-    dependencies:
-      '@girs/cairo-1.0': 1.0.0-4.0.0-rc.15
-      '@girs/gio-2.0': 2.88.0-4.0.0-rc.15
-      '@girs/glib-2.0': 2.88.0-4.0.0-rc.15
-      '@girs/gobject-2.0': 2.88.0-4.0.0-rc.15
 
   '@girs/gjs@4.0.0-rc.17':
     dependencies:
@@ -2820,11 +2782,6 @@ snapshots:
       '@girs/gjs': 4.0.0-beta.40
       '@girs/gobject-2.0': 2.86.4-4.0.0-beta.40
 
-  '@girs/glib-2.0@2.88.0-4.0.0-rc.15':
-    dependencies:
-      '@girs/gjs': 4.0.0-rc.15
-      '@girs/gobject-2.0': 2.88.0-4.0.0-rc.15
-
   '@girs/glib-2.0@2.88.0-4.0.0-rc.17':
     dependencies:
       '@girs/gjs': 4.0.0-rc.17
@@ -2858,12 +2815,6 @@ snapshots:
       '@girs/gjs': 4.0.0-beta.40
       '@girs/glib-2.0': 2.86.4-4.0.0-beta.40
       '@girs/gobject-2.0': 2.86.4-4.0.0-beta.40
-
-  '@girs/gmodule-2.0@2.0.0-4.0.0-rc.15':
-    dependencies:
-      '@girs/gjs': 4.0.0-rc.15
-      '@girs/glib-2.0': 2.88.0-4.0.0-rc.15
-      '@girs/gobject-2.0': 2.88.0-4.0.0-rc.15
 
   '@girs/gmodule-2.0@2.0.0-4.0.0-rc.17':
     dependencies:
@@ -3098,11 +3049,6 @@ snapshots:
     dependencies:
       '@girs/gjs': 4.0.0-beta.40
       '@girs/glib-2.0': 2.86.4-4.0.0-beta.40
-
-  '@girs/gobject-2.0@2.88.0-4.0.0-rc.15':
-    dependencies:
-      '@girs/gjs': 4.0.0-rc.15
-      '@girs/glib-2.0': 2.88.0-4.0.0-rc.15
 
   '@girs/gobject-2.0@2.88.0-4.0.0-rc.17':
     dependencies:
@@ -4190,13 +4136,13 @@ snapshots:
       '@girs/gjs': 4.1.0
       '@girs/gobject-2.0': 4.1.0
 
-  '@helpers4/array@3.0.0': {}
+  '@helpers4/array@3.0.3': {}
 
-  '@helpers4/color@3.0.0': {}
+  '@helpers4/color@3.0.3': {}
 
-  '@helpers4/object@3.0.0': {}
+  '@helpers4/object@3.0.3': {}
 
-  '@helpers4/promise@3.0.0': {}
+  '@helpers4/promise@3.0.3': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
@@ -4392,9 +4338,9 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
-  '@types/node@25.9.5':
+  '@types/node@26.1.1':
     dependencies:
-      undici-types: 7.24.6
+      undici-types: 8.3.0
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     optional: true
@@ -4465,13 +4411,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.10(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1))':
+  '@vitest/mocker@4.1.10(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1))':
     dependencies:
       '@vitest/spy': 4.1.10
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1)
+      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1)
 
   '@vitest/pretty-format@4.1.10':
     dependencies:
@@ -4500,7 +4446,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vitest: 4.1.10(@types/node@25.9.5)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1))
+      vitest: 4.1.10(@types/node@26.1.1)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1))
 
   '@vitest/utils@4.1.10':
     dependencies:
@@ -4617,7 +4563,7 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  mozlz4@0.2.2: {}
+  mozlz4@0.2.4: {}
 
   mrmime@2.0.1: {}
 
@@ -4714,7 +4660,7 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
-  sqlite-reader@0.2.1: {}
+  sqlite-reader@0.3.0: {}
 
   stackback@0.0.2: {}
 
@@ -4767,9 +4713,9 @@ snapshots:
       '@typescript/typescript-win32-arm64': 7.0.2
       '@typescript/typescript-win32-x64': 7.0.2
 
-  undici-types@7.24.6: {}
+  undici-types@8.3.0: {}
 
-  vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1):
+  vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.5
@@ -4777,15 +4723,15 @@ snapshots:
       rolldown: 1.1.5
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 25.9.5
+      '@types/node': 26.1.1
       esbuild: 0.28.1
       fsevents: 2.3.3
       tsx: 4.23.1
 
-  vitest@4.1.10(@types/node@25.9.5)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1)):
+  vitest@4.1.10(@types/node@26.1.1)(@vitest/ui@4.1.10)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1)):
     dependencies:
       '@vitest/expect': 4.1.10
-      '@vitest/mocker': 4.1.10(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1))
+      '@vitest/mocker': 4.1.10(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1))
       '@vitest/pretty-format': 4.1.10
       '@vitest/runner': 4.1.10
       '@vitest/snapshot': 4.1.10
@@ -4802,10 +4748,10 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(tsx@4.23.1)
+      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 25.9.5
+      '@types/node': 26.1.1
       '@vitest/ui': 4.1.10(vitest@4.1.10)
     transitivePeerDependencies:
       - msw
