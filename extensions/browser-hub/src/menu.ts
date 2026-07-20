@@ -415,12 +415,13 @@ export function fillMenu({
 
   // Build browser entries
   for (const entry of entries) {
-    menu.addMenuItem(buildCategorySeparator(entry.label, entry.icon));
-
     if (entry.group === "simple") {
-      // Simple browsers (no profiles) - show as icon buttons in a row
+      // Simple browsers (no profiles) - shown as an icon-button row, visually
+      // distinct enough from the profile menu items above it that a labeled
+      // separator ahead of it is redundant — skip it.
       menu.addMenuItem(buildSimpleBrowserRow({ title, items: entry.items, notify, closeMenu }));
     } else {
+      menu.addMenuItem(buildCategorySeparator(entry.label, entry.icon));
       // Firefox/Chromium/Falkon browsers with profiles
       for (const item of entry.items) {
         menu.addMenuItem(buildProfileMenuItem({ item, title, notify, closeMenu }));
