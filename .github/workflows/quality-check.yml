@@ -143,19 +143,25 @@ jobs:
               .concat(`| shexli (advisory) | ${icon(shexliResult)} ${shexliResult} |`)
               .join('\n');
             const allGood = Object.values(blocking).every((r) => r === 'success');
+            // Each entry here is a complete markdown block (heading, table,
+            // note, timestamp) — joined with a blank line between every one
+            // of them. Building this as one flat array of lines and filtering
+            // out the empty-string spacers (as a previous version did) drops
+            // the blank line GitHub needs to end the table, which merges the
+            // following prose into the table's last cell instead of rendering
+            // it as its own paragraph.
+            const table = ['| Check | Status |', '|-------|--------|', rows].join('\n');
+            const note = shexliResult !== 'success'
+              ? '_shexli is advisory-only (known upstream crash — see the workflow file) and does not block merging._'
+              : null;
+            const updated = `_Updated: ${new Date().toUTCString()} — commit \`${{ github.sha }}\`_`;
             const body = [
               '<!-- quality-checks-summary -->',
               `## Quality Checks ${allGood ? '✅ All passing' : '❌ Some checks failed'}`,
-              '',
-              '| Check | Status |',
-              '|-------|--------|',
-              rows,
-              '',
-              shexliResult !== 'success'
-                ? '_shexli is advisory-only (known upstream crash — see the workflow file) and does not block merging._'
-                : '',
-              `_Updated: ${new Date().toUTCString()} — commit \`${{ github.sha }}\`_`,
-            ].filter(Boolean).join('\n');
+              table,
+              note,
+              updated,
+            ].filter(Boolean).join('\n\n');
             const marker = '<!-- quality-checks-summary -->';
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
