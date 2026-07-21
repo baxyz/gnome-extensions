@@ -188,9 +188,7 @@ describe("fillMenu", () => {
       onRefresh: noop,
     });
 
-    // No separator ahead of the Browsers row — [0] toolbar, [1] row directly.
-    expect(menu.items[1]).not.toBeInstanceOf(FakePopupSeparatorMenuItem);
-    const row = menu.items[1] as FakePopupMenuItem;
+    const row = menu.items[2] as FakePopupMenuItem; // [0] toolbar, [1] separator, [2] row
     const container = row.children[0];
     expect(container.children).toHaveLength(1); // one line, not one child per button
     const line = container.children[0];
@@ -213,7 +211,7 @@ describe("fillMenu", () => {
       onRefresh: noop,
     });
 
-    const row = menu.items[1] as FakePopupMenuItem;
+    const row = menu.items[2] as FakePopupMenuItem;
     const container = row.children[0];
     expect(container.children).toHaveLength(2); // 6 on the first line, 1 on the second
     expect(container.children[0].children).toHaveLength(6);
