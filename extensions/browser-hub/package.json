@@ -26,7 +26,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "install:local": "../../tooling/scripts/install-local.sh",
-    "pack": "../../tooling/scripts/pack.sh",
+    "pack:extension": "../../tooling/scripts/pack.sh",
     "shexli": "../../tooling/scripts/shexli.sh",
     "check": "tsx --import ./scripts/shims/register.mjs scripts/check-browsers.ts"
   },
