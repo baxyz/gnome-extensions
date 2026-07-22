@@ -65,23 +65,18 @@ jobs:
   analyze:
     name: Analyze (shexli)
     runs-on: ubuntu-latest
-    # shexli 0.2.1 segfaults deterministically on this extension's real
-    # dist/extension.js (confirmed: each half of the file analyzes cleanly on
-    # its own, the whole file crashes — not a simple "too many local imports"
-    # trigger, since a minimal multi-file synthetic repro doesn't reproduce it
-    # either). faulthandler traces the crash into CPython's own pathlib.stat(),
-    # called from shexli/analyzer/reachability.py's resolve_local_import() —
-    # a symptom of heap corruption elsewhere, not that function's own fault.
-    # tree_sitter_javascript (the only loaded C extension per the trace) is the
-    # prime suspect, but three independent Python-level "keep every parsed
-    # Tree alive" patches (the fix the tree-sitter docs prescribe for
-    # Node-outlives-Tree bugs) did NOT stop the crash, on both shexli's own
-    # call sites and a blanket patch at parse_js() itself — so this isn't a
-    # simple Python object-lifetime bug fixable from our side; it's corruption
-    # inside the C extension. Already on the latest tree-sitter (0.26.0) and
-    # tree-sitter-javascript (0.25.0); no shexli release newer than 0.2.1
-    # exists yet. Not blocking until upstream ships a fix; findings still show
-    # up in the job log when it doesn't crash.
+    # shexli 0.2.1 used to segfault deterministically on this extension's
+    # real dist/extension.js — root-caused to a memory-corruption bug in
+    # tree-sitter 0.26.0 specifically (the version a fresh, unconstrained
+    # `pip install shexli` always resolves, since it satisfies shexli's own
+    # `tree-sitter>=0.25.0` requirement). Confirmed by bisecting dependency
+    # versions directly: tree-sitter 0.25.1/0.25.2 analyze this exact package
+    # cleanly and consistently (multiple repeat runs, zero crashes); 0.26.0
+    # crashes consistently (Segfault or Bus error, varying by run — a
+    # hallmark of real memory corruption, not a deterministic logic bug).
+    # tree-sitter-javascript's version didn't matter either way. `pipx inject`
+    # below pins the working version into shexli's own venv without needing
+    # a shexli release (none newer than 0.2.1 exists).
     #
     # continue-on-error here only keeps the *workflow run* from failing
     # overall — it does NOT change this job's own check-run conclusion, which
@@ -89,7 +84,9 @@ jobs:
     # So the job itself must never fail: shexli's outcome is captured into an
     # output instead of the step's exit code, and reported as its own row in
     # the PR summary below without affecting this job's (or the merge's)
-    # pass/fail state.
+    # pass/fail state. Kept as a safety net even though shexli should now
+    # actually run to completion, in case some future PR's content or a
+    # shexli/tree-sitter update reintroduces a crash.
     outputs:
       shexli_result: ${{ steps.shexli.outputs.result }}
     steps:
@@ -104,6 +101,12 @@ jobs:
           python-version: '3.x'
       - run: pnpm install --frozen-lockfile
       - run: pipx install shexli
+      # --force: pipx inject can silently skip if it thinks the package is
+      # already injected (observed even right after a fresh pipx install, on
+      # an unrelated pre-existing pipx state) — without --force that leaves
+      # shexli's own tree-sitter>=0.25.0 resolution (currently 0.26.0, the
+      # buggy version) in place with no error, defeating this pin silently.
+      - run: pipx inject shexli 'tree-sitter==0.25.2' --force
       - name: Run shexli (advisory only, never fails this job)
         id: shexli
         run: |
