@@ -65,21 +65,17 @@ jobs:
   analyze:
     name: Analyze (shexli)
     runs-on: ubuntu-latest
-    # shexli 0.2.1 used to segfault deterministically on this extension's
-    # real packaged output — root-caused to a memory-corruption bug in
-    # tree-sitter 0.26.0 specifically (the version a fresh, unconstrained
-    # `pip install shexli` always resolves, since it satisfies shexli's own
-    # `tree-sitter>=0.25.0` requirement). Confirmed by bisecting dependency
-    # versions directly: tree-sitter 0.25.1/0.25.2 analyze this exact package
-    # cleanly and consistently (multiple repeat runs, zero crashes); 0.26.0
-    # crashes consistently (Segfault or Bus error, varying by run — a
-    # hallmark of real memory corruption, not a deterministic logic bug).
-    # tree-sitter-javascript's version didn't matter either way. `pipx inject`
-    # below pins the working version into shexli's own venv without needing
-    # a shexli release (none newer than 0.2.1 exists). Blocking again now
-    # that it reliably runs to completion — see tooling/scripts/shexli.sh for
-    # how a real finding turns into this job's own exit code (shexli's own
-    # CLI always exits 0, findings or not).
+    # tree-sitter 0.26.0 — what a fresh, unconstrained `pip install shexli`
+    # always resolves, since it satisfies shexli's own tree-sitter>=0.25.0
+    # requirement — has a memory-corruption bug that crashes shexli on this
+    # extension's real packaged output (Segfault or Bus error, varying by
+    # run, the hallmark of memory corruption rather than a deterministic
+    # logic bug). tree-sitter 0.25.1/0.25.2 analyze it cleanly and
+    # consistently; tree-sitter-javascript's version doesn't matter either
+    # way. `pipx inject` below pins the working version into shexli's own
+    # venv. See tooling/scripts/shexli.sh for how a real finding turns into
+    # this job's own exit code (shexli's own CLI always exits 0, findings or
+    # not).
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -112,9 +108,6 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            // shexli is a real blocking check again now that the crash is
-            // fixed (see the analyze job's comment) — folded back into the
-            // same table as the other checks, no special-casing needed.
             const results = {
               lint:   '${{ needs.lint.result }}',
               format: '${{ needs.format.result }}',
@@ -128,12 +121,10 @@ jobs:
               .join('\n');
             const allGood = Object.values(results).every((r) => r === 'success');
             // Each entry here is a complete markdown block (heading, table,
-            // timestamp) — joined with a blank line between every one of
-            // them. Building this as one flat array of lines and filtering
-            // out the empty-string spacers (as a previous version did) drops
-            // the blank line GitHub needs to end the table, which merges the
-            // following prose into the table's last cell instead of rendering
-            // it as its own paragraph.
+            // timestamp), joined with a blank line between every one of
+            // them — a table needs a blank line after it or GitHub merges
+            // whatever follows into its last cell instead of rendering it
+            // as its own paragraph.
             const table = ['| Check | Status |', '|-------|--------|', rows].join('\n');
             const updated = `_Updated: ${new Date().toUTCString()} — commit \`${{ github.sha }}\`_`;
             const body = [
