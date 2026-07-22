@@ -6,25 +6,25 @@ allowBuilds:
   esbuild: true
 
 catalog:
-  '@girs/gjs': 4.0.0-rc.15
+  '@girs/gjs': 4.1.0
   '@girs/gnome-shell': '^50.0.4'
   '@girs/gnome-shell-46': 'npm:@girs/gnome-shell@^46.0.2'
   '@girs/gnome-shell-47': 'npm:@girs/gnome-shell@^47.0.2'
   '@girs/gnome-shell-48': 'npm:@girs/gnome-shell@^48.0.4'
   '@girs/gnome-shell-49': 'npm:@girs/gnome-shell@^49.1.0'
   '@girs/gnome-shell-50': 'npm:@girs/gnome-shell@^50.0.4'
-  '@types/node': '^25.9.5'
+  '@types/node': '^26.1.1'
   '@vitest/ui': '^4.1.10'
   esbuild: '^0.28.1'
-  oxfmt: '^0.59.0'
+  oxfmt: '^0.60.0'
   oxlint: '^1.74.0'
   typescript: '7.0.2'
   vite: '^8.1.5'
   vitest: '^4.1.10'
-  '@helpers4/array': '^3.0.0'
-  '@helpers4/color': '^3.0.0'
-  '@helpers4/object': '^3.0.0'
-  '@helpers4/promise': '^3.0.0'
+  '@helpers4/array': '^3.0.4'
+  '@helpers4/color': '^3.0.4'
+  '@helpers4/object': '^3.0.4'
+  '@helpers4/promise': '^3.0.4'
   tsx: '^4.23.1'
 
 minimumReleaseAgeExclude:
