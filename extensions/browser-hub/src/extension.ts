@@ -14,6 +14,14 @@ import { SpaceType } from "./taxonomy/space-type.enum";
 import type { ResolvedBrowserEntry } from "./taxonomy";
 import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
 
+// this.menu is typed as PopupMenu | PopupDummyMenu — a union whose two
+// `connect`/`disconnect` overloads don't unify for an ad-hoc signal name, so
+// it's accessed through this minimal cast (same pattern as menu.ts's tooltip()).
+type MenuSignals = {
+  connect(sig: "open-state-changed", cb: (menu: unknown, isOpen: boolean) => void): number;
+  disconnect(id: number): void;
+};
+
 const SPACE_TYPE_VALUES = Object.values(SpaceType);
 // Debounce delay for settings changes (ms) — batch rapid setting changes to avoid
 // redundant menu rebuilds while the user is still adjusting preferences.
@@ -124,6 +132,7 @@ class BrowserProfilesIndicator extends Button {
   private _refreshSeq = 0;
   private _lastEntries: ResolvedBrowserEntry[] = [];
   private _menuOpenStateId: number | null = null;
+  private _menuSignals!: MenuSignals;
 
   constructor(
     title: string,
@@ -144,26 +153,16 @@ class BrowserProfilesIndicator extends Button {
     // button, which just opens gnome-control-center with no callback when it
     // closes. Bust the cache on every menu open so the toolbar never shows a
     // default browser that's gone stale since the last time it was shown.
-    // this.menu is typed as PopupMenu | PopupDummyMenu — a union whose two
-    // `connect`/`disconnect` overloads don't unify for an ad-hoc signal name,
-    // so it's called through a minimal cast (same pattern as menu.ts's
-    // tooltip()).
-    const menuSignals = this.menu as unknown as {
-      connect(sig: "open-state-changed", cb: (menu: unknown, isOpen: boolean) => void): number;
-      disconnect(id: number): void;
-    };
-    this._menuOpenStateId = menuSignals.connect("open-state-changed", (_menu, isOpen) => {
+    // Disconnected in this.destroy() below, not via a "destroy" signal
+    // handler — that indirection (connect to the signal now, disconnect
+    // whenever it happens to fire later) isn't statically traceable back to
+    // disable() the way overriding destroy() directly is, which is what
+    // GNOME's extension review tooling actually checks for.
+    this._menuSignals = this.menu as unknown as MenuSignals;
+    this._menuOpenStateId = this._menuSignals.connect("open-state-changed", (_menu, isOpen) => {
       if (isOpen) {
         clearDefaultBrowserCache();
         this.redrawMenu();
-      }
-    });
-
-    this.connect("destroy", () => {
-      this._alive = false;
-      if (this._menuOpenStateId !== null) {
-        menuSignals.disconnect(this._menuOpenStateId);
-        this._menuOpenStateId = null;
       }
     });
 
@@ -175,6 +174,17 @@ class BrowserProfilesIndicator extends Button {
     );
 
     this.refreshEntries();
+  }
+
+  // Called by disable() via this._indicator.destroy() — disconnect our own
+  // signal before handing off to the base class's own teardown.
+  override destroy(): void {
+    this._alive = false;
+    if (this._menuOpenStateId !== null) {
+      this._menuSignals.disconnect(this._menuOpenStateId);
+      this._menuOpenStateId = null;
+    }
+    super.destroy();
   }
 
   refreshEntries(): void {
