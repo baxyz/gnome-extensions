@@ -66,7 +66,7 @@ jobs:
     name: Analyze (shexli)
     runs-on: ubuntu-latest
     # shexli 0.2.1 used to segfault deterministically on this extension's
-    # real dist/extension.js — root-caused to a memory-corruption bug in
+    # real packaged output — root-caused to a memory-corruption bug in
     # tree-sitter 0.26.0 specifically (the version a fresh, unconstrained
     # `pip install shexli` always resolves, since it satisfies shexli's own
     # `tree-sitter>=0.25.0` requirement). Confirmed by bisecting dependency
@@ -76,19 +76,10 @@ jobs:
     # hallmark of real memory corruption, not a deterministic logic bug).
     # tree-sitter-javascript's version didn't matter either way. `pipx inject`
     # below pins the working version into shexli's own venv without needing
-    # a shexli release (none newer than 0.2.1 exists).
-    #
-    # continue-on-error here only keeps the *workflow run* from failing
-    # overall — it does NOT change this job's own check-run conclusion, which
-    # branch protection's "required status checks" gate reads independently.
-    # So the job itself must never fail: shexli's outcome is captured into an
-    # output instead of the step's exit code, and reported as its own row in
-    # the PR summary below without affecting this job's (or the merge's)
-    # pass/fail state. Kept as a safety net even though shexli should now
-    # actually run to completion, in case some future PR's content or a
-    # shexli/tree-sitter update reintroduces a crash.
-    outputs:
-      shexli_result: ${{ steps.shexli.outputs.result }}
+    # a shexli release (none newer than 0.2.1 exists). Blocking again now
+    # that it reliably runs to completion — see tooling/scripts/shexli.sh for
+    # how a real finding turns into this job's own exit code (shexli's own
+    # CLI always exits 0, findings or not).
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -107,14 +98,7 @@ jobs:
       # shexli's own tree-sitter>=0.25.0 resolution (currently 0.26.0, the
       # buggy version) in place with no error, defeating this pin silently.
       - run: pipx inject shexli 'tree-sitter==0.25.2' --force
-      - name: Run shexli (advisory only, never fails this job)
-        id: shexli
-        run: |
-          if pnpm -r shexli; then
-            echo "result=success" >> "$GITHUB_OUTPUT"
-          else
-            echo "result=failure" >> "$GITHUB_OUTPUT"
-          fi
+      - run: pnpm -r shexli
 
   pr-summary:
     name: PR Summary
@@ -128,43 +112,36 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            // shexli is advisory-only (see the analyze job's comment) — its
-            // result comes from a job output, not needs.analyze.result
-            // (which is always 'success', since the job itself never fails
-            // any more), and it's reported separately from the blocking
-            // checks rather than folded into `allGood`.
-            const blocking = {
+            // shexli is a real blocking check again now that the crash is
+            // fixed (see the analyze job's comment) — folded back into the
+            // same table as the other checks, no special-casing needed.
+            const results = {
               lint:   '${{ needs.lint.result }}',
               format: '${{ needs.format.result }}',
               test:   '${{ needs.test.result }}',
               build:  '${{ needs.build.result }}',
+              shexli: '${{ needs.analyze.result }}',
             };
-            const shexliResult = '${{ needs.analyze.outputs.shexli_result }}';
             const icon = (r) => r === 'success' ? '✅' : r === 'failure' ? '❌' : r === 'skipped' ? '⏭️' : '⚠️';
-            const rows = Object.entries(blocking)
+            const rows = Object.entries(results)
               .map(([name, result]) => `| ${name} | ${icon(result)} ${result} |`)
-              .concat(`| shexli (advisory) | ${icon(shexliResult)} ${shexliResult} |`)
               .join('\n');
-            const allGood = Object.values(blocking).every((r) => r === 'success');
+            const allGood = Object.values(results).every((r) => r === 'success');
             // Each entry here is a complete markdown block (heading, table,
-            // note, timestamp) — joined with a blank line between every one
-            // of them. Building this as one flat array of lines and filtering
+            // timestamp) — joined with a blank line between every one of
+            // them. Building this as one flat array of lines and filtering
             // out the empty-string spacers (as a previous version did) drops
             // the blank line GitHub needs to end the table, which merges the
             // following prose into the table's last cell instead of rendering
             // it as its own paragraph.
             const table = ['| Check | Status |', '|-------|--------|', rows].join('\n');
-            const note = shexliResult !== 'success'
-              ? '_shexli is advisory-only (known upstream crash — see the workflow file) and does not block merging._'
-              : null;
             const updated = `_Updated: ${new Date().toUTCString()} — commit \`${{ github.sha }}\`_`;
             const body = [
               '<!-- quality-checks-summary -->',
               `## Quality Checks ${allGood ? '✅ All passing' : '❌ Some checks failed'}`,
               table,
-              note,
               updated,
-            ].filter(Boolean).join('\n\n');
+            ].join('\n\n');
             const marker = '<!-- quality-checks-summary -->';
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
