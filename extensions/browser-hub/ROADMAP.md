@@ -67,7 +67,7 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 ### Per-tab media indicator
 
 - Show which tabs are currently playing audio/video, per profile, per browser.
-  MPRIS (`org.mpris.MediaPlayer2.*`) only exposes one player per browser *process*, not per tab,
+  MPRIS (`org.mpris.MediaPlayer2.*`) only exposes one player per browser _process_, not per tab,
   and doesn't identify which profile launched it (would need to cross-reference the bus owner's
   PID against its `--profile` argv). A real per-tab list would need a companion browser extension
   and native messaging, per browser — a separate project, not an addition to this one.
