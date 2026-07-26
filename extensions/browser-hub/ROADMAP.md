@@ -22,10 +22,22 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
       with matching syntax. Kept as-is: harmless on current Zen versions, and
       will start working on its own once that PR merges and users update.
 
+### Package manager badge
+
+- [ ] Show a small emblem (native/Flatpak/Snap) on each browser icon, in the Browsers row and in the detailed sections.
+      `pkg.manager` is already resolved everywhere a browser is listed — render via `Gio.EmblemedIcon` wrapping the existing desktop icon, no new resolution logic needed.
+
 ### Default browser switcher
 
 - [ ] Change the system default browser (`xdg-settings set default-web-browser`) from the indicator.
       Reference implementation: [totoshko88/browser-switcher](https://github.com/totoshko88/browser-switcher) (GPL-3.0, compatible with AGPL-3.0).
+- [ ] Replace the toolbar's Settings button with a one-click dropdown to switch the default browser directly.
+      Needs a decision first: where Settings moves (long-press? main menu? its own icon?) once the dropdown takes its spot.
+
+### Panel icon: generic vs default browser
+
+- [ ] Add a setting to show the resolved default browser's own icon in the panel instead of the generic `web-browser-symbolic`.
+      Infrastructure already exists: `getDefaultBrowser()` + `resolveDesktopIcon()`.
 
 ### Default profile per browser
 
@@ -49,6 +61,16 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
   - Timezone spoofing
   - Media device enumeration blocking
   - Reference: [arkenfox/user.js](https://github.com/arkenfox/user.js)
+
+## Ideas to explore (not committed)
+
+### Per-tab media indicator
+
+- Show which tabs are currently playing audio/video, per profile, per browser.
+  MPRIS (`org.mpris.MediaPlayer2.*`) only exposes one player per browser *process*, not per tab,
+  and doesn't identify which profile launched it (would need to cross-reference the bus owner's
+  PID against its `--profile` argv). A real per-tab list would need a companion browser extension
+  and native messaging, per browser — a separate project, not an addition to this one.
 
 ## Housekeeping
 
