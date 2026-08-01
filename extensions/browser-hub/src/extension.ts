@@ -57,7 +57,7 @@ export default class BrowserProfilesExtension extends Extension {
       profileGroupsMode: settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
     });
 
-    this._indicator = new GBrowserProfilesIndicator(
+    this._indicator = new BrowserProfilesIndicator(
       this.metadata.name,
       () => this.openPreferences(),
       readSettings,
@@ -122,6 +122,10 @@ export default class BrowserProfilesExtension extends Extension {
 // -- Indicator ----------------------------------------------------------------
 
 class BrowserProfilesIndicator extends Button {
+  static {
+    GObject.registerClass(this);
+  }
+
   private _title: string;
   private _alive = true;
   private _onSettings: () => void;
@@ -228,5 +232,3 @@ class BrowserProfilesIndicator extends Button {
     });
   }
 }
-
-const GBrowserProfilesIndicator = GObject.registerClass(BrowserProfilesIndicator);
