@@ -71,7 +71,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
   ...expandChromiumVariants({
     label: "Ungoogled Chromium",
     dirName: "chromium",
-    flatpakId: "com.github.Eloston.UngoogledChromium",
+    flatpakId: "io.github.ungoogled_software.ungoogled_chromium",
   }),
   ...expandChromiumVariants({
     label: "Brave",
