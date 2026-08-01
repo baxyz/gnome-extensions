@@ -176,6 +176,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     xdg: "firedragon/profiles.ini",
     classic: ".firedragon/profiles.ini",
     binary: "firedragon",
+    flatpakId: "org.garudalinux.firedragon",
   }),
 
   // GNU IceCat, based on Firefox ESR 115; XDG landed upstream in Firefox 147, not yet inherited —
