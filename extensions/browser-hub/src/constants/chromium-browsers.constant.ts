@@ -132,4 +132,38 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     dirName: "thorium",
     binary: "thorium-browser",
   }),
+  // Distributed via Flathub and the Snap Store; no native package.
+  ...expandChromiumVariants({
+    label: "Ecosia Browser",
+    dirName: "EcosiaBrowser",
+    flatpakId: "org.ecosia.Browser",
+    snap: { name: "ecosia" },
+  }),
+  // Also distributed via Yandex's own apt repo (package/binary "yandex-browser-stable").
+  ...expandChromiumVariants({
+    label: "Yandex Browser",
+    dirName: "yandex-browser",
+    binary: "yandex-browser-stable",
+    flatpakId: "ru.yandex.Browser",
+  }),
+  // Distributed via Flathub only; no native package or snap.
+  ...expandChromiumVariants({
+    label: "Ulaa",
+    dirName: "ulaa-browser",
+    flatpakId: "com.ulaa.Ulaa",
+  }),
+  // Distributed via Flathub only; no native package or snap.
+  ...expandChromiumVariants({
+    label: "JioSphere",
+    dirName: "JioSphere",
+    flatpakId: "com.jiosphere.JioSphere",
+  }),
+  // Opera's dev channel — no flatpak (only stable/GX are on Flathub), same
+  // channel-suffix convention as Opera/Opera GX above.
+  ...expandChromiumVariants({
+    label: "Opera Developer",
+    dirName: "opera-developer",
+    binary: "opera-developer",
+    snap: { name: "opera-developer" },
+  }),
 ];
