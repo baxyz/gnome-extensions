@@ -48,6 +48,9 @@ describe("FIREFOX_BROWSERS snap variant", () => {
     const { FIREFOX_BROWSERS } = await import("../src/constants/firefox-browsers.constant");
     const snapEntry = FIREFOX_BROWSERS.find((b) => b.label === "Firefox (snap)");
     expect(snapEntry?.path).toBe("/home/user/snap/firefox/common/.mozilla/firefox/profiles.ini");
-    expect(fileReadLink).not.toHaveBeenCalled();
+    // Other entries in this module (e.g. Zen's snap variant) legitimately use
+    // the per-revision snapDataDir and do call file_read_link — only assert
+    // Firefox's own resolution never reads the "firefox" revision symlink.
+    expect(fileReadLink).not.toHaveBeenCalledWith("/snap/firefox/current");
   });
 });
