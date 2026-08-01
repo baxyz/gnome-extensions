@@ -16,7 +16,7 @@ export default class FirefoxProfilesExtension extends Extension {
   private _indicator: FirefoxProfilesIndicator | null = null;
 
   enable() {
-    this._indicator = new GFirefoxProfilesIndicator(this.metadata.name);
+    this._indicator = new FirefoxProfilesIndicator(this.metadata.name);
     Main.panel.addToStatusArea(this.uuid, this._indicator);
   }
 
@@ -34,6 +34,10 @@ export default class FirefoxProfilesExtension extends Extension {
  * Indicator for Firefox profiles
  */
 class FirefoxProfilesIndicator extends Button {
+  static {
+    GObject.registerClass(this);
+  }
+
   private title: string;
 
   constructor(title: string) {
@@ -69,5 +73,3 @@ class FirefoxProfilesIndicator extends Button {
     );
   }
 }
-
-const GFirefoxProfilesIndicator = GObject.registerClass(FirefoxProfilesIndicator);
