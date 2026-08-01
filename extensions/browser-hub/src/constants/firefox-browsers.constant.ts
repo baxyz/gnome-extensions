@@ -165,6 +165,9 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     flatpakId: "app.zen_browser.zen",
     binary: "zen-browser",
     spaceType: SpaceType.ZenWorkspaces,
+    // Community-maintained (Zen itself only publishes Flathub/native); snap
+    // name is "zen-browser-snap", not "zen-browser".
+    snap: { name: "zen-browser-snap", relativePath: ".zen/profiles.ini" },
   }),
 
   // Garuda Linux. XDG support added in v13, classic path covers pre-v13.

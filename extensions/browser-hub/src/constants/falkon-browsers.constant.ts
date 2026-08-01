@@ -1,6 +1,6 @@
 import { BrowserType, PackageManager } from "../taxonomy";
 import type { FalkonBrowserConfig } from "../taxonomy";
-import { HOME_DIR, XDG_CONFIG_HOME } from "./paths.constant";
+import { HOME_DIR, XDG_CONFIG_HOME, snapDataDir } from "./paths.constant";
 
 export const FALKON_BROWSERS: FalkonBrowserConfig[] = [
   {
@@ -14,5 +14,11 @@ export const FALKON_BROWSERS: FalkonBrowserConfig[] = [
     label: "Falkon (flatpak)",
     path: HOME_DIR + "/.var/app/org.kde.falkon/config/falkon/profiles/",
     pkg: { manager: PackageManager.Flatpak, appId: "org.kde.falkon" },
+  },
+  {
+    type: BrowserType.Falkon,
+    label: "Falkon (snap)",
+    path: snapDataDir("falkon") + "/.config/falkon/profiles/",
+    pkg: { manager: PackageManager.Snap, name: "falkon" },
   },
 ];
