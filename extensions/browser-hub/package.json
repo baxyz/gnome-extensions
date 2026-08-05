@@ -35,8 +35,8 @@
     "@helpers4/color": "catalog:",
     "@helpers4/object": "catalog:",
     "@helpers4/promise": "catalog:",
-    "mozlz4": "^0.2.2",
-    "sqlite-reader": "^0.2.1"
+    "mozlz4": "^0.2.4",
+    "sqlite-reader": "^0.3.0"
   },
   "devDependencies": {
     "@girs/gjs": "catalog:",
