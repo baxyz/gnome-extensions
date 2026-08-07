@@ -3,9 +3,14 @@ import type Gio from "gi://Gio";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
-import type { BrowserSpace, ResolvedBrowserEntry, ResolvedBrowserItem } from "./taxonomy";
+import type {
+  BrowserSpace,
+  ResolvedBrowserEntry,
+  ResolvedBrowserItem,
+  ResolvedBrowserPkg,
+} from "./taxonomy";
 import type { DefaultBrowserInfo } from "./default-browser";
-import { launchBrowser } from "./internal";
+import { launchBrowser, resolveDesktopIcon } from "./internal";
 import { chunk, isEmpty } from "@helpers4/array";
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
@@ -97,39 +102,94 @@ function makeSpaceGroup(
   return group;
 }
 
+// Matches the "Browsers" row's own icon size (makeIconButton's call site
+// below) so the default-browser button reads as the same kind of control,
+// not a smaller text-only one bolted on beside it.
+const DEFAULT_BROWSER_ICON_SIZE = 24;
+
 function makeDefaultBrowserGroup(
   name: string,
+  icon: Gio.Icon | undefined,
   onLaunch: () => void,
-  onChangeDefault: () => void,
-  showEdit: boolean,
+  onTogglePicker: () => void,
+  showPicker: boolean,
+  pickerOpen: boolean,
 ): St.BoxLayout {
   const group = new St.BoxLayout({ style_class: "browser-hub-btn-group" });
 
   const launchBtn = new St.Button({
     can_focus: true,
     accessible_name: name,
-    label: name,
-    style_class: showEdit
+    style_class: showPicker
       ? "button browser-hub-default-browser-btn"
       : "button browser-hub-default-browser-btn browser-hub-default-browser-btn--solo",
   });
+  const content = new St.BoxLayout({ style_class: "browser-hub-default-browser-btn-content" });
+  content.add_child(
+    new St.Icon({
+      ...iconProps(icon ?? "web-browser-symbolic"),
+      icon_size: DEFAULT_BROWSER_ICON_SIZE,
+    }),
+  );
+  content.add_child(new St.Label({ text: name }));
+  launchBtn.set_child(content);
   tooltip(launchBtn, name);
   launchBtn.connect("clicked", onLaunch);
   group.add_child(launchBtn);
 
-  if (showEdit) {
-    const changeBtn = new St.Button({
+  if (showPicker) {
+    const pickerBtn = new St.Button({
       can_focus: true,
-      accessible_name: "Change default browser",
+      accessible_name: "Choose default browser",
       style_class: "button browser-hub-change-default-btn",
     });
-    changeBtn.set_child(new St.Icon({ icon_name: "document-edit-symbolic", icon_size: 12 }));
-    tooltip(changeBtn, "Change default browser");
-    changeBtn.connect("clicked", onChangeDefault);
-    group.add_child(changeBtn);
+    // pan-down/pan-up (not the "open"/"checked" pseudo-classes real
+    // PopupSubMenuMenuItem arrows use) since this isn't a real PopupSubMenu —
+    // see buildDefaultBrowserPicker's own comment for why.
+    pickerBtn.set_child(
+      new St.Icon({
+        icon_name: pickerOpen ? "pan-up-symbolic" : "pan-down-symbolic",
+        icon_size: 12,
+      }),
+    );
+    tooltip(pickerBtn, "Choose default browser");
+    pickerBtn.connect("clicked", onTogglePicker);
+    group.add_child(pickerBtn);
   }
 
   return group;
+}
+
+/**
+ * Rows for picking a new default browser, shown directly under the toolbar
+ * when its caret is toggled open. A real PopupSubMenu (the class backing
+ * GNOME Shell's own expandable submenus, e.g. PopupSubMenuMenuItem) would
+ * give this a slide animation for free, but it re-parents its actor onto
+ * the *top-level* menu via _setParent — awkward to splice in for just one
+ * row of a non-submenu toolbar item without risking breaking that item's own
+ * layout. Plain conditional PopupMenuItems, added/removed by fillMenu's
+ * existing removeAll()-and-rebuild on every redraw, get the same "list
+ * appears right under the toolbar" result with no animation, for much less
+ * risk of mis-wiring internals nothing here can visually test.
+ */
+function buildDefaultBrowserPicker(
+  browsers: ResolvedBrowserItem[],
+  onPick: (pkg: ResolvedBrowserPkg) => void,
+): PopupMenuItem[] {
+  return browsers
+    .filter((b) => b.pkg !== undefined)
+    .map((b) => {
+      const item = new PopupMenuItem(b.label);
+      item.add_style_class_name("browser-hub-default-browser-picker-item");
+      if (b.icon) {
+        const iconWidget = new St.Icon({ ...iconProps(b.icon), icon_size: 16 });
+        item.insert_child_below(iconWidget, item.label);
+      }
+      // Filtered above — the pkg is present, this is just narrowing the type.
+      const pkg = b.pkg;
+      if (pkg) item.connect("activate", () => onPick(pkg));
+      return item;
+    });
 }
 
 function makeIconRow(): PopupMenuItem {
@@ -159,6 +219,8 @@ function buildToolbar({
   title,
   defaultBrowser,
   showDefaultBrowserEdit,
+  pickerOpen,
+  onTogglePicker,
   notify,
   onRefresh,
   onSettings,
@@ -167,6 +229,8 @@ function buildToolbar({
   title: string;
   defaultBrowser?: DefaultBrowserInfo | null;
   showDefaultBrowserEdit: boolean;
+  pickerOpen: boolean;
+  onTogglePicker: () => void;
   notify: typeof Main.notify;
   onRefresh: () => void;
   onSettings: () => void;
@@ -179,15 +243,14 @@ function buildToolbar({
     toolbar.add_child(
       makeDefaultBrowserGroup(
         defaultBrowser.name,
+        resolveDesktopIcon(defaultBrowser.pkg),
         () => {
           launchBrowser({ command: cmd, title, notify });
           closeMenu();
         },
-        () => {
-          launchBrowser({ command: ["gnome-control-center", "applications"], title, notify });
-          closeMenu();
-        },
+        onTogglePicker,
         showDefaultBrowserEdit,
+        pickerOpen,
       ),
     );
   }
@@ -360,6 +423,9 @@ export function fillMenu({
   defaultBrowser,
   showToolbar = true,
   showDefaultBrowserEdit = true,
+  pickerOpen = false,
+  onTogglePicker = () => {},
+  onSetDefaultBrowser = () => {},
 }: {
   title: string;
   menu: PopupMenu | PopupDummyMenu;
@@ -370,6 +436,10 @@ export function fillMenu({
   defaultBrowser?: DefaultBrowserInfo | null;
   showToolbar?: boolean;
   showDefaultBrowserEdit?: boolean;
+  /** Whether the default-browser picker (opened via the toolbar's caret) is currently expanded. */
+  pickerOpen?: boolean;
+  onTogglePicker?: () => void;
+  onSetDefaultBrowser?: (pkg: ResolvedBrowserPkg) => void;
 }): void {
   if ("removeAll" in menu) {
     menu.removeAll();
@@ -390,12 +460,23 @@ export function fillMenu({
         title,
         defaultBrowser,
         showDefaultBrowserEdit,
+        pickerOpen,
+        onTogglePicker,
         notify,
         onRefresh,
         onSettings,
         closeMenu,
       }),
     );
+    // The picker's own rows come from the same "Browsers" row entry the
+    // quick-launch icons below are built from — same one-per-identity list,
+    // just rendered as text rows instead of icon buttons here.
+    if (showDefaultBrowserEdit && pickerOpen) {
+      const browsers = entries.find((e) => e.group === "simple")?.items ?? [];
+      for (const item of buildDefaultBrowserPicker(browsers, onSetDefaultBrowser)) {
+        menu.addMenuItem(item);
+      }
+    }
   }
 
   // Handle empty state. No separator above this — there's nothing here to

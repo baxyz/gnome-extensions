@@ -15,10 +15,10 @@ import {
   resolveDesktopIcon,
   setBadgeIconsDir,
 } from "./internal";
-import { clearDefaultBrowserCache, getDefaultBrowser } from "./default-browser";
+import { clearDefaultBrowserCache, getDefaultBrowser, setDefaultBrowser } from "./default-browser";
 import type { DefaultBrowserInfo } from "./default-browser";
 import { SpaceType } from "./taxonomy/space-type.enum";
-import type { ResolvedBrowserEntry } from "./taxonomy";
+import type { ResolvedBrowserEntry, ResolvedBrowserPkg } from "./taxonomy";
 import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
 
 // this.menu is typed as PopupMenu | PopupDummyMenu — a union whose two
@@ -154,6 +154,11 @@ class BrowserProfilesIndicator extends Button {
   private _menuOpenStateId: number | null = null;
   private _menuSignals!: MenuSignals;
   private _panelIcon: St.Icon;
+  // Whether the default-browser picker (toolbar caret) is expanded. Reset to
+  // closed on every menu open (see the open-state-changed handler below) —
+  // fillMenu() rebuilds the whole menu from scratch on every redraw anyway,
+  // so this is the only place this state actually lives.
+  private _defaultBrowserPickerOpen = false;
 
   constructor(
     title: string,
@@ -170,10 +175,11 @@ class BrowserProfilesIndicator extends Button {
 
     // getDefaultBrowser() is cached (see default-browser.ts) for the
     // extension's lifetime — otherwise correct, but the OS default-browser
-    // association can change via this menu's own "change default browser"
-    // button, which just opens gnome-control-center with no callback when it
-    // closes. Bust the cache on every menu open so the toolbar never shows a
-    // default browser that's gone stale since the last time it was shown.
+    // association can change externally (gnome-control-center, xdg-settings)
+    // between menu opens. Bust the cache on every menu open so the toolbar
+    // never shows a default browser that's gone stale since the last time it
+    // was shown. Also collapses the default-browser picker, if it was left
+    // open from a previous visit.
     // Disconnected in this.destroy() below, not via a "destroy" signal
     // handler — that indirection (connect to the signal now, disconnect
     // whenever it happens to fire later) isn't statically traceable back to
@@ -183,6 +189,7 @@ class BrowserProfilesIndicator extends Button {
     this._menuOpenStateId = this._menuSignals.connect("open-state-changed", (_menu, isOpen) => {
       if (isOpen) {
         clearDefaultBrowserCache();
+        this._defaultBrowserPickerOpen = false;
         this.redrawMenu();
       }
     });
@@ -248,6 +255,18 @@ class BrowserProfilesIndicator extends Button {
       defaultBrowser,
       showToolbar,
       showDefaultBrowserEdit,
+      pickerOpen: this._defaultBrowserPickerOpen,
+      onTogglePicker: () => {
+        this._defaultBrowserPickerOpen = !this._defaultBrowserPickerOpen;
+        this.redrawMenu();
+      },
+      onSetDefaultBrowser: (pkg: ResolvedBrowserPkg) => {
+        this._defaultBrowserPickerOpen = false;
+        if (!setDefaultBrowser(pkg)) {
+          Main.notify(this._title, "Couldn't set that browser as default");
+        }
+        this.redrawMenu();
+      },
     });
   }
 

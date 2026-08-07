@@ -62,6 +62,13 @@ vi.mock("gi://St", () => ({
     Button: FakeButton,
     BoxLayout: FakeBoxLayout,
     Bin: FakeBin,
+    // Real St.Label takes a GObject-style props object; FakeLabel (below,
+    // also reused directly by FakePopupMenuItem) takes a plain string.
+    Label: class extends FakeLabel {
+      constructor(props: { text: string }) {
+        super(props.text);
+      }
+    },
     IconTheme: class {
       has_icon() {
         return true;
@@ -111,6 +118,10 @@ vi.mock("gi://Gio", () => ({
   default: {
     Subprocess: { new: subprocessNew },
     SubprocessFlags: { NONE: 0 },
+    // menu.ts's buildToolbar resolves the default browser's own icon via
+    // resolveDesktopIcon() — no app matches in this test environment, which
+    // exercises the same "no icon found" tolerance as a real missing .desktop file.
+    DesktopAppInfo: { new: () => null },
   },
 }));
 
@@ -434,7 +445,8 @@ describe("fillMenu", () => {
     expect(subprocessNew).toHaveBeenCalledWith(["firefox", "-P", "default"], 0);
   });
 
-  it("shows the edit button only when showDefaultBrowserEdit is true, and launches gnome-control-center applications on click", () => {
+  it("shows the picker caret only when showDefaultBrowserEdit is true, and toggles the picker on click", () => {
+    const onTogglePicker = vi.fn();
     const menuWithEdit = makeFakeMenu();
     fillMenu({
       title: "t",
@@ -445,13 +457,15 @@ describe("fillMenu", () => {
       onRefresh: noop,
       defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
       showDefaultBrowserEdit: true,
+      onTogglePicker,
     });
     const toolbar = menuWithEdit.items[0] as FakePopupMenuItem;
     const btnGroup = toolbar.children[0] as FakeBoxLayout;
-    expect(btnGroup.children).toHaveLength(2); // launch + edit
-    const editBtn = btnGroup.children[1] as FakeButton;
-    editBtn.emit("clicked");
-    expect(subprocessNew).toHaveBeenCalledWith(["gnome-control-center", "applications"], 0);
+    expect(btnGroup.children).toHaveLength(2); // launch + caret
+    const caretBtn = btnGroup.children[1] as FakeButton;
+    caretBtn.emit("clicked");
+    expect(onTogglePicker).toHaveBeenCalledTimes(1);
+    expect(subprocessNew).not.toHaveBeenCalled();
 
     const menuWithoutEdit = makeFakeMenu();
     fillMenu({
@@ -467,6 +481,54 @@ describe("fillMenu", () => {
     const toolbar2 = menuWithoutEdit.items[0] as FakePopupMenuItem;
     const btnGroup2 = toolbar2.children[0] as FakeBoxLayout;
     expect(btnGroup2.children).toHaveLength(1); // launch only
+  });
+
+  it("expands picker rows (from the 'Browsers' row's items) below the toolbar only when pickerOpen is true", () => {
+    const browsersEntry = {
+      label: "Browsers",
+      group: "simple" as const,
+      items: [
+        { label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+        { label: "Chromium", command: ["chromium"] }, // no pkg — must be skipped
+      ],
+    };
+
+    const closedMenu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu: closedMenu,
+      entries: [browsersEntry],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+      showDefaultBrowserEdit: true,
+      pickerOpen: false,
+    });
+    // [0] toolbar, [1] category separator, [2] the "Browsers" row itself — no picker rows.
+    expect(closedMenu.items).toHaveLength(3);
+
+    const onSetDefaultBrowser = vi.fn();
+    const openMenu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu: openMenu,
+      entries: [browsersEntry],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+      showDefaultBrowserEdit: true,
+      pickerOpen: true,
+      onSetDefaultBrowser,
+    });
+    // [0] toolbar, [1] picker row (Chromium's pkg-less item is skipped),
+    // [2] category separator, [3] the "Browsers" row itself.
+    expect(openMenu.items).toHaveLength(4);
+    const pickerItem = openMenu.items[1] as FakePopupMenuItem;
+    expect(pickerItem.label.text).toBe("Firefox");
+    pickerItem.emit("activate");
+    expect(onSetDefaultBrowser).toHaveBeenCalledWith(FAKE_DEFAULT_BROWSER_PKG);
   });
 
   it("omits the whole toolbar row when showToolbar is false", () => {

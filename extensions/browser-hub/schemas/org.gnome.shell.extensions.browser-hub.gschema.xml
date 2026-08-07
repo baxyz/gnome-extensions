@@ -58,8 +58,8 @@
 
     <key name="show-default-browser-edit" type="b">
       <default>true</default>
-      <summary>Show default browser edit button</summary>
-      <description>Sub-setting of "show-toolbar" (has no effect when that is off). Display the pencil button next to the default browser name that opens Default Applications settings.</description>
+      <summary>Show default browser picker caret</summary>
+      <description>Sub-setting of "show-toolbar" (has no effect when that is off). Display the caret button next to the default browser name that expands a list of detected browsers to set as the new system default.</description>
     </key>
 
     <key name="show-default-browser-panel-icon" type="b">

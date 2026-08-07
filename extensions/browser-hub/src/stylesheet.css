@@ -18,13 +18,22 @@
   margin-right: 0.3em;
 }
 
-/* Default browser button group in toolbar */
+/* Default browser button group in toolbar — same padding as
+   .browser-hub-browser-btn (the "Browsers" row's square buttons) so both
+   read as the same kind of control instead of one looking like a smaller,
+   text-only afterthought next to the other. */
 .browser-hub-default-browser-btn {
-  font-size: 9pt;
-  padding: 2px 6px 2px 8px;
+  padding: 8px;
   border-radius: 6px 0 0 6px;
 }
 
+/* Icon + label inside the default browser button (see menu.ts) */
+.browser-hub-default-browser-btn-content {
+  spacing: 6px;
+}
+
+/* Caret button that expands the default-browser picker list below the
+   toolbar — same glued-pair shape the old edit-pencil button had. */
 .browser-hub-change-default-btn {
   padding: 2px 5px;
   border-radius: 0 6px 6px 0;
@@ -33,6 +42,13 @@
 
 .browser-hub-default-browser-btn--solo {
   border-radius: 6px;
+}
+
+/* Rows in the expanded default-browser picker (see buildDefaultBrowserPicker
+   in menu.ts) — indented so they read as belonging to the toolbar's caret
+   above them, not as their own independent menu entries. */
+.browser-hub-default-browser-picker-item {
+  padding-left: 1.5em;
 }
 
 /* Profile color indicator dot (e.g. Chromium profile background color) */
