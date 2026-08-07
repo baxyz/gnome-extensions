@@ -8,6 +8,11 @@ type FakeFile = {
 };
 
 const files = new Map<string, FakeFile>();
+// Separate from `files` above (a different shape, and writeTextFileAsync's
+// own tests don't need query_info/load_contents at all) — written contents
+// captured here for assertions.
+const written = new Map<string, Uint8Array>();
+let writeShouldFail = false;
 
 function ioError(code: number): { matches: (domain: unknown, c: number) => boolean } {
   return { matches: (_domain: unknown, c: number) => c === code };
@@ -36,8 +41,24 @@ vi.mock("gi://Gio", () => ({
           if (f.size === -1) throw ioError(PERMISSION_DENIED);
           return [true, f.contents];
         },
+        replace_contents_bytes_async(
+          contents: Uint8Array,
+          _etag: null,
+          _makeBackup: boolean,
+          _flags: number,
+          _cancel: null,
+          cb: (src: null, res: { path: string }) => void,
+        ) {
+          if (!writeShouldFail) written.set(path, contents);
+          cb(null, { path });
+        },
+        replace_contents_finish(_result: { path: string }) {
+          if (writeShouldFail) throw new Error("disk full");
+          return [true, ""];
+        },
       }),
     },
+    FileCreateFlags: { NONE: 0 },
   },
 }));
 
@@ -45,7 +66,8 @@ vi.mock("gi://Gio", () => ({
 // the import itself must still resolve under Node.
 vi.mock("gi://GLib", () => ({ default: { PRIORITY_DEFAULT: 0 } }));
 
-const { logIfUnexpected, readFileAsync, tagError } = await import("../src/internal/gio");
+const { logIfUnexpected, readFileAsync, tagError, writeTextFileAsync } =
+  await import("../src/internal/gio");
 
 describe("logIfUnexpected", () => {
   it("stays silent for a NOT_FOUND error", () => {
@@ -121,5 +143,19 @@ describe("readFileAsync", () => {
     });
 
     await expect(readFileAsync("/huge")).rejects.toThrow(/exceeds the read size limit/);
+  });
+});
+
+describe("writeTextFileAsync", () => {
+  it("writes the given text, UTF-8 encoded", async () => {
+    writeShouldFail = false;
+    await writeTextFileAsync("/out/user.js", 'user_pref("a", true);');
+    expect(written.get("/out/user.js")).toEqual(new TextEncoder().encode('user_pref("a", true);'));
+  });
+
+  it("rejects when the underlying write fails", async () => {
+    writeShouldFail = true;
+    await expect(writeTextFileAsync("/out/user.js", "x")).rejects.toThrow("disk full");
+    writeShouldFail = false;
   });
 });
