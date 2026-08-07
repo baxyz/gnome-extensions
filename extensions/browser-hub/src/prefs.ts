@@ -49,8 +49,8 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       ),
     );
     const editBtnRow = switchRow(
-      "Show “change default browser” button",
-      "A pencil icon next to the default browser name that opens Default Applications",
+      "Show default browser picker",
+      "A caret next to the default browser name that expands a list to set a new default",
       "show-default-browser-edit",
     );
     bindToParent("show-default-browser-edit", editBtnRow);

@@ -29,10 +29,10 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 ### Default browser switcher
 
-- [ ] Change the system default browser (`xdg-settings set default-web-browser`) from the indicator.
-      Reference implementation: [totoshko88/browser-switcher](https://github.com/totoshko88/browser-switcher) (GPL-3.0, compatible with AGPL-3.0).
-- [ ] Replace the toolbar's Settings button with a one-click dropdown to switch the default browser directly.
-      Needs a decision first: where Settings moves (long-press? main menu? its own icon?) once the dropdown takes its spot.
+- [x] Change the system default browser from the indicator.
+      `Gio.AppInfo.set_as_default_for_type()` for http/https/text-html (default-browser.ts's `setDefaultBrowser()`) — matches [totoshko88/browser-switcher](https://github.com/totoshko88/browser-switcher)'s approach, no `xdg-settings` subprocess needed.
+- [x] One-click way to switch the default browser directly from the toolbar.
+      Took the edit-pencil button's slot instead of Settings': it's now a caret that expands a list of detected browsers (icon + name, sourced from the same data as the "Browsers" row) right below the toolbar. Picking one calls `setDefaultBrowser()` and collapses the list. Settings itself is untouched.
 
 ### Panel icon: generic vs default browser
 
