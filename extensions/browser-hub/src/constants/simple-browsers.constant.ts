@@ -237,4 +237,25 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
     label: "Links (snap)",
     pkg: { manager: PackageManager.Snap, name: "links" },
   },
+
+  // === Orion Browser (Kagi, WebKit) ===
+  // Not on Flathub — installed from Kagi's own remote
+  // (flatpak.orionbrowser.com/orion-beta.flatpakrepo). That repo currently
+  // serves two distinct, actively updated app ids side by side; both listed
+  // since it's unclear which (if either) is being phased out.
+  // Kagi's own docs describe a real Profiles feature, but every
+  // screenshot/instruction is macOS-specific (Dock icons, "File > Profiles"
+  // menu) and the Linux beta explicitly still lacks other desktop-parity
+  // features (extensions, Kagi Sync) — Simple until Linux profile storage is
+  // confirmed and documented somewhere.
+  {
+    type: BrowserType.Simple,
+    label: "Orion Browser",
+    pkg: { manager: PackageManager.Flatpak, appId: "com.kagi.Orion" },
+  },
+  {
+    type: BrowserType.Simple,
+    label: "Orion Browser (GTK)",
+    pkg: { manager: PackageManager.Flatpak, appId: "com.kagi.OrionGtk" },
+  },
 ];
