@@ -8,8 +8,14 @@ import { Button } from "resource:///org/gnome/shell/ui/panelMenu.js";
 import { getBrowserEntries } from "./browser";
 import type { BrowserSettings, ProfileGroupsMode } from "./browser";
 import { fillMenu } from "./menu";
-import { clearDesktopIconCache, clearPathPresenceCache, clearPkgResolutionCache } from "./internal";
+import {
+  clearDesktopIconCache,
+  clearPathPresenceCache,
+  clearPkgResolutionCache,
+  resolveDesktopIcon,
+} from "./internal";
 import { clearDefaultBrowserCache, getDefaultBrowser } from "./default-browser";
+import type { DefaultBrowserInfo } from "./default-browser";
 import { SpaceType } from "./taxonomy/space-type.enum";
 import type { ResolvedBrowserEntry } from "./taxonomy";
 import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
@@ -26,6 +32,13 @@ const SPACE_TYPE_VALUES = Object.values(SpaceType);
 // Debounce delay for settings changes (ms) — batch rapid setting changes to avoid
 // redundant menu rebuilds while the user is still adjusting preferences.
 const SETTINGS_DEBOUNCE_MS = 50;
+const GENERIC_PANEL_ICON_NAME = "web-browser-symbolic";
+
+type ToolbarSettings = {
+  showToolbar: boolean;
+  showDefaultBrowserEdit: boolean;
+  showDefaultBrowserPanelIcon: boolean;
+};
 
 // -- Extension ----------------------------------------------------------------
 
@@ -64,6 +77,7 @@ export default class BrowserProfilesExtension extends Extension {
       () => ({
         showToolbar: settings.get_boolean("show-toolbar"),
         showDefaultBrowserEdit: settings.get_boolean("show-default-browser-edit"),
+        showDefaultBrowserPanelIcon: settings.get_boolean("show-default-browser-panel-icon"),
       }),
     );
 
@@ -130,19 +144,20 @@ class BrowserProfilesIndicator extends Button {
   private _alive = true;
   private _onSettings: () => void;
   private _readSettings: () => BrowserSettings;
-  private _readToolbarSettings: () => { showToolbar: boolean; showDefaultBrowserEdit: boolean };
+  private _readToolbarSettings: () => ToolbarSettings;
   // Bumped on every refreshEntries() call so a slow, older scan can't clobber
   // the menu after a newer one has already resolved (out-of-order settling).
   private _refreshSeq = 0;
   private _lastEntries: ResolvedBrowserEntry[] = [];
   private _menuOpenStateId: number | null = null;
   private _menuSignals!: MenuSignals;
+  private _panelIcon: St.Icon;
 
   constructor(
     title: string,
     onSettings: () => void,
     readSettings: () => BrowserSettings,
-    readToolbarSettings: () => { showToolbar: boolean; showDefaultBrowserEdit: boolean },
+    readToolbarSettings: () => ToolbarSettings,
   ) {
     super(0.0, title);
 
@@ -170,12 +185,11 @@ class BrowserProfilesIndicator extends Button {
       }
     });
 
-    this.add_child(
-      new St.Icon({
-        icon_name: "web-browser-symbolic",
-        style_class: "system-status-icon",
-      }),
-    );
+    this._panelIcon = new St.Icon({
+      icon_name: GENERIC_PANEL_ICON_NAME,
+      style_class: "system-status-icon",
+    });
+    this.add_child(this._panelIcon);
 
     this.refreshEntries();
   }
@@ -210,7 +224,10 @@ class BrowserProfilesIndicator extends Button {
   }
 
   private _draw(): void {
-    const { showToolbar, showDefaultBrowserEdit } = this._readToolbarSettings();
+    const { showToolbar, showDefaultBrowserEdit, showDefaultBrowserPanelIcon } =
+      this._readToolbarSettings();
+    const defaultBrowser = getDefaultBrowser();
+    this._updatePanelIcon(showDefaultBrowserPanelIcon, defaultBrowser);
     fillMenu({
       title: this._title,
       menu: this.menu,
@@ -226,9 +243,27 @@ class BrowserProfilesIndicator extends Button {
         clearDefaultBrowserCache();
         this.refreshEntries();
       },
-      defaultBrowser: getDefaultBrowser(),
+      defaultBrowser,
       showToolbar,
       showDefaultBrowserEdit,
     });
+  }
+
+  // Falls back to the generic icon whenever the setting is off, no default
+  // browser is detected, or its .desktop file's icon can't be resolved —
+  // resolveDesktopIcon() itself already reflects that same tolerance (see
+  // internal/desktop-icon.ts), this just adds the setting as another reason
+  // to prefer the generic icon.
+  private _updatePanelIcon(
+    showDefaultBrowserPanelIcon: boolean,
+    defaultBrowser: DefaultBrowserInfo | null,
+  ): void {
+    const icon =
+      showDefaultBrowserPanelIcon && defaultBrowser && resolveDesktopIcon(defaultBrowser.pkg);
+    if (icon) {
+      this._panelIcon.set_gicon(icon);
+    } else {
+      this._panelIcon.set_icon_name(GENERIC_PANEL_ICON_NAME);
+    }
   }
 }

@@ -27,6 +27,17 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       settings.bind(SUB_SETTING_PARENTS[key], row, "sensitive", Gio.SettingsBindFlags.GET);
     };
 
+    // -- Panel ------------------------------------------------------------------
+
+    const panelGroup = new Adw.PreferencesGroup({ title: "Panel" });
+    panelGroup.add(
+      switchRow(
+        "Show default browser's icon",
+        "Use the default browser's own icon instead of the generic one",
+        "show-default-browser-panel-icon",
+      ),
+    );
+
     // -- Toolbar --------------------------------------------------------------
 
     const toolbarGroup = new Adw.PreferencesGroup({ title: "Toolbar" });
@@ -127,6 +138,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     );
 
     const page = new Adw.PreferencesPage();
+    page.add(panelGroup);
     page.add(toolbarGroup);
     page.add(profilesGroup);
     page.add(profileGroupsGroup);
