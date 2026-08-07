@@ -6,6 +6,7 @@ export {
   readFileAsync,
   readTextFileAsync,
   tagError,
+  writeTextFileAsync,
 } from "./gio";
 export type { DesktopAppInfo, DirEntry } from "./gio";
 export {
