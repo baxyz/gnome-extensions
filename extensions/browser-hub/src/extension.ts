@@ -13,6 +13,7 @@ import {
   clearPathPresenceCache,
   clearPkgResolutionCache,
   resolveDesktopIcon,
+  setBadgeIconsDir,
 } from "./internal";
 import { clearDefaultBrowserCache, getDefaultBrowser } from "./default-browser";
 import type { DefaultBrowserInfo } from "./default-browser";
@@ -53,6 +54,7 @@ export default class BrowserProfilesExtension extends Extension {
   private _pendingNeedsRescan = false;
 
   enable() {
+    setBadgeIconsDir(this.dir.get_child("assets").get_child("badges"));
     const settings = this.getSettings();
     this._settings = settings;
 

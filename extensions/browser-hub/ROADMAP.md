@@ -24,8 +24,8 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 ### Package manager badge
 
-- [ ] Show a small emblem (native/Flatpak/Snap) on each browser icon, in the Browsers row and in the detailed sections.
-      `pkg.manager` is already resolved everywhere a browser is listed — render via `Gio.EmblemedIcon` wrapping the existing desktop icon, no new resolution logic needed.
+- [x] Show a small emblem (Flatpak/Snap) on each browser icon, in the Browsers row and in the detailed sections. Native is unmarked (the default).
+      No Flatpak/Snap icon exists in Adwaita — two SVGs (`assets/badges/`, recolored from real official marks, see `assets/badges/NOTICE.md`) ship with the extension instead, applied via `Gio.EmblemedIcon` in `resolveDesktopIcon()`. St's texture cache renders `GEmblemedIcon` natively, so every call site got the badge for free with no rendering changes.
 
 ### Default browser switcher
 

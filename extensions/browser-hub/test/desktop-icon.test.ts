@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
+import type Gio from "gi://Gio";
 
 // Maps desktop id -> fake Gio.Icon (or absent = "no app installed under that id").
 const installedApps = new Map<string, object>();
@@ -7,16 +8,34 @@ const desktopAppInfoNew = vi.fn((id: string) => {
   return icon ? { get_icon: () => icon, get_string: () => null } : null;
 });
 
+// Fakes for the emblem-wrapping path — only exercised once a test calls
+// setBadgeIconsDir(); every test above that point never does, so these are
+// never invoked there (see resolveDesktopIcon's badgeIconsDir-null guard).
+const fileIconNew = vi.fn((file: { path: string }) => ({ __fileIcon: file.path }));
+const emblemNew = vi.fn((icon: unknown) => ({ __emblem: icon }));
+const emblemedIconNew = vi.fn((icon: unknown, emblem: unknown) => ({ __emblemed: icon, emblem }));
+
 vi.mock("gi://Gio", () => ({
-  default: { DesktopAppInfo: { new: desktopAppInfoNew } },
+  default: {
+    DesktopAppInfo: { new: desktopAppInfoNew },
+    FileIcon: { new: fileIconNew },
+    Emblem: { new: emblemNew },
+    EmblemedIcon: { new: emblemedIconNew },
+  },
 }));
 
 // internal/gio.ts (imported transitively via ./gio) also references GLib —
 // unused by anything these tests exercise, but the import itself must resolve.
 vi.mock("gi://GLib", () => ({ default: { PRIORITY_DEFAULT: 0 } }));
 
-const { resolveDesktopIcon, clearDesktopIconCache } = await import("../src/internal/desktop-icon");
+const { resolveDesktopIcon, clearDesktopIconCache, setBadgeIconsDir } =
+  await import("../src/internal/desktop-icon");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
+
+// A minimal fake Gio.File — only get_child() is exercised.
+function fakeDir(path: string): Gio.File {
+  return { get_child: (name: string) => ({ path: `${path}/${name}` }) } as unknown as Gio.File;
+}
 
 describe("resolveDesktopIcon", () => {
   it("guesses '<binary>.desktop' for a Native package", () => {
@@ -85,5 +104,51 @@ describe("resolveDesktopIcon", () => {
     clearDesktopIconCache();
     expect(resolveDesktopIcon(pkg)).toBe(icon);
     expect(desktopAppInfoNew).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("resolveDesktopIcon — package manager badge", () => {
+  beforeAll(() => {
+    setBadgeIconsDir(fakeDir("/ext/assets/badges"));
+  });
+
+  it("wraps a Flatpak package's icon in an EmblemedIcon carrying the flatpak badge", () => {
+    const icon = {};
+    installedApps.set("org.badged.Flatpak.desktop", icon);
+    const pkg = { manager: PackageManager.Flatpak, appId: "org.badged.Flatpak" } as const;
+
+    const result = resolveDesktopIcon(pkg);
+    expect(fileIconNew).toHaveBeenCalledWith({ path: "/ext/assets/badges/flatpak-badge.svg" });
+    expect(emblemedIconNew).toHaveBeenCalledWith(icon, {
+      __emblem: { __fileIcon: expect.any(String) },
+    });
+    expect(result).toEqual({ __emblemed: icon, emblem: expect.anything() });
+  });
+
+  it("wraps a Snap package's icon with the snap badge, not the flatpak one", () => {
+    const icon = {};
+    installedApps.set("badged-snap_badged-snap.desktop", icon);
+    const pkg = { manager: PackageManager.Snap, name: "badged-snap" } as const;
+
+    resolveDesktopIcon(pkg);
+    expect(fileIconNew).toHaveBeenCalledWith({ path: "/ext/assets/badges/snap-badge.svg" });
+  });
+
+  it("does not badge a Native package's icon — native is the unmarked default", () => {
+    const icon = {};
+    installedApps.set("badged-native.desktop", icon);
+    const pkg = { manager: PackageManager.Native, binary: "badged-native" } as const;
+
+    fileIconNew.mockClear();
+    expect(resolveDesktopIcon(pkg)).toBe(icon);
+    expect(fileIconNew).not.toHaveBeenCalled();
+  });
+
+  it("does not badge when there's no icon to badge (app not installed)", () => {
+    const pkg = { manager: PackageManager.Flatpak, appId: "org.not.Installed" } as const;
+
+    fileIconNew.mockClear();
+    expect(resolveDesktopIcon(pkg)).toBeUndefined();
+    expect(fileIconNew).not.toHaveBeenCalled();
   });
 });
