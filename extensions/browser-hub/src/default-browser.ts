@@ -6,6 +6,7 @@ import { buildBaseCommand, getDesktopAppInfo, type DesktopAppInfo } from "./inte
 export type DefaultBrowserInfo = {
   name: string;
   command: string[];
+  pkg: ResolvedBrowserPkg;
 };
 
 function desktopField(info: DesktopAppInfo, key: string): string | null {
@@ -46,9 +47,11 @@ export function getDefaultBrowser(): DefaultBrowserInfo | null {
   const name = appInfo?.get_name();
   const desktopId = appInfo?.get_id();
   const executable = appInfo?.get_executable();
-  cachedDefaultBrowser =
-    name && desktopId && executable
-      ? { name, command: buildBaseCommand(detectPkg(desktopId, executable)) }
-      : null;
+  if (name && desktopId && executable) {
+    const pkg = detectPkg(desktopId, executable);
+    cachedDefaultBrowser = { name, command: buildBaseCommand(pkg), pkg };
+  } else {
+    cachedDefaultBrowser = null;
+  }
   return cachedDefaultBrowser;
 }

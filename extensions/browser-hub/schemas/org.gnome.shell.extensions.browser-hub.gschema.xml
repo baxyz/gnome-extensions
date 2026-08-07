@@ -62,5 +62,11 @@
       <description>Sub-setting of "show-toolbar" (has no effect when that is off). Display the pencil button next to the default browser name that opens Default Applications settings.</description>
     </key>
 
+    <key name="show-default-browser-panel-icon" type="b">
+      <default>false</default>
+      <summary>Show the default browser's own icon in the panel</summary>
+      <description>Use the resolved default browser's own icon in the top panel instead of the generic web-browser-symbolic icon. Falls back to the generic icon when no default browser is detected or its icon can't be resolved.</description>
+    </key>
+
   </schema>
 </schemalist>

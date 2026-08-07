@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type Gio from "gi://Gio";
+import { PackageManager } from "../src/taxonomy";
+
+const FAKE_DEFAULT_BROWSER_PKG = { manager: PackageManager.Native, binary: "firefox" } as const;
 
 // menu.ts imports { launchBrowser } from "./internal", which loads the
 // whole internal/index.ts barrel — including pkg.ts, which imports "gi://GLib"
@@ -440,7 +443,7 @@ describe("fillMenu", () => {
       notify,
       onSettings: noop,
       onRefresh: noop,
-      defaultBrowser: { name: "Firefox", command: ["firefox"] },
+      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
       showDefaultBrowserEdit: true,
     });
     const toolbar = menuWithEdit.items[0] as FakePopupMenuItem;
@@ -458,7 +461,7 @@ describe("fillMenu", () => {
       notify,
       onSettings: noop,
       onRefresh: noop,
-      defaultBrowser: { name: "Firefox", command: ["firefox"] },
+      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
       showDefaultBrowserEdit: false,
     });
     const toolbar2 = menuWithoutEdit.items[0] as FakePopupMenuItem;
@@ -475,7 +478,7 @@ describe("fillMenu", () => {
       notify,
       onSettings: noop,
       onRefresh: noop,
-      defaultBrowser: { name: "Firefox", command: ["firefox"] },
+      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
       showToolbar: false,
     });
 

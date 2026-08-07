@@ -36,8 +36,8 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 ### Panel icon: generic vs default browser
 
-- [ ] Add a setting to show the resolved default browser's own icon in the panel instead of the generic `web-browser-symbolic`.
-      Infrastructure already exists: `getDefaultBrowser()` + `resolveDesktopIcon()`.
+- [x] Add a setting to show the resolved default browser's own icon in the panel instead of the generic `web-browser-symbolic`.
+      `show-default-browser-panel-icon` (off by default), read at every `_draw()` alongside the other toolbar settings.
 
 ### Default profile per browser
 

@@ -20,7 +20,11 @@ export const ENTRY_AFFECTING_KEYS = new Set<string>([
 ]);
 
 /** Settings keys that only affect how the menu is drawn, not what it contains. */
-export const COSMETIC_KEYS = new Set<string>(["show-toolbar", "show-default-browser-edit"]);
+export const COSMETIC_KEYS = new Set<string>([
+  "show-toolbar",
+  "show-default-browser-edit",
+  "show-default-browser-panel-icon",
+]);
 
 /**
  * Sub-setting gschema key -> its parent key. A sub-setting only takes effect
