@@ -8,7 +8,7 @@ export {
   tagError,
 } from "./gio";
 export type { DesktopAppInfo, DirEntry } from "./gio";
-export { clearDesktopIconCache, resolveDesktopIcon } from "./desktop-icon";
+export { clearDesktopIconCache, resolveDesktopIcon, setBadgeIconsDir } from "./desktop-icon";
 export {
   buildBaseCommand,
   clearPathPresenceCache,

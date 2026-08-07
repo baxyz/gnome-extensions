@@ -16,11 +16,27 @@ function gnomeSchemas(): Plugin {
   };
 }
 
+// Static assets (currently just the package-manager badge SVGs) aren't
+// imported by any TS module — Gio.FileIcon loads them by path at runtime
+// (see internal/desktop-icon.ts) — so they need copying into dist/ verbatim,
+// the same way schemas/ does above.
+function staticAssets(): Plugin {
+  return {
+    name: "static-assets",
+    apply: "build",
+    closeBundle() {
+      if (existsSync("assets")) {
+        cpSync("assets", "dist/assets", { recursive: true });
+      }
+    },
+  };
+}
+
 const base = createViteConfig();
 
 export default defineConfig({
   ...base,
-  plugins: [...(base.plugins as Plugin[]), gnomeSchemas()],
+  plugins: [...(base.plugins as Plugin[]), gnomeSchemas(), staticAssets()],
   build: {
     ...base.build,
     lib: {
