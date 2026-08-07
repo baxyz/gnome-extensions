@@ -44,7 +44,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     toolbarGroup.add(
       switchRow(
         "Show toolbar",
-        "The top row: default browser, Refresh, and Settings",
+        "The top row: default browser, Donut browser, Refresh, and Settings",
         "show-toolbar",
       ),
     );
@@ -55,6 +55,13 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     );
     bindToParent("show-default-browser-edit", editBtnRow);
     toolbarGroup.add(editBtnRow);
+    const donutBtnRow = switchRow(
+      "Show Donut browser button",
+      "Launches a disposable, fingerprint-resistant profile (Firefox family only)",
+      "show-donut-browser",
+    );
+    bindToParent("show-donut-browser", donutBtnRow);
+    toolbarGroup.add(donutBtnRow);
 
     // -- Profiles ---------------------------------------------------------------
 

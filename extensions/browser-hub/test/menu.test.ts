@@ -51,7 +51,11 @@ class FakeWidget {
   }
 }
 class FakeIcon extends FakeWidget {}
-class FakeButton extends FakeWidget {}
+// Real St.Button defaults reactive to true; makeDonutButton's click handler
+// (menu.ts) reads it back to guard against double-clicks while busy.
+class FakeButton extends FakeWidget {
+  reactive = true;
+}
 class FakeBoxLayout extends FakeWidget {}
 class FakeBin extends FakeWidget {}
 
@@ -111,6 +115,15 @@ class FakePopupSeparatorMenuItem extends FakeWidget {
 vi.mock("resource:///org/gnome/shell/ui/popupMenu.js", () => ({
   PopupMenuItem: FakePopupMenuItem,
   PopupSeparatorMenuItem: FakePopupSeparatorMenuItem,
+}));
+
+class FakeSpinner extends FakeWidget {
+  play(): void {}
+  stop(): void {}
+  destroy(): void {}
+}
+vi.mock("resource:///org/gnome/shell/ui/animation.js", () => ({
+  Spinner: FakeSpinner,
 }));
 
 const subprocessNew = vi.fn();
@@ -529,6 +542,99 @@ describe("fillMenu", () => {
     expect(pickerItem.label.text).toBe("Firefox");
     pickerItem.emit("activate");
     expect(onSetDefaultBrowser).toHaveBeenCalledWith(FAKE_DEFAULT_BROWSER_PKG);
+  });
+
+  it("shows the Donut button only when showDonutBrowser is on and an eligible browser is installed", () => {
+    const eligibleEntries = [
+      {
+        label: "Browsers",
+        group: "simple" as const,
+        items: [{ label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG }],
+      },
+    ];
+
+    const off = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu: off,
+      entries: eligibleEntries,
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      showDonutBrowser: false,
+    });
+    const toolbarOff = off.items[0] as FakePopupMenuItem;
+    // [spacer] only — no Donut button, no default-browser group (none passed).
+    expect(toolbarOff.children).toHaveLength(3); // spacer, Refresh, Settings
+
+    // No eligible browser in `entries` — button stays hidden even though the setting is on.
+    const noBrowsers = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu: noBrowsers,
+      entries: [],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      showDonutBrowser: true,
+    });
+    const toolbarNoBrowsers = noBrowsers.items[0] as FakePopupMenuItem;
+    expect(toolbarNoBrowsers.children).toHaveLength(3);
+
+    const eligible = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu: eligible,
+      entries: eligibleEntries,
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      showDonutBrowser: true,
+    });
+    const toolbarEligible = eligible.items[0] as FakePopupMenuItem;
+    expect(toolbarEligible.children).toHaveLength(4); // + the Donut button
+  });
+
+  it("shows a spinner in the Donut button while onLaunchDonut is pending, then restores the icon", async () => {
+    const entries = [
+      {
+        label: "Browsers",
+        group: "simple" as const,
+        items: [{ label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG }],
+      },
+    ];
+    let resolveLaunch!: () => void;
+    const onLaunchDonut = vi.fn(() => new Promise<void>((resolve) => (resolveLaunch = resolve)));
+
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries,
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      showDonutBrowser: true,
+      onLaunchDonut,
+    });
+    const toolbar = menu.items[0] as FakePopupMenuItem;
+    const donutBtn = toolbar.children[1] as FakeButton; // spacer, Donut, Refresh, Settings
+
+    donutBtn.emit("clicked");
+    expect(onLaunchDonut).toHaveBeenCalledWith({
+      label: "Firefox",
+      command: ["firefox"],
+      pkg: FAKE_DEFAULT_BROWSER_PKG,
+    });
+    expect(donutBtn.children[0]).toBeInstanceOf(FakeSpinner);
+    expect(donutBtn.reactive).toBe(false);
+
+    resolveLaunch();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(donutBtn.children[0]).toBeInstanceOf(FakeIcon);
+    expect(donutBtn.reactive).toBe(true);
   });
 
   it("omits the whole toolbar row when showToolbar is false", () => {

@@ -3,6 +3,7 @@ import type Gio from "gi://Gio";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
+import { Spinner } from "resource:///org/gnome/shell/ui/animation.js";
 import type {
   BrowserSpace,
   ResolvedBrowserEntry,
@@ -10,6 +11,7 @@ import type {
   ResolvedBrowserPkg,
 } from "./taxonomy";
 import type { DefaultBrowserInfo } from "./default-browser";
+import { findDonutBrowser } from "./donut-browser";
 import { launchBrowser, resolveDesktopIcon } from "./internal";
 import { chunk, isEmpty } from "@helpers4/array";
 
@@ -56,6 +58,50 @@ function makeIconButton(
   );
   tooltip(btn, label);
   btn.connect("clicked", onClick);
+  return btn;
+}
+
+const DONUT_TOOLTIP = "Open a disposable, anti-fingerprint browser session";
+const DONUT_ICON_SIZE = 16;
+
+/**
+ * Toolbar button for launching a Donut (disposable, anti-fingerprint)
+ * profile. Shows a spinner in place of its icon while onLaunch's async
+ * profile creation is in flight, so a slow disk doesn't leave the click
+ * looking like it did nothing — restoring the icon (or just leaving the
+ * button be, if fillMenu's removeAll() already tore this row down in the
+ * meantime) once it settles.
+ */
+function makeDonutButton(onLaunch: () => Promise<void>, closeMenu: () => void): St.Button {
+  const btn = new St.Button({
+    can_focus: true,
+    accessible_name: DONUT_TOOLTIP,
+    style_class: "button browser-hub-toolbar-btn",
+  });
+  const icon = new St.Icon({ icon_name: "view-conceal-symbolic", icon_size: DONUT_ICON_SIZE });
+  btn.set_child(icon);
+  tooltip(btn, DONUT_TOOLTIP);
+  btn.connect("clicked", () => {
+    if (!btn.reactive) return;
+    btn.reactive = false;
+    const spinner = new Spinner(DONUT_ICON_SIZE, { animate: true, hideOnStop: false });
+    btn.set_child(spinner);
+    spinner.play();
+    onLaunch()
+      .catch((e: unknown) => logError(e as object, "[browser-hub] failed to launch Donut browser"))
+      .finally(() => {
+        try {
+          spinner.stop();
+          spinner.destroy();
+          btn.set_child(icon);
+          btn.reactive = true;
+        } catch {
+          // Menu was rebuilt while the profile creation was still pending —
+          // this button no longer exists, nothing left to restore.
+        }
+        closeMenu();
+      });
+  });
   return btn;
 }
 
@@ -221,6 +267,8 @@ function buildToolbar({
   showDefaultBrowserEdit,
   pickerOpen,
   onTogglePicker,
+  showDonutButton,
+  onLaunchDonut,
   notify,
   onRefresh,
   onSettings,
@@ -231,6 +279,8 @@ function buildToolbar({
   showDefaultBrowserEdit: boolean;
   pickerOpen: boolean;
   onTogglePicker: () => void;
+  showDonutButton: boolean;
+  onLaunchDonut: () => Promise<void>;
   notify: typeof Main.notify;
   onRefresh: () => void;
   onSettings: () => void;
@@ -256,6 +306,11 @@ function buildToolbar({
   }
 
   toolbar.add_child(new St.Widget({ x_expand: true }));
+  // Only shown when a Donut-eligible browser was actually found (see
+  // findDonutBrowser) — no point offering a button that can't do anything.
+  if (showDonutButton) {
+    toolbar.add_child(makeDonutButton(onLaunchDonut, closeMenu));
+  }
   toolbar.add_child(
     makeIconButton(
       "Refresh",
@@ -426,6 +481,8 @@ export function fillMenu({
   pickerOpen = false,
   onTogglePicker = () => {},
   onSetDefaultBrowser = () => {},
+  showDonutBrowser = false,
+  onLaunchDonut = () => Promise.resolve(),
 }: {
   title: string;
   menu: PopupMenu | PopupDummyMenu;
@@ -440,6 +497,8 @@ export function fillMenu({
   pickerOpen?: boolean;
   onTogglePicker?: () => void;
   onSetDefaultBrowser?: (pkg: ResolvedBrowserPkg) => void;
+  showDonutBrowser?: boolean;
+  onLaunchDonut?: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) => Promise<void>;
 }): void {
   if ("removeAll" in menu) {
     menu.removeAll();
@@ -450,6 +509,12 @@ export function fillMenu({
   }
 
   const closeMenu = () => (menu as { close(): void }).close();
+
+  // Both the picker and the Donut button act on the same "Browsers" row
+  // items the quick-launch icons below are built from — one row per
+  // installed browser identity, already carrying pkg.
+  const browsers = entries.find((e) => e.group === "simple")?.items ?? [];
+  const donutBrowser = showDonutBrowser ? findDonutBrowser(browsers, defaultBrowser ?? null) : null;
 
   // Off, this hides the whole row — including Refresh and Settings, so
   // there's no in-menu way back into preferences (the GNOME Extensions app
@@ -462,17 +527,16 @@ export function fillMenu({
         showDefaultBrowserEdit,
         pickerOpen,
         onTogglePicker,
+        showDonutButton: donutBrowser !== null,
+        onLaunchDonut: () => onLaunchDonut(donutBrowser!),
         notify,
         onRefresh,
         onSettings,
         closeMenu,
       }),
     );
-    // The picker's own rows come from the same "Browsers" row entry the
-    // quick-launch icons below are built from — same one-per-identity list,
-    // just rendered as text rows instead of icon buttons here.
+    // The picker's rows come from the same list — see `browsers` above.
     if (showDefaultBrowserEdit && pickerOpen) {
-      const browsers = entries.find((e) => e.group === "simple")?.items ?? [];
       for (const item of buildDefaultBrowserPicker(browsers, onSetDefaultBrowser)) {
         menu.addMenuItem(item);
       }

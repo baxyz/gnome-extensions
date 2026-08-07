@@ -48,19 +48,22 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 ### Donut browser — isolated ephemeral profile
 
-- [ ] Create a throw-away browser profile on the fly:
-  - `mktemp -d` → temporary profile directory
-  - Launch with `--profile $tmpdir --no-remote`
-  - Clean up on close (or leave for manual cleanup — TBD)
+- [x] Create a throw-away browser profile on the fly:
+  - Directory under `$XDG_RUNTIME_DIR/browser-hub/donut/<uuid>` → launch with `--profile <dir> -no-remote`.
+  - Cleanup: none in-menu — `$XDG_RUNTIME_DIR` is removed by the system on logout/reboot (tmpfs-backed), which is also why the dir lives there instead of e.g. `~/.cache`. `--profile` never touches `profiles.ini` either (confirmed against MozillaZine's docs), so there's no registry entry left behind even before that.
+  - Firefox-family only (see below) — priority order (default browser first, then Firefox > Zen > Floorp > LibreWolf > Mullvad Browser > Waterfox > Firedragon, then whatever else qualifies) in `donut-browser.ts`'s `findDonutBrowser()`. Snap-packaged browsers are excluded: granting a Flatpak sandbox ad-hoc access to the profile dir works via `flatpak run --filesystem=`, snap's confinement model has no equivalent verified here.
+  - Toolbar button (`view-conceal-symbolic`, a real Adwaita icon — "mask"/"spy" don't exist as icons) shows a spinner while the profile directory is being created, and is hidden entirely when no eligible browser is installed. New `show-donut-browser` setting (sub-setting of `show-toolbar`).
 
 ### Anti-detect / anti-fingerprint (Donut browser)
 
-- [ ] Inject a `user.js` into the Donut profile at creation time:
-  - Canvas fingerprint blocking
-  - WebGL vendor/renderer spoofing
-  - Timezone spoofing
-  - Media device enumeration blocking
-  - Reference: [arkenfox/user.js](https://github.com/arkenfox/user.js)
+- [x] Set fingerprint-resistance prefs in the Donut profile's `user.js` at creation time.
+      A single Mozilla pref, `privacy.resistFingerprinting` (RFP — also what Tor Browser uses), already covers all four items originally listed here (canvas, WebGL, timezone, MediaDevices) — no need to hand-roll each one or bundle arkenfox's full 1265-line file. `donut-browser.ts`'s `DONUT_USER_JS` also sets `letterboxing`/`spoof_english` (arkenfox's recommended RFP companions) and forces `browser.privatebrowsing.autostart`, belt-and-suspenders for a profile that's already disposable.
+      Chrome family: no equivalent built-in mechanism exists (no pref, no serious CLI flag) — real hardening there needs an extension, force-installed via enterprise policy. Out of scope for now, see below.
+
+### Donut browser follow-ups (not started)
+
+- [ ] Chrome family support — `--user-data-dir` gives an isolated profile easily enough, but there's no `resistFingerprinting` equivalent; would need a force-installed extension (`ExtensionInstallForcelist` policy) for real anti-fingerprinting, not just an isolated profile.
+- [ ] Manual browser selection for Donut, in addition to the automatic pick — let the user override `findDonutBrowser()`'s choice from the toolbar.
 
 ## Ideas to explore (not committed)
 
