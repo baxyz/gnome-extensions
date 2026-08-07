@@ -82,6 +82,7 @@ export function readTextFileAsync(path: string): Promise<string> {
 export type DesktopAppInfo = {
   get_string(key: string): string | null;
   get_icon(): Gio.Icon | null;
+  set_as_default_for_type(contentType: string): void;
 };
 const _DesktopAppInfo = (
   Gio as unknown as { DesktopAppInfo: { new: (id: string) => DesktopAppInfo | null } }
