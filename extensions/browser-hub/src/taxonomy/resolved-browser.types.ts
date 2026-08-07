@@ -1,4 +1,5 @@
 import type Gio from "gi://Gio";
+import type { ResolvedBrowserPkg } from "./browser-package.types";
 
 /**
  * How a profile item's own color should be presented, if it has one at all —
@@ -47,6 +48,13 @@ export type ResolvedBrowserItem = {
   /** Sub-entries shown as icon buttons: Zen workspaces or Firefox profile groups */
   spaces?: BrowserSpace[];
   color?: ColorPresentation;
+  /**
+   * Only set on "simple" row items (see resolveBrowsersRow) — lets the
+   * default-browser picker call setDefaultBrowser(pkg) on the exact browser
+   * identity a row represents. Absent on family entries' profile items,
+   * where "default browser" isn't a meaningful per-profile concept.
+   */
+  pkg?: ResolvedBrowserPkg;
 };
 
 export type ResolvedBrowserEntry = {

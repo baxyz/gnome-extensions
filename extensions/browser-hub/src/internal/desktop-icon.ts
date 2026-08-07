@@ -39,7 +39,8 @@ function badgeIconFor(manager: PackageManager): Gio.Icon | undefined {
   return icon;
 }
 
-function desktopIdFor(pkg: ResolvedBrowserPkg): string {
+/** Also used by default-browser.ts's setDefaultBrowser() to resolve a Gio.DesktopAppInfo. */
+export function desktopIdFor(pkg: ResolvedBrowserPkg): string {
   switch (pkg.manager) {
     case PackageManager.Native:
       return pkg.desktopId ?? `${pkg.binary}.desktop`;

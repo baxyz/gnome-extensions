@@ -106,6 +106,7 @@ function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
       label: b.label,
       command: buildBaseCommand(b.pkg),
       icon: resolveDesktopIcon(b.pkg),
+      pkg: b.pkg,
     }))
     .sort(createSortByStringFn("label"));
   return [{ label: "Browsers", group: "simple", items }];
