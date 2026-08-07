@@ -75,5 +75,6 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 ## Housekeeping
 
 - [x] Update icon from `firefox-symbolic` to a generic browser icon (`web-browser-symbolic`)
-- [ ] Update CI: add pnpm store caching to reduce job time
+- [x] Update CI: add pnpm store caching to reduce job time
+      Already done — `cache: pnpm` on every job's `actions/setup-node` step since the workflow's very first commit (6904ed2). The checkbox was just never ticked.
 - [x] Evaluate `@nicolo-ribaudo/vite-plugin-gnome-shell` vs current manual Rollup config
