@@ -17,8 +17,9 @@ import {
 } from "./internal";
 import { clearDefaultBrowserCache, getDefaultBrowser, setDefaultBrowser } from "./default-browser";
 import type { DefaultBrowserInfo } from "./default-browser";
+import { launchDonutBrowser } from "./donut-browser";
 import { SpaceType } from "./taxonomy/space-type.enum";
-import type { ResolvedBrowserEntry, ResolvedBrowserPkg } from "./taxonomy";
+import type { ResolvedBrowserEntry, ResolvedBrowserItem, ResolvedBrowserPkg } from "./taxonomy";
 import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
 
 // this.menu is typed as PopupMenu | PopupDummyMenu — a union whose two
@@ -39,6 +40,7 @@ type ToolbarSettings = {
   showToolbar: boolean;
   showDefaultBrowserEdit: boolean;
   showDefaultBrowserPanelIcon: boolean;
+  showDonutBrowser: boolean;
 };
 
 // -- Extension ----------------------------------------------------------------
@@ -80,6 +82,7 @@ export default class BrowserProfilesExtension extends Extension {
         showToolbar: settings.get_boolean("show-toolbar"),
         showDefaultBrowserEdit: settings.get_boolean("show-default-browser-edit"),
         showDefaultBrowserPanelIcon: settings.get_boolean("show-default-browser-panel-icon"),
+        showDonutBrowser: settings.get_boolean("show-donut-browser"),
       }),
     );
 
@@ -233,7 +236,7 @@ class BrowserProfilesIndicator extends Button {
   }
 
   private _draw(): void {
-    const { showToolbar, showDefaultBrowserEdit, showDefaultBrowserPanelIcon } =
+    const { showToolbar, showDefaultBrowserEdit, showDefaultBrowserPanelIcon, showDonutBrowser } =
       this._readToolbarSettings();
     const defaultBrowser = getDefaultBrowser();
     this._updatePanelIcon(showDefaultBrowserPanelIcon, defaultBrowser);
@@ -267,6 +270,9 @@ class BrowserProfilesIndicator extends Button {
         }
         this.redrawMenu();
       },
+      showDonutBrowser,
+      onLaunchDonut: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) =>
+        launchDonutBrowser(item, this._title, Main.notify),
     });
   }
 

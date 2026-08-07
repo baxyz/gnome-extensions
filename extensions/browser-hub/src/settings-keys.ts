@@ -24,6 +24,7 @@ export const COSMETIC_KEYS = new Set<string>([
   "show-toolbar",
   "show-default-browser-edit",
   "show-default-browser-panel-icon",
+  "show-donut-browser",
 ]);
 
 /**
@@ -36,4 +37,5 @@ export const COSMETIC_KEYS = new Set<string>([
  */
 export const SUB_SETTING_PARENTS: Readonly<Record<string, string>> = {
   "show-default-browser-edit": "show-toolbar",
+  "show-donut-browser": "show-toolbar",
 };
