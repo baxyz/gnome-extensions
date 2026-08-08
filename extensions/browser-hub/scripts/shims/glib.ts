@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as os from "os";
+import * as nodepath from "path";
 import { execSync } from "child_process";
+import { randomUUID } from "crypto";
 
 export enum FileTest {
   EXISTS = 16,
@@ -50,7 +52,13 @@ export default {
 
   get_home_dir: (): string => os.homedir(),
 
+  get_tmp_dir: (): string => os.tmpdir(),
+
   getenv: (key: string): string | null => process.env[key] ?? null,
+
+  build_filenamev: (parts: string[]): string => nodepath.join(...parts),
+
+  uuid_string_random: (): string => randomUUID(),
 
   file_test: (path: string, test: FileTest): boolean => {
     try {

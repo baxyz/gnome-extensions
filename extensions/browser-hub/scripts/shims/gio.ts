@@ -70,6 +70,25 @@ function newFile(filePath: string) {
       if (!_contents) throw new Error(`Cannot read: ${filePath}`);
       return [true, _contents];
     },
+
+    make_directory_with_parents: (_cancel: null): boolean => {
+      fs.mkdirSync(filePath, { recursive: true });
+      return true;
+    },
+
+    replace_contents_bytes_async: (
+      contents: Uint8Array,
+      _etag: null,
+      _makeBackup: boolean,
+      _flags: number,
+      _cancel: null,
+      cb: (src: null, res: { filePath: string }) => void,
+    ) => {
+      fs.writeFileSync(filePath, contents);
+      cb(null, { filePath });
+    },
+
+    replace_contents_finish: (_res: { filePath: string }): [boolean, string] => [true, ""],
   };
 }
 
@@ -115,6 +134,7 @@ function parseDesktopFile(desktopId: string): Record<string, string> | null {
 export default {
   File: { new_for_path: newFile },
   FileQueryInfoFlags,
+  FileCreateFlags: { NONE: 0 },
   FileType,
   DesktopAppInfo: {
     new: (desktopId: string) => {
