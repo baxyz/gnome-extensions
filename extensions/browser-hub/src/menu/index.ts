@@ -28,7 +28,8 @@ export function fillMenu({
   onTogglePicker = noop,
   onSetDefaultBrowser = noop,
   showDonutBrowser = false,
-  onLaunchDonut = () => Promise.resolve(),
+  donutLaunching = false,
+  onLaunchDonut = noop,
 }: {
   title: string;
   menu: PopupMenu | PopupDummyMenu;
@@ -44,7 +45,9 @@ export function fillMenu({
   onTogglePicker?: () => void;
   onSetDefaultBrowser?: (pkg: ResolvedBrowserPkg) => void;
   showDonutBrowser?: boolean;
-  onLaunchDonut?: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) => Promise<void>;
+  /** Whether a Donut profile launch triggered by a previous click is still in flight. */
+  donutLaunching?: boolean;
+  onLaunchDonut?: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) => void;
 }): void {
   if ("removeAll" in menu) {
     menu.removeAll();
@@ -74,6 +77,7 @@ export function fillMenu({
         pickerOpen,
         onTogglePicker,
         showDonutButton: donutBrowser !== null,
+        donutLaunching,
         onLaunchDonut: () => onLaunchDonut(donutBrowser!),
         notify,
         onRefresh,

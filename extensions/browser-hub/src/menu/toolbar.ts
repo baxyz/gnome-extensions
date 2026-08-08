@@ -13,42 +13,26 @@ const DONUT_ICON_SIZE = 16;
 
 /**
  * Toolbar button for launching a Donut (disposable, anti-fingerprint)
- * profile. Shows a spinner in place of its icon while onLaunch's async
- * profile creation is in flight, so a slow disk doesn't leave the click
- * looking like it did nothing — restoring the icon (or just leaving the
- * button be, if fillMenu's removeAll() already tore this row down in the
- * meantime) once it settles.
+ * profile. `isLaunching` (owned by the indicator, across redraws — a
+ * profile launch can outlive several menu open/close cycles) swaps the
+ * icon for a spinner and makes the button inert instead of clickable.
  */
-function makeDonutButton(onLaunch: () => Promise<void>, closeMenu: () => void): St.Button {
+function makeDonutButton(isLaunching: boolean, onLaunch: () => void): St.Button {
   const btn = new St.Button({
     can_focus: true,
     accessible_name: DONUT_TOOLTIP,
     style_class: "button browser-hub-toolbar-btn",
   });
-  const icon = new St.Icon({ icon_name: "view-conceal-symbolic", icon_size: DONUT_ICON_SIZE });
-  btn.set_child(icon);
-  tooltip(btn, DONUT_TOOLTIP);
-  btn.connect("clicked", () => {
-    if (!btn.reactive) return;
-    btn.reactive = false;
+  if (isLaunching) {
     const spinner = new Spinner(DONUT_ICON_SIZE, { animate: true, hideOnStop: false });
     btn.set_child(spinner);
     spinner.play();
-    onLaunch()
-      .catch((e: unknown) => logError(e as object, "[browser-hub] failed to launch Donut browser"))
-      .finally(() => {
-        try {
-          spinner.stop();
-          spinner.destroy();
-          btn.set_child(icon);
-          btn.reactive = true;
-        } catch {
-          // Menu was rebuilt while the profile creation was still pending —
-          // this button no longer exists, nothing left to restore.
-        }
-        closeMenu();
-      });
-  });
+    btn.reactive = false;
+  } else {
+    btn.set_child(new St.Icon({ icon_name: "view-conceal-symbolic", icon_size: DONUT_ICON_SIZE }));
+    btn.connect("clicked", onLaunch);
+  }
+  tooltip(btn, DONUT_TOOLTIP);
   return btn;
 }
 
@@ -152,6 +136,7 @@ export function buildToolbar({
   pickerOpen,
   onTogglePicker,
   showDonutButton,
+  donutLaunching,
   onLaunchDonut,
   notify,
   onRefresh,
@@ -164,7 +149,8 @@ export function buildToolbar({
   pickerOpen: boolean;
   onTogglePicker: () => void;
   showDonutButton: boolean;
-  onLaunchDonut: () => Promise<void>;
+  donutLaunching: boolean;
+  onLaunchDonut: () => void;
   notify: typeof Main.notify;
   onRefresh: () => void;
   onSettings: () => void;
@@ -193,7 +179,7 @@ export function buildToolbar({
   // Only shown when a Donut-eligible browser was actually found (see
   // findDonutBrowser) — no point offering a button that can't do anything.
   if (showDonutButton) {
-    toolbar.add_child(makeDonutButton(onLaunchDonut, closeMenu));
+    toolbar.add_child(makeDonutButton(donutLaunching, onLaunchDonut));
   }
   toolbar.add_child(
     makeIconButton(
