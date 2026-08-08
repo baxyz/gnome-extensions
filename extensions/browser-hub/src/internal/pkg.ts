@@ -1,4 +1,5 @@
 import GLib from "gi://GLib";
+import { createCachedResolver } from "@helpers4/function";
 import { PackageManager } from "../taxonomy";
 import type { BrowserPkg, ResolvedBrowserPkg } from "../taxonomy";
 import { HOME_DIR } from "../constants/paths.constant";
@@ -32,25 +33,15 @@ function resolvePkgUncached(pkg: BrowserPkg): ResolvedBrowserPkg | null {
 // GNOME Shell's main thread, on *every* settings-triggered refresh (~50 browsers).
 // Cache it for the extension's lifetime; the Refresh button (see extension.ts)
 // explicitly busts this cache so newly-installed browsers are still picked up.
-let pkgResolutionCache = new WeakMap<BrowserPkg, ResolvedBrowserPkg | null>();
-
-/** Clears the package resolution cache. Called on extension disable and manual refresh. */
-export function clearPkgResolutionCache(): void {
-  pkgResolutionCache = new WeakMap();
-}
-
-/**
- * Resolves a package to a concrete binary/path, using a cache for performance.
- * Returns the cached result if available, otherwise resolves and caches the result.
- */
-export function resolvePkg(pkg: BrowserPkg): ResolvedBrowserPkg | null {
-  if (pkgResolutionCache.has(pkg)) {
-    return pkgResolutionCache.get(pkg) ?? null;
-  }
-  const resolved = resolvePkgUncached(pkg);
-  pkgResolutionCache.set(pkg, resolved);
-  return resolved;
-}
+// WeakMap-backed: each BrowserPkg config object lives as long as the settings
+// that produced it, so entries can be collected once those are gone.
+//
+// resolve/clear are re-exported directly as resolvePkg/clearPkgResolutionCache
+// — no wrapper needed, neither method reads `this`.
+export const { resolve: resolvePkg, clear: clearPkgResolutionCache } = createCachedResolver(
+  resolvePkgUncached,
+  () => new WeakMap(),
+);
 
 /** Filters browsers to only those whose packages are available (installed/present). */
 export function filterAvailable<T extends { pkg: BrowserPkg }>(
@@ -65,25 +56,20 @@ export function filterAvailable<T extends { pkg: BrowserPkg }>(
 // getBrowserEntries resolves each profiled family AND the combined "Browsers"
 // row from the same underlying configs in one tick (see browser/resolve-all.ts)
 // — without this cache, the same path gets `GLib.file_test`'d twice per
-// refresh. Keyed by (test flag, path) since the same path can legitimately be
-// checked under different tests (e.g. Falkon uses IS_DIR, the Browsers row
-// uses the default EXISTS).
-let pathPresenceCache = new Map<string, boolean>();
+// refresh. Nested by test flag then path (not a single "test:path" string
+// key) since the same path can legitimately be checked under different
+// tests (e.g. Falkon uses IS_DIR, the Browsers row uses the default EXISTS)
+// — clearing the outer resolver drops every inner one with it.
+const pathPresenceByTest = createCachedResolver((test: number) =>
+  createCachedResolver((path: string): boolean => GLib.file_test(path, test)),
+);
 
 /** Clears the path-presence cache. Called on extension disable and manual refresh. */
-export function clearPathPresenceCache(): void {
-  pathPresenceCache = new Map();
-}
+export const clearPathPresenceCache = pathPresenceByTest.clear;
 
 /** Cached GLib.file_test — use this instead of calling GLib.file_test directly for any presence check. */
 export function pathIsPresent(path: string, test: number): boolean {
-  const cacheKey = `${test}:${path}`;
-  let present = pathPresenceCache.get(cacheKey);
-  if (present === undefined) {
-    present = GLib.file_test(path, test);
-    pathPresenceCache.set(cacheKey, present);
-  }
-  return present;
+  return pathPresenceByTest.resolve(test).resolve(path);
 }
 
 /**
