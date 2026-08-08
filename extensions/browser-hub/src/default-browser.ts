@@ -22,7 +22,11 @@ function detectPkg(desktopId: string, executable: string): ResolvedBrowserPkg {
     const snapName = desktopField(info, "X-SnapInstanceName");
     if (snapName) return { manager: PackageManager.Snap, name: snapName };
   }
-  return { manager: PackageManager.Native, binary: executable };
+  // desktopId is already known here (it's how `info` above was resolved) —
+  // carrying it through lets resolveDesktopIcon() use it directly instead of
+  // re-guessing `${executable}.desktop`, which fails for the many apps whose
+  // desktop file doesn't match their binary name (e.g. GNOME Web).
+  return { manager: PackageManager.Native, binary: executable, desktopId };
 }
 
 // The OS default-browser association only changes via setDefaultBrowser()
@@ -66,14 +70,18 @@ const BROWSER_CONTENT_TYPES = ["x-scheme-handler/http", "x-scheme-handler/https"
 export function setDefaultBrowser(pkg: ResolvedBrowserPkg): boolean {
   const info = getDesktopAppInfo(desktopIdFor(pkg));
   if (!info) return false;
+  let ok = true;
   try {
     for (const contentType of BROWSER_CONTENT_TYPES) {
       info.set_as_default_for_type(contentType);
     }
   } catch (e: unknown) {
     logError(e as object, "[browser-hub] failed to set default browser");
-    return false;
+    ok = false;
   }
+  // Bust the cache either way: a throw partway through the loop above can
+  // still have switched some content types before failing, so the
+  // pre-call cached value must not keep being served as "the" default.
   clearDefaultBrowserCache();
-  return true;
+  return ok;
 }
