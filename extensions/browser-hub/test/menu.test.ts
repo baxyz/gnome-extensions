@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type Gio from "gi://Gio";
+import { noop } from "@helpers4/function";
 import { PackageManager } from "../src/taxonomy";
 
 const FAKE_DEFAULT_BROWSER_PKG = { manager: PackageManager.Native, binary: "firefox" } as const;
@@ -159,7 +160,6 @@ function makeFakeMenu(): FakeMenu {
 }
 
 const notify = vi.fn();
-const noop = () => {};
 
 beforeEach(() => {
   subprocessNew.mockClear();

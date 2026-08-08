@@ -23,6 +23,7 @@ catalog:
   vitest: '^4.1.10'
   '@helpers4/array': '^3.0.7'
   '@helpers4/color': '^3.0.7'
+  '@helpers4/function': '^3.0.7'
   '@helpers4/guard': '^3.0.7'
   '@helpers4/object': '^3.0.7'
   '@helpers4/promise': '^3.0.7'
