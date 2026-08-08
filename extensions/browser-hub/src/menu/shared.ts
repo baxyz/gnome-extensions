@@ -1,6 +1,7 @@
 import St from "gi://St";
 import type Gio from "gi://Gio";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
+import { isCssColor } from "@helpers4/guard";
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
 export function tooltip(btn: St.Button, text: string): void {
@@ -8,21 +9,10 @@ export function tooltip(btn: St.Button, text: string): void {
 }
 
 // Firefox profile theme colors come straight from a SQLite column (see
-// firefox-spaces.ts) with no format guarantee. St's CSS engine can't execute
-// anything, but a stray `;` could still smuggle in an extra declaration —
-// reject anything that isn't a plain color token before it reaches set_style().
+// firefox-spaces.ts) with no format guarantee — isCssColor() guards against a
+// crafted value smuggling extra declarations into set_style()'s CSS string.
 export function safeCssColor(color: string | undefined): string | undefined {
-  if (!color) return undefined;
-  // Match hex colors (#rgb, #rrggbb, #rrggbbaa), a full rgb/rgba/hsl/hsla(...)
-  // call (no nested parens, so a smuggled ");" can't close early and append
-  // more declarations), or a plain named color.
-  const validColor =
-    /^(#([\da-f]{3}){1,2}|#([\da-f]{4}){1,2}|(rgb|rgba|hsl|hsla)\([^()]*\)|[a-z]+)$/i.test(
-      color.trim(),
-    );
-  // Additionally reject any string containing dangerous CSS characters
-  if (!validColor || /[{}\\]/.test(color)) return undefined;
-  return color;
+  return isCssColor(color) ? color : undefined;
 }
 
 // Firefox Profile Groups avatars and Zen icons are GNOME/Adwaita icon names
