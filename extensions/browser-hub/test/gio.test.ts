@@ -21,43 +21,77 @@ function ioError(code: number): { matches: (domain: unknown, c: number) => boole
 const NOT_FOUND = 1;
 const PERMISSION_DENIED = 2;
 
+// A real class (not a factory returning a fresh object per call): the
+// production code under test calls Gio._promisify(Gio.File.prototype, ...)
+// at import time, which needs an actual shared prototype to patch, the same
+// way real GJS's Gio.File does.
+class FakeGioFile {
+  constructor(private path: string) {}
+
+  query_info(_attrs: string, _flags: number, _cancel: null) {
+    const f = files.get(this.path);
+    if (!f || !f.present) throw ioError(NOT_FOUND);
+    return { get_size: () => f.size };
+  }
+
+  load_contents_async(_cancel: null, cb: (src: null, res: { path: string }) => void) {
+    cb(null, { path: this.path });
+  }
+
+  load_contents_finish(result: { path: string }) {
+    const f = files.get(result.path);
+    if (!f || !f.present) throw ioError(NOT_FOUND);
+    if (f.size === -1) throw ioError(PERMISSION_DENIED);
+    return [true, f.contents];
+  }
+
+  replace_contents_async(
+    contents: Uint8Array,
+    _etag: null,
+    _makeBackup: boolean,
+    _flags: number,
+    _cancel: null,
+    cb: (src: null, res: { path: string }) => void,
+  ) {
+    if (!writeShouldFail) written.set(this.path, contents);
+    cb(null, { path: this.path });
+  }
+
+  replace_contents_finish(_result: { path: string }) {
+    if (writeShouldFail) throw new Error("disk full");
+    return [true, ""];
+  }
+}
+
+// Mirrors GJS's real Gio._promisify (see internal/gio.ts) — strips a leading
+// boolean from an array-shaped finish() result, passes through anything else.
+function promisify(
+  proto: Record<string, (...args: unknown[]) => unknown>,
+  asyncFn: string,
+  finishFn: string,
+): void {
+  const original = proto[asyncFn];
+  proto[asyncFn] = function (this: Record<string, (...args: unknown[]) => unknown>, ...args) {
+    if (typeof args.at(-1) === "function") return original.apply(this, args);
+    return new Promise((resolve, reject) => {
+      original.call(this, ...args, (_source: unknown, result: unknown) => {
+        try {
+          const ret = this[finishFn](result);
+          resolve(Array.isArray(ret) && typeof ret[0] === "boolean" ? ret.slice(1) : ret);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+  };
+}
+
 vi.mock("gi://Gio", () => ({
   default: {
     FileQueryInfoFlags: { NONE: 0 },
     IOErrorEnum: { NOT_FOUND, PERMISSION_DENIED },
-    File: {
-      new_for_path: (path: string) => ({
-        query_info(_attrs: string, _flags: number, _cancel: null) {
-          const f = files.get(path);
-          if (!f || !f.present) throw ioError(NOT_FOUND);
-          return { get_size: () => f.size };
-        },
-        load_contents_async(_cancel: null, cb: (src: null, res: { path: string }) => void) {
-          cb(null, { path });
-        },
-        load_contents_finish(result: { path: string }) {
-          const f = files.get(result.path);
-          if (!f || !f.present) throw ioError(NOT_FOUND);
-          if (f.size === -1) throw ioError(PERMISSION_DENIED);
-          return [true, f.contents];
-        },
-        replace_contents_bytes_async(
-          contents: Uint8Array,
-          _etag: null,
-          _makeBackup: boolean,
-          _flags: number,
-          _cancel: null,
-          cb: (src: null, res: { path: string }) => void,
-        ) {
-          if (!writeShouldFail) written.set(path, contents);
-          cb(null, { path });
-        },
-        replace_contents_finish(_result: { path: string }) {
-          if (writeShouldFail) throw new Error("disk full");
-          return [true, ""];
-        },
-      }),
-    },
+    File: Object.assign(FakeGioFile, { new_for_path: (path: string) => new FakeGioFile(path) }),
+    _promisify: promisify,
     FileCreateFlags: { NONE: 0 },
   },
 }));

@@ -128,6 +128,13 @@ vi.mock("resource:///org/gnome/shell/ui/animation.js", () => ({
 }));
 
 const subprocessNew = vi.fn();
+// A class, not a plain object: internal/gio.ts calls Gio._promisify(Gio.File.prototype,
+// ...) at module scope on import (menu.ts imports launchBrowser/resolveDesktopIcon
+// from "./internal", the barrel that includes gio.ts), which needs an actual
+// prototype to patch even though nothing here exercises the promisified
+// methods themselves.
+class FakeGioFile {}
+
 vi.mock("gi://Gio", () => ({
   default: {
     Subprocess: { new: subprocessNew },
@@ -136,6 +143,8 @@ vi.mock("gi://Gio", () => ({
     // resolveDesktopIcon() — no app matches in this test environment, which
     // exercises the same "no icon found" tolerance as a real missing .desktop file.
     DesktopAppInfo: { new: () => null },
+    File: FakeGioFile,
+    _promisify: () => {},
   },
 }));
 

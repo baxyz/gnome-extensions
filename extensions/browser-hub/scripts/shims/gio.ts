@@ -27,68 +27,101 @@ function makeEnumerator(dirPath: string) {
   };
 }
 
-function newFile(filePath: string) {
-  let _contents: Uint8Array | null = null;
+// A real class (not a factory returning a fresh object literal per call) —
+// production code's internal/gio.ts calls Gio._promisify(Gio.File.prototype,
+// ...) at import time, which needs an actual shared prototype to patch, the
+// same way real GJS's Gio.File does. See `promisify` below for the shim of
+// _promisify itself.
+class FakeGioFile {
+  constructor(private filePath: string) {}
 
-  return {
-    get_parent: () => ({
-      get_path: (): string => nodepath.dirname(filePath),
-    }),
+  get_parent() {
+    return { get_path: (): string => nodepath.dirname(this.filePath) };
+  }
 
-    enumerate_children: (_attrs: string, _flags: number, _cancel: null) => {
-      return makeEnumerator(filePath);
-    },
+  enumerate_children(_attrs: string, _flags: number, _cancel: null) {
+    return makeEnumerator(this.filePath);
+  }
 
-    enumerate_children_async: (
-      _attrs: string,
-      _flags: number,
-      _priority: number,
-      _cancel: null,
-      cb: (src: null, res: { filePath: string }) => void,
-    ) => {
-      cb(null, { filePath });
-    },
+  enumerate_children_async(
+    _attrs: string,
+    _flags: number,
+    _priority: number,
+    _cancel: null,
+    cb: (src: null, res: { filePath: string }) => void,
+  ) {
+    cb(null, { filePath: this.filePath });
+  }
 
-    enumerate_children_finish: (res: { filePath: string }) => {
-      return makeEnumerator(res.filePath);
-    },
+  enumerate_children_finish(res: { filePath: string }) {
+    return makeEnumerator(res.filePath);
+  }
 
-    query_info: (_attrs: string, _flags: number, _cancel: null) => ({
-      get_size: () => fs.statSync(filePath).size,
-    }),
+  query_info(_attrs: string, _flags: number, _cancel: null) {
+    return { get_size: () => fs.statSync(this.filePath).size };
+  }
 
-    load_contents_async: (_cancel: null, cb: (src: null, res: unknown) => void) => {
-      try {
-        _contents = new Uint8Array(fs.readFileSync(filePath));
-      } catch {
-        _contents = null;
-      }
-      cb(null, {});
-    },
+  load_contents_async(_cancel: null, cb: (src: null, res: { filePath: string }) => void) {
+    cb(null, { filePath: this.filePath });
+  }
 
-    load_contents_finish: (_res: unknown): [boolean, Uint8Array] => {
-      if (!_contents) throw new Error(`Cannot read: ${filePath}`);
-      return [true, _contents];
-    },
+  // [true, contents] matches real GJS's raw (non-promisified) return shape —
+  // verified against a real gjs interpreter (see internal/gio.ts).
+  load_contents_finish(res: { filePath: string }): [boolean, Uint8Array] {
+    return [true, new Uint8Array(fs.readFileSync(res.filePath))];
+  }
 
-    make_directory_with_parents: (_cancel: null): boolean => {
-      fs.mkdirSync(filePath, { recursive: true });
-      return true;
-    },
+  make_directory_with_parents(_cancel: null): boolean {
+    fs.mkdirSync(this.filePath, { recursive: true });
+    return true;
+  }
 
-    replace_contents_bytes_async: (
-      contents: Uint8Array,
-      _etag: null,
-      _makeBackup: boolean,
-      _flags: number,
-      _cancel: null,
-      cb: (src: null, res: { filePath: string }) => void,
-    ) => {
-      fs.writeFileSync(filePath, contents);
-      cb(null, { filePath });
-    },
+  replace_contents_async(
+    contents: Uint8Array,
+    _etag: null,
+    _makeBackup: boolean,
+    _flags: number,
+    _cancel: null,
+    cb: (src: null, res: { filePath: string }) => void,
+  ) {
+    fs.writeFileSync(this.filePath, contents);
+    cb(null, { filePath: this.filePath });
+  }
 
-    replace_contents_finish: (_res: { filePath: string }): [boolean, string] => [true, ""],
+  replace_contents_finish(_res: { filePath: string }): [boolean, string] {
+    return [true, ""];
+  }
+}
+
+function newFile(filePath: string): FakeGioFile {
+  return new FakeGioFile(filePath);
+}
+
+/**
+ * Shims GJS's own Gio._promisify (real one: https://gjs.guide/guides/gjs/asynchronous-programming.html#promisify-helper).
+ * Verified against a real gjs interpreter that the real helper strips a
+ * leading boolean from an array-shaped finish() result (the "did it
+ * succeed" flag becomes redundant once failure is signaled via rejection
+ * instead) and passes through anything else unchanged.
+ */
+function promisify(
+  proto: Record<string, (...args: unknown[]) => unknown>,
+  asyncFn: string,
+  finishFn: string,
+): void {
+  const original = proto[asyncFn];
+  proto[asyncFn] = function (this: Record<string, (...args: unknown[]) => unknown>, ...args) {
+    if (typeof args.at(-1) === "function") return original.apply(this, args);
+    return new Promise((resolve, reject) => {
+      original.call(this, ...args, (_source: unknown, result: unknown) => {
+        try {
+          const ret = this[finishFn](result);
+          resolve(Array.isArray(ret) && typeof ret[0] === "boolean" ? ret.slice(1) : ret);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
   };
 }
 
@@ -132,7 +165,12 @@ function parseDesktopFile(desktopId: string): Record<string, string> | null {
 }
 
 export default {
-  File: { new_for_path: newFile },
+  // Object.assign, not a plain object literal: Gio._promisify(Gio.File.prototype, ...)
+  // needs Gio.File itself to be the class (so .prototype resolves to
+  // FakeGioFile.prototype) while still exposing new_for_path as if it were
+  // a static factory, matching real Gio.File's own shape.
+  File: Object.assign(FakeGioFile, { new_for_path: newFile }),
+  _promisify: promisify,
   FileQueryInfoFlags,
   FileCreateFlags: { NONE: 0 },
   FileType,

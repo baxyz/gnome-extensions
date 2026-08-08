@@ -61,52 +61,86 @@ vi.mock("gi://GLib", () => ({
   },
 }));
 
+// A real class (not a factory returning a fresh object per call): resolvers
+// under test import internal/gio.ts, which calls Gio._promisify(Gio.File.prototype,
+// ...) at import time — that needs an actual shared prototype to patch, the
+// same way real GJS's Gio.File does.
+class FakeGioFile {
+  constructor(private path: string) {}
+
+  query_info(_attrs: string, _flags: number, _cancellable: null) {
+    const entry = fs.get(this.path);
+    if (!entry || entry.type !== "file") throw notFoundError();
+    return { get_size: () => entry.content.byteLength };
+  }
+
+  load_contents_async(
+    _cancellable: null,
+    callback: (source: unknown, result: { path: string }) => void,
+  ) {
+    callback(null, { path: this.path });
+  }
+
+  load_contents_finish(result: { path: string }) {
+    const entry = fs.get(result.path);
+    if (!entry || entry.type !== "file") throw notFoundError();
+    return [true, entry.content];
+  }
+
+  enumerate_children_async(
+    _attrs: string,
+    _flags: number,
+    _prio: number,
+    _cancellable: null,
+    callback: (source: unknown, result: { path: string }) => void,
+  ) {
+    callback(null, { path: this.path });
+  }
+
+  enumerate_children_finish(result: { path: string }) {
+    const entry = fs.get(result.path);
+    if (!entry || entry.type !== "dir") throw notFoundError();
+    let i = 0;
+    return {
+      next_file: () =>
+        i < entry.names.length
+          ? {
+              get_name: () => entry.names[i++],
+              get_file_type: () => "directory",
+            }
+          : null,
+      close: () => {},
+    };
+  }
+}
+
+// Mirrors GJS's real Gio._promisify (see internal/gio.ts) — strips a leading
+// boolean from an array-shaped finish() result, passes through anything else.
+function promisify(
+  proto: Record<string, (...args: unknown[]) => unknown>,
+  asyncFn: string,
+  finishFn: string,
+): void {
+  const original = proto[asyncFn];
+  proto[asyncFn] = function (this: Record<string, (...args: unknown[]) => unknown>, ...args) {
+    if (typeof args.at(-1) === "function") return original.apply(this, args);
+    return new Promise((resolve, reject) => {
+      original.call(this, ...args, (_source: unknown, result: unknown) => {
+        try {
+          const ret = this[finishFn](result);
+          resolve(Array.isArray(ret) && typeof ret[0] === "boolean" ? ret.slice(1) : ret);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+  };
+}
+
 vi.mock("gi://Gio", () => ({
   default: {
-    File: {
-      new_for_path: (path: string) => ({
-        query_info(_attrs: string, _flags: number, _cancellable: null) {
-          const entry = fs.get(path);
-          if (!entry || entry.type !== "file") throw notFoundError();
-          return { get_size: () => entry.content.byteLength };
-        },
-        load_contents_async(
-          _cancellable: null,
-          callback: (source: unknown, result: { path: string }) => void,
-        ) {
-          callback(null, { path });
-        },
-        load_contents_finish(result: { path: string }) {
-          const entry = fs.get(result.path);
-          if (!entry || entry.type !== "file") throw notFoundError();
-          return [true, entry.content];
-        },
-        enumerate_children_async(
-          _attrs: string,
-          _flags: number,
-          _prio: number,
-          _cancellable: null,
-          callback: (source: unknown, result: { path: string }) => void,
-        ) {
-          callback(null, { path });
-        },
-        enumerate_children_finish(result: { path: string }) {
-          const entry = fs.get(result.path);
-          if (!entry || entry.type !== "dir") throw notFoundError();
-          let i = 0;
-          return {
-            next_file: () =>
-              i < entry.names.length
-                ? {
-                    get_name: () => entry.names[i++],
-                    get_file_type: () => "directory",
-                  }
-                : null,
-            close: () => {},
-          };
-        },
-      }),
-    },
+    File: Object.assign(FakeGioFile, { new_for_path: (path: string) => new FakeGioFile(path) }),
+    _promisify: promisify,
     FileQueryInfoFlags: { NONE: 0 },
     FileType: { DIRECTORY: "directory" },
     Subprocess: { new: () => ({}) },
