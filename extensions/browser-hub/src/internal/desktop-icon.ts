@@ -57,11 +57,18 @@ export function desktopIdFor(pkg: ResolvedBrowserPkg): string {
 
 // Package/binary presence rarely changes mid-session — see pkg.ts's cache for
 // the same rationale. Cleared alongside it (clearDesktopIconCache below).
-let desktopIconCache = new WeakMap<ResolvedBrowserPkg, Gio.Icon | null>();
+//
+// Keyed by desktopIdFor(pkg) (a string), not the pkg object itself: the
+// default browser's own pkg is rebuilt fresh on every menu open (see
+// default-browser.ts's clearDefaultBrowserCache(), called from the same
+// open-state-changed handler that redraws the toolbar) — an object-identity
+// key would never hit for it, defeating the cache on the one call site that
+// runs on every single menu open.
+let desktopIconCache = new Map<string, Gio.Icon | null>();
 
 /** Clears the desktop icon cache. Called on extension disable and manual refresh. */
 export function clearDesktopIconCache(): void {
-  desktopIconCache = new WeakMap();
+  desktopIconCache = new Map();
 }
 
 /**
@@ -78,13 +85,14 @@ export function clearDesktopIconCache(): void {
  * code of its own anywhere icons are drawn.
  */
 export function resolveDesktopIcon(pkg: ResolvedBrowserPkg): Gio.Icon | undefined {
-  if (desktopIconCache.has(pkg)) return desktopIconCache.get(pkg) ?? undefined;
-  const baseIcon = getDesktopAppInfo(desktopIdFor(pkg))?.get_icon() ?? null;
+  const desktopId = desktopIdFor(pkg);
+  if (desktopIconCache.has(desktopId)) return desktopIconCache.get(desktopId) ?? undefined;
+  const baseIcon = getDesktopAppInfo(desktopId)?.get_icon() ?? null;
   let icon: Gio.Icon | null = baseIcon;
   if (baseIcon) {
     const badge = badgeIconFor(pkg.manager);
     if (badge) icon = Gio.EmblemedIcon.new(baseIcon, Gio.Emblem.new(badge));
   }
-  desktopIconCache.set(pkg, icon);
+  desktopIconCache.set(desktopId, icon);
   return icon ?? undefined;
 }
