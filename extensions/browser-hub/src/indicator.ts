@@ -55,6 +55,12 @@ export class BrowserProfilesIndicator extends Button {
   // fillMenu() rebuilds the whole menu from scratch on every redraw anyway,
   // so this is the only place this state actually lives.
   private _defaultBrowserPickerOpen = false;
+  // Guards against a second Donut launch starting while one is already in
+  // flight. Deliberately kept here rather than on the toolbar button itself —
+  // fillMenu() tears down and rebuilds the whole menu (including that
+  // button) on every redraw, so any state living on the button wouldn't
+  // survive a close/reopen while the launch is still pending.
+  private _donutLaunching = false;
 
   constructor(
     title: string,
@@ -164,8 +170,23 @@ export class BrowserProfilesIndicator extends Button {
         this.redrawMenu();
       },
       showDonutBrowser,
-      onLaunchDonut: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) =>
-        launchDonutBrowser(item, this._title, Main.notify),
+      donutLaunching: this._donutLaunching,
+      onLaunchDonut: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) => {
+        if (this._donutLaunching) return;
+        this._donutLaunching = true;
+        this.redrawMenu();
+        launchDonutBrowser(item, this._title, Main.notify)
+          .catch((e: unknown) => {
+            logError(e as object, "[browser-hub] failed to launch Donut browser");
+            Main.notify(this._title, "Failed to launch the Donut browser");
+          })
+          .finally(() => {
+            this._donutLaunching = false;
+            if (!this._alive) return;
+            this.redrawMenu();
+            this.menu.close();
+          });
+      },
     });
   }
 

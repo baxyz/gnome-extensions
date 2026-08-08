@@ -603,7 +603,7 @@ describe("fillMenu", () => {
     expect(toolbarEligible.children).toHaveLength(4); // + the Donut button
   });
 
-  it("shows a spinner in the Donut button while onLaunchDonut is pending, then restores the icon", async () => {
+  it("calls onLaunchDonut with the eligible item when the Donut button is clicked", () => {
     const entries = [
       {
         label: "Browsers",
@@ -611,8 +611,7 @@ describe("fillMenu", () => {
         items: [{ label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG }],
       },
     ];
-    let resolveLaunch!: () => void;
-    const onLaunchDonut = vi.fn(() => new Promise<void>((resolve) => (resolveLaunch = resolve)));
+    const onLaunchDonut = vi.fn();
 
     const menu = makeFakeMenu();
     fillMenu({
@@ -634,15 +633,33 @@ describe("fillMenu", () => {
       command: ["firefox"],
       pkg: FAKE_DEFAULT_BROWSER_PKG,
     });
+  });
+
+  it("shows a spinner and an inert button when donutLaunching is true", () => {
+    const entries = [
+      {
+        label: "Browsers",
+        group: "simple" as const,
+        items: [{ label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG }],
+      },
+    ];
+
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries,
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      showDonutBrowser: true,
+      donutLaunching: true,
+    });
+    const toolbar = menu.items[0] as FakePopupMenuItem;
+    const donutBtn = toolbar.children[1] as FakeButton;
+
     expect(donutBtn.children[0]).toBeInstanceOf(FakeSpinner);
     expect(donutBtn.reactive).toBe(false);
-
-    resolveLaunch();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(donutBtn.children[0]).toBeInstanceOf(FakeIcon);
-    expect(donutBtn.reactive).toBe(true);
   });
 
   it("omits the whole toolbar row when showToolbar is false", () => {
