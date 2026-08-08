@@ -1,4 +1,5 @@
 import Gio from "gi://Gio";
+import { guard } from "@helpers4/promise";
 import { PackageManager } from "./taxonomy";
 import type { ResolvedBrowserPkg } from "./taxonomy";
 import { buildBaseCommand, desktopIdFor, getDesktopAppInfo, type DesktopAppInfo } from "./internal";
@@ -10,11 +11,7 @@ export type DefaultBrowserInfo = {
 };
 
 function desktopField(info: DesktopAppInfo, key: string): string | null {
-  try {
-    return info.get_string(key);
-  } catch {
-    return null;
-  }
+  return guard(() => info.get_string(key), null);
 }
 
 function detectPkg(desktopId: string, executable: string): ResolvedBrowserPkg {
