@@ -40,7 +40,15 @@ function baseLabel(label: string): string {
 function samePkg(a: ResolvedBrowserPkg, b: ResolvedBrowserPkg): boolean {
   switch (a.manager) {
     case PackageManager.Native:
-      return b.manager === PackageManager.Native && a.binary === b.binary;
+      // Compared by basename, not the raw string: a's binary comes from
+      // GLib.find_program_in_path() (typically a full resolved path) while
+      // b's can come from Gio.AppInfo.get_executable() (often just the bare
+      // command from the .desktop file's Exec= line) — same browser, two
+      // different string shapes.
+      return (
+        b.manager === PackageManager.Native &&
+        GLib.path_get_basename(a.binary) === GLib.path_get_basename(b.binary)
+      );
     case PackageManager.Flatpak:
       return b.manager === PackageManager.Flatpak && a.appId === b.appId;
     case PackageManager.Snap:
