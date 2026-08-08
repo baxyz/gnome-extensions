@@ -9,14 +9,21 @@
  *   matters most — it's the one thing the mocked unit tests can't actually
  *   prove works, since they never touch a real disk.
  * - Every user_pref() line DONUT_USER_JS writes, actually changing
- *   Firefox's behavior: privacy.resistFingerprinting (timezone — see the
- *   ROADMAP for why this one pref already covers canvas/WebGL/timezone/
- *   MediaDevices without needing separate checks for each), plus its two
- *   companion prefs that RFP doesn't itself cover: letterboxing (viewport
- *   rounded to a 200x100 grid) and spoof_english (navigator.language
- *   forced to en-US regardless of host locale).
+ *   Firefox's behavior: privacy.resistFingerprinting — both its
+ *   deterministic signal (timezone spoofed to Atlantic/Reykjavik) and its
+ *   randomized one (canvas noise: two independent Donut sessions draw the
+ *   same pixels and get different output, proving the noise is real and
+ *   per-session, not a fixed/absent value that would defeat the whole
+ *   point) — plus its two companion prefs that RFP doesn't itself cover:
+ *   letterboxing (viewport rounded to a 200x100 grid) and spoof_english
+ *   (navigator.language forced to en-US regardless of host locale).
  * - Disposability: the profile directory is gone once the session ends.
- * - NOT covered: browser.privatebrowsing.autostart — verifying an actual
+ * - NOT covered: WebGL vendor/renderer spoofing — this container's headless
+ *   Firefox has no WebGL backend at all (getContext("webgl") returns null
+ *   regardless of RFP), so there's nothing to assert against here; Media
+ *   Devices spoofing — navigator.mediaDevices is itself undefined on
+ *   about:blank (insecure context), never mind what RFP does to it;
+ *   browser.privatebrowsing.autostart — verifying an actual
  *   private-browsing window needs Firefox chrome/WebExtension APIs, not
  *   just content-page JS, so there's no reliable signal from inside
  *   page.evaluate(); the GNOME Shell button/spinner (no St under Node);
@@ -30,7 +37,7 @@
  */
 import * as fs from "fs";
 import assert from "node:assert/strict";
-import { firefox } from "playwright";
+import { firefox, type Page } from "playwright";
 import { createDonutProfile } from "../src/donut-browser";
 
 // Deliberately not a multiple of the 200x100 letterboxing grid, so a
@@ -38,9 +45,42 @@ import { createDonutProfile } from "../src/donut-browser";
 // kicking in — not from coincidentally requesting an already-aligned size.
 const REQUESTED_VIEWPORT = { width: 851, height: 653 };
 
+// Same drawing operation every call — the only thing that should ever differ
+// between two independent Donut sessions is resistFingerprinting's noise.
+async function canvasFingerprint(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 200;
+    canvas.height = 50;
+    const ctx = canvas.getContext("2d")!;
+    ctx.textBaseline = "top";
+    ctx.font = "14px 'Arial'";
+    ctx.fillText("browser-hub donut fingerprint probe", 2, 15);
+    return canvas.toDataURL();
+  });
+}
+
+/** Creates a throwaway Donut profile+session, runs `run` against its page, and cleans up after. */
+async function withDonutSession<T>(run: (page: Page) => Promise<T>): Promise<T> {
+  const profileDir = await createDonutProfile();
+  const context = await firefox.launchPersistentContext(profileDir, {
+    headless: true,
+    viewport: REQUESTED_VIEWPORT,
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto("about:blank");
+    return await run(page);
+  } finally {
+    await context.close();
+    fs.rmSync(profileDir, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   console.log("Creating a Donut profile...");
   const profileDir = await createDonutProfile();
+  let firstSessionFingerprint: string;
 
   try {
     assert.ok(fs.statSync(profileDir).isDirectory(), `expected a directory at ${profileDir}`);
@@ -65,10 +105,8 @@ async function main() {
       const page = await context.newPage();
       await page.goto("about:blank");
 
-      // The clearest, most deterministic resistFingerprinting signal to
-      // assert on — canvas/WebGL spoofing is randomized by design (that's
-      // the point), so there's no single expected value to compare against
-      // without a second, unprotected profile as a baseline.
+      // The clearest, deterministic resistFingerprinting signal available:
+      // there's exactly one expected value to compare against.
       const timezone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
       assert.equal(
         timezone,
@@ -102,6 +140,8 @@ async function main() {
         `letterboxing should round the viewport height down to a multiple of 100, got ${innerHeight}`,
       );
       console.log("✅ privacy.resistFingerprinting.letterboxing is in effect");
+
+      firstSessionFingerprint = await canvasFingerprint(page);
     } finally {
       await context.close();
     }
@@ -111,6 +151,18 @@ async function main() {
 
   assert.ok(!fs.existsSync(profileDir), `expected ${profileDir} to be gone after cleanup`);
   console.log("✅ profile directory removed — the session left nothing behind");
+
+  console.log("Launching a second, independent Donut session for a canvas-noise comparison...");
+  const secondSessionFingerprint = await withDonutSession(canvasFingerprint);
+  assert.notEqual(
+    firstSessionFingerprint,
+    secondSessionFingerprint,
+    "two independent Donut sessions drawing the same canvas should get different pixels " +
+      "— identical output would mean resistFingerprinting's noise isn't actually being applied",
+  );
+  console.log(
+    "✅ canvas noise differs across sessions — resistFingerprinting's randomization is live",
+  );
 
   console.log("\nAll good.");
 }
