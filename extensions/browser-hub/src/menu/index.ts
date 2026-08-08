@@ -5,6 +5,7 @@ import type { ResolvedBrowserEntry, ResolvedBrowserItem, ResolvedBrowserPkg } fr
 import type { DefaultBrowserInfo } from "../default-browser";
 import { findDonutBrowser } from "../donut-browser";
 import { isEmpty } from "@helpers4/array";
+import { noop } from "@helpers4/function";
 import { buildCategorySeparator } from "./shared";
 import { buildDefaultBrowserPicker, buildToolbar } from "./toolbar";
 import { buildProfileMenuItem, buildSimpleBrowserRow } from "./browser-rows";
@@ -24,8 +25,8 @@ export function fillMenu({
   showToolbar = true,
   showDefaultBrowserEdit = true,
   pickerOpen = false,
-  onTogglePicker = () => {},
-  onSetDefaultBrowser = () => {},
+  onTogglePicker = noop,
+  onSetDefaultBrowser = noop,
   showDonutBrowser = false,
   onLaunchDonut = () => Promise.resolve(),
 }: {

@@ -34,6 +34,7 @@
   "dependencies": {
     "@helpers4/array": "catalog:",
     "@helpers4/color": "catalog:",
+    "@helpers4/function": "catalog:",
     "@helpers4/guard": "catalog:",
     "@helpers4/object": "catalog:",
     "@helpers4/promise": "catalog:",
