@@ -1,6 +1,6 @@
 import GLib from "gi://GLib";
 import { readTable } from "sqlite-reader";
-import { isEmpty } from "@helpers4/array";
+import { createSortByStringFn, isEmpty } from "@helpers4/array";
 import { listDirEntries, logIfUnexpected, readFileAsync } from "../internal";
 
 export interface FirefoxSelectableProfile {
@@ -106,8 +106,8 @@ export async function readFirefoxSelectableProfiles(
   );
 
   const result = new Map<string, FirefoxSelectableProfile[]>();
-  for (const { dbPath, matchedBasenames, selectable } of perFile.sort((a, b) =>
-    a.dbPath.localeCompare(b.dbPath),
+  for (const { dbPath, matchedBasenames, selectable } of perFile.sort(
+    createSortByStringFn("dbPath"),
   )) {
     for (const basename of matchedBasenames) {
       if (result.has(basename)) {
