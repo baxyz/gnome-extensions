@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { fakeGioPromisify } from "./helpers/fake-gio-promisify";
 
 // Safety-net tests for the CURRENT behavior of the browser resolvers, written
 // before the Phase 2-6 rework (see the approved plan) so the refactor has a
@@ -113,33 +114,10 @@ class FakeGioFile {
   }
 }
 
-// Mirrors GJS's real Gio._promisify (see internal/gio.ts) — strips a leading
-// boolean from an array-shaped finish() result, passes through anything else.
-function promisify(
-  proto: Record<string, (...args: unknown[]) => unknown>,
-  asyncFn: string,
-  finishFn: string,
-): void {
-  const original = proto[asyncFn];
-  proto[asyncFn] = function (this: Record<string, (...args: unknown[]) => unknown>, ...args) {
-    if (typeof args.at(-1) === "function") return original.apply(this, args);
-    return new Promise((resolve, reject) => {
-      original.call(this, ...args, (_source: unknown, result: unknown) => {
-        try {
-          const ret = this[finishFn](result);
-          resolve(Array.isArray(ret) && typeof ret[0] === "boolean" ? ret.slice(1) : ret);
-        } catch (e) {
-          reject(e);
-        }
-      });
-    });
-  };
-}
-
 vi.mock("gi://Gio", () => ({
   default: {
     File: Object.assign(FakeGioFile, { new_for_path: (path: string) => new FakeGioFile(path) }),
-    _promisify: promisify,
+    _promisify: fakeGioPromisify,
     FileQueryInfoFlags: { NONE: 0 },
     FileType: { DIRECTORY: "directory" },
     Subprocess: { new: () => ({}) },
