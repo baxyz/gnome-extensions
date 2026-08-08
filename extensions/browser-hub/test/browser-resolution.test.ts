@@ -61,10 +61,9 @@ vi.mock("gi://GLib", () => ({
   },
 }));
 
-// A real class (not a factory returning a fresh object per call): resolvers
-// under test import internal/gio.ts, which calls Gio._promisify(Gio.File.prototype,
-// ...) at import time — that needs an actual shared prototype to patch, the
-// same way real GJS's Gio.File does.
+// The resolvers under test import internal/gio.ts, which calls
+// Gio._promisify(Gio.File.prototype, ...) at import time, patching this
+// class's prototype — every instance needs to share it.
 class FakeGioFile {
   constructor(private path: string) {}
 

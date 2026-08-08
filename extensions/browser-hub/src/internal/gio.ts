@@ -1,12 +1,11 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 
-// GJS's own Promise wrapper for a Gio Async/Finish pair (stable since GJS
-// 1.54 — see https://gjs.guide/guides/gjs/asynchronous-programming.html#promisify-helper).
-// Verified against a real gjs interpreter (not just the mocked test suite)
-// that the promisified resolve value matches @girs/gio-2.0's typed
-// overloads: load_contents_async -> [Uint8Array, etag],
-// enumerate_children_async -> FileEnumerator directly.
+// GJS's own Promise wrapper for a Gio async/finish pair, stable since GJS
+// 1.54 — see https://gjs.guide/guides/gjs/asynchronous-programming.html#promisify-helper.
+// Strips the redundant leading boolean from an array-shaped finish() result
+// (failure is signaled by rejection instead) — load_contents_async below
+// resolves to [contents, etag], not [ok, contents, etag].
 Gio._promisify(Gio.File.prototype, "load_contents_async", "load_contents_finish");
 Gio._promisify(Gio.File.prototype, "replace_contents_async", "replace_contents_finish");
 Gio._promisify(Gio.File.prototype, "enumerate_children_async", "enumerate_children_finish");
