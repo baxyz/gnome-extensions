@@ -3,6 +3,7 @@ import type Gio from "gi://Gio";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { PopupMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { Spinner } from "resource:///org/gnome/shell/ui/animation.js";
+import { PackageManager } from "../taxonomy";
 import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "../taxonomy";
 import type { DefaultBrowserInfo } from "../default-browser";
 import { launchBrowser, resolveDesktopIcon } from "../internal";
@@ -110,20 +111,27 @@ export function buildDefaultBrowserPicker(
   browsers: ResolvedBrowserItem[],
   onPick: (pkg: ResolvedBrowserPkg) => void,
 ): PopupMenuItem[] {
-  return browsers
-    .filter((b) => b.pkg !== undefined)
-    .map((b) => {
-      const item = new PopupMenuItem(b.label);
-      item.add_style_class_name("browser-hub-default-browser-picker-item");
-      if (b.icon) {
-        const iconWidget = new St.Icon({ ...iconProps(b.icon), icon_size: 16 });
-        item.insert_child_below(iconWidget, item.label);
-      }
-      // Filtered above — the pkg is present, this is just narrowing the type.
-      const pkg = b.pkg;
-      if (pkg) item.connect("activate", () => onPick(pkg));
-      return item;
-    });
+  return (
+    browsers
+      // Snap excluded: desktopIdFor()'s "<name>_<name>.desktop" guess for Snap
+      // is unverified beyond a couple of browsers, and this picker's pkg feeds
+      // straight into setDefaultBrowser() — a wrong guess there means silently
+      // failing to do the one thing this control promises, not just a missing
+      // icon (findDonutBrowser excludes Snap for its own, different reason).
+      .filter((b) => b.pkg !== undefined && b.pkg.manager !== PackageManager.Snap)
+      .map((b) => {
+        const item = new PopupMenuItem(b.label);
+        item.add_style_class_name("browser-hub-default-browser-picker-item");
+        if (b.icon) {
+          const iconWidget = new St.Icon({ ...iconProps(b.icon), icon_size: 16 });
+          item.insert_child_below(iconWidget, item.label);
+        }
+        // Filtered above — the pkg is present, this is just narrowing the type.
+        const pkg = b.pkg;
+        if (pkg) item.connect("activate", () => onPick(pkg));
+        return item;
+      })
+  );
 }
 
 /**
