@@ -20,9 +20,17 @@ vi.mock("gi://GLib", () => ({
   },
 }));
 
+// A class, not a plain object: internal/gio.ts calls Gio._promisify(Gio.File.prototype,
+// ...) at module scope on import, which needs an actual prototype to patch
+// even though nothing here exercises the promisified methods themselves.
+class FakeGioFile {
+  load_contents_async() {}
+}
+
 vi.mock("gi://Gio", () => ({
   default: {
-    File: { new_for_path: () => ({ load_contents_async: () => {} }) },
+    File: Object.assign(FakeGioFile, { new_for_path: () => new FakeGioFile() }),
+    _promisify: () => {},
     FileQueryInfoFlags: { NONE: 0 },
     FileType: { DIRECTORY: "directory" },
     Subprocess: { new: () => ({}) },

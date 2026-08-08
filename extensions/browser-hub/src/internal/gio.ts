@@ -1,6 +1,16 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 
+// GJS's own Promise wrapper for a Gio Async/Finish pair (stable since GJS
+// 1.54 — see https://gjs.guide/guides/gjs/asynchronous-programming.html#promisify-helper).
+// Verified against a real gjs interpreter (not just the mocked test suite)
+// that the promisified resolve value matches @girs/gio-2.0's typed
+// overloads: load_contents_async -> [Uint8Array, etag],
+// enumerate_children_async -> FileEnumerator directly.
+Gio._promisify(Gio.File.prototype, "load_contents_async", "load_contents_finish");
+Gio._promisify(Gio.File.prototype, "replace_contents_async", "replace_contents_finish");
+Gio._promisify(Gio.File.prototype, "enumerate_children_async", "enumerate_children_finish");
+
 export const decoder = new TextDecoder();
 
 /**
@@ -47,54 +57,29 @@ export function logIfUnexpected(e: unknown, context: string): void {
 // and stalling the menu.
 const MAX_READABLE_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-export function readFileAsync(path: string): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    const file = Gio.File.new_for_path(path);
-    let size: number;
-    try {
-      size = file.query_info("standard::size", Gio.FileQueryInfoFlags.NONE, null).get_size();
-    } catch (e) {
-      reject(e);
-      return;
-    }
-    if (size > MAX_READABLE_FILE_SIZE) {
-      reject(new Error(`refusing to read ${path}: ${size} bytes exceeds the read size limit`));
-      return;
-    }
-    file.load_contents_async(null, (_source, result) => {
-      try {
-        const [, contents] = file.load_contents_finish(result);
-        resolve(contents);
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
+export async function readFileAsync(path: string): Promise<Uint8Array> {
+  const file = Gio.File.new_for_path(path);
+  const size = file.query_info("standard::size", Gio.FileQueryInfoFlags.NONE, null).get_size();
+  if (size > MAX_READABLE_FILE_SIZE) {
+    throw new Error(`refusing to read ${path}: ${size} bytes exceeds the read size limit`);
+  }
+  const [contents] = await file.load_contents_async(null);
+  return contents;
 }
 
 export function readTextFileAsync(path: string): Promise<string> {
   return readFileAsync(path).then((bytes) => decoder.decode(bytes));
 }
 
-export function writeTextFileAsync(path: string, contents: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const file = Gio.File.new_for_path(path);
-    file.replace_contents_bytes_async(
-      new TextEncoder().encode(contents),
-      null,
-      false,
-      Gio.FileCreateFlags.NONE,
-      null,
-      (_source, result) => {
-        try {
-          file.replace_contents_finish(result);
-          resolve();
-        } catch (e) {
-          reject(e);
-        }
-      },
-    );
-  });
+export async function writeTextFileAsync(path: string, contents: string): Promise<void> {
+  const file = Gio.File.new_for_path(path);
+  await file.replace_contents_async(
+    new TextEncoder().encode(contents),
+    null,
+    false,
+    Gio.FileCreateFlags.NONE,
+    null,
+  );
 }
 
 // Gio.DesktopAppInfo is Linux-specific (gio-unix-2.0) — present in GJS but
@@ -119,29 +104,24 @@ export type DirEntry = { name: string; type: Gio.FileType };
  * Lists a directory's immediate entries (name + type), or [] if it doesn't
  * exist or can't be enumerated — callers apply their own name/type filter.
  */
-export function listDirEntries(dirPath: string, logContext: string): Promise<DirEntry[]> {
-  return new Promise((resolve) => {
+export async function listDirEntries(dirPath: string, logContext: string): Promise<DirEntry[]> {
+  try {
     const dir = Gio.File.new_for_path(dirPath);
-    dir.enumerate_children_async(
+    const enumerator = await dir.enumerate_children_async(
       "standard::name,standard::type",
       Gio.FileQueryInfoFlags.NONE,
       GLib.PRIORITY_DEFAULT,
       null,
-      (_source, result) => {
-        try {
-          const enumerator = dir.enumerate_children_finish(result);
-          const entries: DirEntry[] = [];
-          let info: Gio.FileInfo | null;
-          while ((info = enumerator.next_file(null)) !== null) {
-            entries.push({ name: info.get_name(), type: info.get_file_type() });
-          }
-          enumerator.close(null);
-          resolve(entries);
-        } catch (e: unknown) {
-          logIfUnexpected(e, logContext);
-          resolve([]);
-        }
-      },
     );
-  });
+    const entries: DirEntry[] = [];
+    let info: Gio.FileInfo | null;
+    while ((info = enumerator.next_file(null)) !== null) {
+      entries.push({ name: info.get_name(), type: info.get_file_type() });
+    }
+    enumerator.close(null);
+    return entries;
+  } catch (e: unknown) {
+    logIfUnexpected(e, logContext);
+    return [];
+  }
 }

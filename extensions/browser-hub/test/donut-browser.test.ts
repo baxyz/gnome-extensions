@@ -25,28 +25,62 @@ const dirs = new Map<string, FakeDir>();
 const written = new Map<string, Uint8Array>();
 const subprocessNew = vi.fn();
 
+// A real class (not a factory returning a fresh object per call): donut-browser.ts
+// imports internal/gio.ts, which calls Gio._promisify(Gio.File.prototype, ...)
+// at import time — that needs an actual shared prototype to patch, the same
+// way real GJS's Gio.File does.
+class FakeGioFile {
+  constructor(private path: string) {}
+
+  make_directory_with_parents(_cancellable: null) {
+    dirs.set(this.path, { made: true });
+    return true;
+  }
+
+  replace_contents_async(
+    contents: Uint8Array,
+    _etag: null,
+    _makeBackup: boolean,
+    _flags: number,
+    _cancel: null,
+    cb: (src: null, res: { path: string }) => void,
+  ) {
+    written.set(this.path, contents);
+    cb(null, { path: this.path });
+  }
+
+  replace_contents_finish(_result: { path: string }) {
+    return [true, ""];
+  }
+}
+
+// Mirrors GJS's real Gio._promisify (see internal/gio.ts) — strips a leading
+// boolean from an array-shaped finish() result, passes through anything else.
+function promisify(
+  proto: Record<string, (...args: unknown[]) => unknown>,
+  asyncFn: string,
+  finishFn: string,
+): void {
+  const original = proto[asyncFn];
+  proto[asyncFn] = function (this: Record<string, (...args: unknown[]) => unknown>, ...args) {
+    if (typeof args.at(-1) === "function") return original.apply(this, args);
+    return new Promise((resolve, reject) => {
+      original.call(this, ...args, (_source: unknown, result: unknown) => {
+        try {
+          const ret = this[finishFn](result);
+          resolve(Array.isArray(ret) && typeof ret[0] === "boolean" ? ret.slice(1) : ret);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+  };
+}
+
 vi.mock("gi://Gio", () => ({
   default: {
-    File: {
-      new_for_path: (path: string) => ({
-        make_directory_with_parents: (_cancellable: null) => {
-          dirs.set(path, { made: true });
-          return true;
-        },
-        replace_contents_bytes_async: (
-          contents: Uint8Array,
-          _etag: null,
-          _makeBackup: boolean,
-          _flags: number,
-          _cancel: null,
-          cb: (src: null, res: { path: string }) => void,
-        ) => {
-          written.set(path, contents);
-          cb(null, { path });
-        },
-        replace_contents_finish: (_result: { path: string }) => [true, ""],
-      }),
-    },
+    File: Object.assign(FakeGioFile, { new_for_path: (path: string) => new FakeGioFile(path) }),
+    _promisify: promisify,
     FileCreateFlags: { NONE: 0 },
     Subprocess: { new: subprocessNew },
     SubprocessFlags: { NONE: 0 },
