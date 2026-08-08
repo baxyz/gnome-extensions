@@ -27,10 +27,9 @@ function makeEnumerator(dirPath: string) {
   };
 }
 
-// A real class (not a factory returning a fresh object literal per call) —
-// production code's internal/gio.ts calls Gio._promisify(Gio.File.prototype,
-// ...) at import time, which needs an actual shared prototype to patch, the
-// same way real GJS's Gio.File does. See `promisify` below for the shim of
+// internal/gio.ts calls Gio._promisify(Gio.File.prototype, ...) at import
+// time, patching this class's prototype — every Gio.File.new_for_path()
+// instance needs to share it. See `promisify` below for the shim of
 // _promisify itself.
 class FakeGioFile {
   constructor(private filePath: string) {}
@@ -65,8 +64,8 @@ class FakeGioFile {
     cb(null, { filePath: this.filePath });
   }
 
-  // [true, contents] matches real GJS's raw (non-promisified) return shape —
-  // verified against a real gjs interpreter (see internal/gio.ts).
+  // [true, contents]: real GJS's raw (non-promisified) finish() shape —
+  // promisify() below strips the leading boolean.
   load_contents_finish(res: { filePath: string }): [boolean, Uint8Array] {
     return [true, new Uint8Array(fs.readFileSync(res.filePath))];
   }
@@ -98,11 +97,10 @@ function newFile(filePath: string): FakeGioFile {
 }
 
 /**
- * Shims GJS's own Gio._promisify (real one: https://gjs.guide/guides/gjs/asynchronous-programming.html#promisify-helper).
- * Verified against a real gjs interpreter that the real helper strips a
- * leading boolean from an array-shaped finish() result (the "did it
- * succeed" flag becomes redundant once failure is signaled via rejection
- * instead) and passes through anything else unchanged.
+ * Shims GJS's own Gio._promisify: https://gjs.guide/guides/gjs/asynchronous-programming.html#promisify-helper
+ * The real helper strips a leading boolean from an array-shaped finish()
+ * result (the "did it succeed" flag becomes redundant once failure is
+ * signaled via rejection instead) and passes through anything else unchanged.
  */
 function promisify(
   proto: Record<string, (...args: unknown[]) => unknown>,

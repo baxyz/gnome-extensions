@@ -21,10 +21,9 @@ function ioError(code: number): { matches: (domain: unknown, c: number) => boole
 const NOT_FOUND = 1;
 const PERMISSION_DENIED = 2;
 
-// A real class (not a factory returning a fresh object per call): the
-// production code under test calls Gio._promisify(Gio.File.prototype, ...)
-// at import time, which needs an actual shared prototype to patch, the same
-// way real GJS's Gio.File does.
+// The production code under test calls Gio._promisify(Gio.File.prototype, ...)
+// at import time, patching this class's prototype — every instance needs to
+// share it.
 class FakeGioFile {
   constructor(private path: string) {}
 

@@ -15,10 +15,9 @@ const fileIconNew = vi.fn((file: { path: string }) => ({ __fileIcon: file.path }
 const emblemNew = vi.fn((icon: unknown) => ({ __emblem: icon }));
 const emblemedIconNew = vi.fn((icon: unknown, emblem: unknown) => ({ __emblemed: icon, emblem }));
 
-// A class, not a plain object: internal/gio.ts calls Gio._promisify(Gio.File.prototype,
-// ...) at module scope on import (internal/desktop-icon.ts imports from
-// "./gio"), which needs an actual prototype to patch even though nothing
-// here exercises the promisified methods themselves.
+// internal/desktop-icon.ts imports from "./gio" — its Gio._promisify(Gio.File.prototype, ...)
+// call at module scope needs an actual prototype to patch even though
+// nothing here exercises the promisified methods themselves.
 class FakeGioFile {}
 
 vi.mock("gi://Gio", () => ({

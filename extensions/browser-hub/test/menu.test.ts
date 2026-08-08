@@ -128,11 +128,10 @@ vi.mock("resource:///org/gnome/shell/ui/animation.js", () => ({
 }));
 
 const subprocessNew = vi.fn();
-// A class, not a plain object: internal/gio.ts calls Gio._promisify(Gio.File.prototype,
-// ...) at module scope on import (menu.ts imports launchBrowser/resolveDesktopIcon
-// from "./internal", the barrel that includes gio.ts), which needs an actual
-// prototype to patch even though nothing here exercises the promisified
-// methods themselves.
+// menu.ts imports launchBrowser/resolveDesktopIcon from "./internal", the
+// barrel that includes gio.ts — its Gio._promisify(Gio.File.prototype, ...)
+// call at module scope needs an actual prototype to patch even though
+// nothing here exercises the promisified methods themselves.
 class FakeGioFile {}
 
 vi.mock("gi://Gio", () => ({

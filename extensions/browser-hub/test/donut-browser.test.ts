@@ -25,10 +25,9 @@ const dirs = new Map<string, FakeDir>();
 const written = new Map<string, Uint8Array>();
 const subprocessNew = vi.fn();
 
-// A real class (not a factory returning a fresh object per call): donut-browser.ts
-// imports internal/gio.ts, which calls Gio._promisify(Gio.File.prototype, ...)
-// at import time — that needs an actual shared prototype to patch, the same
-// way real GJS's Gio.File does.
+// donut-browser.ts imports internal/gio.ts, which calls
+// Gio._promisify(Gio.File.prototype, ...) at import time, patching this
+// class's prototype — every instance needs to share it.
 class FakeGioFile {
   constructor(private path: string) {}
 
