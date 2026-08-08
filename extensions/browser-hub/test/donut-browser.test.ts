@@ -17,6 +17,7 @@ vi.mock("gi://GLib", () => ({
     find_program_in_path: () => null,
     build_filenamev: (parts: string[]) => parts.join("/"),
     uuid_string_random: () => `uuid-${++uuidCounter}`,
+    path_get_basename: (p: string) => p.split("/").at(-1) ?? p,
     PRIORITY_DEFAULT: 0,
   },
 }));
