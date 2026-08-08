@@ -109,9 +109,11 @@ user_pref("browser.privatebrowsing.autostart", true);
 
 function donutProfilesRoot(): string {
   // Falls back to the system tmp dir on the (very unlikely) chance
-  // XDG_RUNTIME_DIR is unset — still cleaned up eventually, just not
+  // XDG_RUNTIME_DIR is unset or empty — still cleaned up eventually, just not
   // guaranteed to be gone by the next login the way /run/user/<uid> is.
-  const runtimeDir = GLib.getenv("XDG_RUNTIME_DIR") ?? GLib.get_tmp_dir();
+  // `||`, not `??`: some systems export XDG_RUNTIME_DIR as an empty string
+  // rather than leaving it unset, which `??` wouldn't catch.
+  const runtimeDir = GLib.getenv("XDG_RUNTIME_DIR") || GLib.get_tmp_dir();
   return GLib.build_filenamev([runtimeDir, "browser-hub", "donut"]);
 }
 
