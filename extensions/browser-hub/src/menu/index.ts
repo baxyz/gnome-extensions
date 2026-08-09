@@ -108,9 +108,18 @@ export function fillMenu({
     return;
   }
 
-  // Build browser entries
+  // Build browser entries. The category separator doubles as a section
+  // header — skipped for the "Browsers" row specifically when it's the
+  // menu's only entry (every profiled family disabled, absent, or filtered
+  // out), since a lone "Browsers" header has nothing left to separate it
+  // from. A lone *profiled* entry (e.g. only Firefox enabled) still gets
+  // its header — unlike "Browsers", its label names the family the profile
+  // rows below it belong to, which is worth keeping even alone.
+  const soloSimpleRow = entries.length === 1 && entries[0].group === "simple";
   for (const entry of entries) {
-    menu.addMenuItem(buildCategorySeparator(entry.label, entry.icon));
+    if (!soloSimpleRow) {
+      menu.addMenuItem(buildCategorySeparator(entry.label, entry.icon));
+    }
 
     if (entry.group === "simple") {
       // Simple browsers (no profiles) - show as icon buttons in a row
