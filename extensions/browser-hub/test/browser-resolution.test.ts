@@ -123,14 +123,19 @@ vi.mock("gi://Gio", () => ({
     Subprocess: { new: () => ({}) },
     SubprocessFlags: { NONE: 0 },
     IOErrorEnum: { NOT_FOUND: 1 },
-    // Only "iconbrowser.desktop" resolves to a real icon (used to verify the
-    // browser icon lands on the entry, not on every profile item) — every
-    // other guessed desktop id (the "firefox"/"chromium"/"falkon" binaries
-    // used throughout this file) matches nothing, same as before.
-    // "org.gnome.Epiphany.desktop" (GNOME Web's real desktopId) throws when
-    // epiphanyIconThrows is set — used by one test to simulate a crash
-    // reachable only from resolveBrowsersRow (SIMPLE_BROWSERS entries are
-    // never touched by the family resolvers).
+  },
+}));
+
+// Only "iconbrowser.desktop" resolves to a real icon (used to verify the
+// browser icon lands on the entry, not on every profile item) — every
+// other guessed desktop id (the "firefox"/"chromium"/"falkon" binaries
+// used throughout this file) matches nothing, same as before.
+// "org.gnome.Epiphany.desktop" (GNOME Web's real desktopId) throws when
+// epiphanyIconThrows is set — used by one test to simulate a crash
+// reachable only from resolveBrowsersRow (SIMPLE_BROWSERS entries are
+// never touched by the family resolvers).
+vi.mock("gi://GioUnix", () => ({
+  default: {
     DesktopAppInfo: {
       new: (id: string) => {
         if (id === "iconbrowser.desktop") return { get_icon: () => FAKE_ICON };

@@ -62,11 +62,14 @@ vi.mock("gi://Gio", () => ({
     FileCreateFlags: { NONE: 0 },
     Subprocess: { new: subprocessNew },
     SubprocessFlags: { NONE: 0 },
-    // desktop-icon.ts (part of the same "./internal" barrel) references these
-    // — never called from anything exercised here, but the barrel still
-    // evaluates that module's top-level code on import.
-    DesktopAppInfo: { new: () => null },
   },
+}));
+
+// desktop-icon.ts (part of the same "./internal" barrel) references this via
+// GioUnix — never called from anything exercised here, but the barrel still
+// evaluates that module's top-level code on import.
+vi.mock("gi://GioUnix", () => ({
+  default: { DesktopAppInfo: { new: () => null } },
 }));
 
 const { findDonutBrowser, createDonutProfile, launchDonutBrowser } =

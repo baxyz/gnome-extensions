@@ -43,8 +43,12 @@ vi.mock("gi://Gio", () => ({
     File: Object.assign(FakeGioFile, { new_for_path: () => new FakeGioFile() }),
     _promisify: fakeGioPromisify,
     AppInfo: { get_default_for_uri_scheme: getDefaultForUriScheme },
-    DesktopAppInfo: { new: desktopAppInfoNew },
   },
+}));
+
+// DesktopAppInfo lives on GioUnix, not Gio — see internal/gio.ts.
+vi.mock("gi://GioUnix", () => ({
+  default: { DesktopAppInfo: { new: desktopAppInfoNew } },
 }));
 
 vi.mock("gi://GLib", () => ({

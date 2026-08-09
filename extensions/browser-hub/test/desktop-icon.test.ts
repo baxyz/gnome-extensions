@@ -22,13 +22,17 @@ class FakeGioFile {}
 
 vi.mock("gi://Gio", () => ({
   default: {
-    DesktopAppInfo: { new: desktopAppInfoNew },
     FileIcon: { new: fileIconNew },
     Emblem: { new: emblemNew },
     EmblemedIcon: { new: emblemedIconNew },
     File: FakeGioFile,
     _promisify: () => {},
   },
+}));
+
+// DesktopAppInfo lives on GioUnix, not Gio — see internal/gio.ts.
+vi.mock("gi://GioUnix", () => ({
+  default: { DesktopAppInfo: { new: desktopAppInfoNew } },
 }));
 
 // internal/gio.ts (imported transitively via ./gio) also references GLib —
