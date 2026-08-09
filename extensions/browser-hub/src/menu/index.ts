@@ -103,13 +103,11 @@ export function fillMenu({
     return;
   }
 
-  // Build browser entries. The category separator doubles as a section
-  // header — skipped for the "Browsers" row specifically when it's the
-  // menu's only entry (every profiled family disabled, absent, or filtered
-  // out), since a lone "Browsers" header has nothing left to separate it
-  // from. A lone *profiled* entry (e.g. only Firefox enabled) still gets
-  // its header — unlike "Browsers", its label names the family the profile
-  // rows below it belong to, which is worth keeping even alone.
+  // Build browser entries. The category separator also acts as a section
+  // header, so a lone "Browsers" row (every profiled family disabled or
+  // filtered out) skips it — nothing left to separate it from. A lone
+  // profiled entry (only Firefox enabled, say) still gets its header: its
+  // label names the family the profile rows below actually belong to.
   const soloSimpleRow = entries.length === 1 && entries[0].group === "simple";
   for (const entry of entries) {
     if (!soloSimpleRow) {

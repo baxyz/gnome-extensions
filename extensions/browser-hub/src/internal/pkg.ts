@@ -35,9 +35,8 @@ function resolvePkgUncached(pkg: BrowserPkg): ResolvedBrowserPkg | null {
 // explicitly busts this cache so newly-installed browsers are still picked up.
 // WeakMap-backed: each BrowserPkg config object lives as long as the settings
 // that produced it, so entries can be collected once those are gone.
-//
-// resolve/clear are re-exported directly as resolvePkg/clearPkgResolutionCache
-// — no wrapper needed, neither method reads `this`.
+// resolve/clear work standalone (neither reads `this`), so they're exported
+// directly under these names instead of through wrapper functions.
 export const { resolve: resolvePkg, clear: clearPkgResolutionCache } = createCachedResolver(
   resolvePkgUncached,
   () => new WeakMap(),
@@ -53,13 +52,12 @@ export function filterAvailable<T extends { pkg: BrowserPkg }>(
   });
 }
 
-// getBrowserEntries resolves each profiled family AND the combined "Browsers"
-// row from the same underlying configs in one tick (see browser/resolve-all.ts)
-// — without this cache, the same path gets `GLib.file_test`'d twice per
-// refresh. Nested by test flag then path (not a single "test:path" string
-// key) since the same path can legitimately be checked under different
-// tests (e.g. Falkon uses IS_DIR, the Browsers row uses the default EXISTS)
-// — clearing the outer resolver drops every inner one with it.
+// getBrowserEntries resolves each profiled family and the combined "Browsers"
+// row from the same underlying configs in one tick, so without this cache
+// the same path gets file_test'd twice per refresh. The same path can be
+// checked under different tests (Falkon uses IS_DIR, the Browsers row uses
+// EXISTS), hence one cache per test value, each keyed by path within it.
+// Clearing the outer resolver throws away all of them together.
 const pathPresenceByTest = createCachedResolver((test: number) =>
   createCachedResolver((path: string): boolean => GLib.file_test(path, test)),
 );
