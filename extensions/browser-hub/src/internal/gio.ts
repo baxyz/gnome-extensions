@@ -1,5 +1,6 @@
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
+import GioUnix from "gi://GioUnix";
 
 // GJS's own Promise wrapper for a Gio async/finish pair, stable since GJS
 // 1.54 — see https://gjs.guide/guides/gjs/asynchronous-programming.html#promisify-helper.
@@ -81,20 +82,23 @@ export async function writeTextFileAsync(path: string, contents: string): Promis
   );
 }
 
-// Gio.DesktopAppInfo is Linux-specific (gio-unix-2.0) — present in GJS but
-// absent from @girs types. Shared here since both default-browser.ts and
-// internal/desktop-icon.ts need it.
+// Gio.DesktopAppInfo is Linux-specific (gio-unix-2.0), and was only ever
+// reachable off the Gio namespace as a GJS compatibility shim — one recent
+// enough GJS/GLib builds have started dropping (confirmed: every one of
+// these desktop-lookup calls silently returned null on one such build,
+// breaking icon resolution and setDefaultBrowser() app-wide even though
+// nothing threw). GioUnix.DesktopAppInfo is the real, non-deprecated home.
+// Kept as a minimal structural type rather than @girs's own DesktopAppInfo
+// (whose .new() it types as always returning an instance) since GJS's actual
+// runtime behavior is to return null for an unknown desktop ID.
 export type DesktopAppInfo = {
   get_string(key: string): string | null;
   get_icon(): Gio.Icon | null;
   set_as_default_for_type(contentType: string): void;
 };
-const _DesktopAppInfo = (
-  Gio as unknown as { DesktopAppInfo: { new: (id: string) => DesktopAppInfo | null } }
-).DesktopAppInfo;
 
 export function getDesktopAppInfo(desktopId: string): DesktopAppInfo | null {
-  return _DesktopAppInfo.new(desktopId);
+  return GioUnix.DesktopAppInfo.new(desktopId) as unknown as DesktopAppInfo | null;
 }
 
 export type DirEntry = { name: string; type: Gio.FileType };

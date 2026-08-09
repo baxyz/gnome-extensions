@@ -39,6 +39,9 @@ vi.mock("gi://Gio", () => ({
   },
 }));
 
+// internal/gio.ts also imports GioUnix (unused by anything exercised here).
+vi.mock("gi://GioUnix", () => ({ default: { DesktopAppInfo: { new: () => null } } }));
+
 // firefox.ts/chromium.ts import the icons module, which checks icon presence
 // via St.IconTheme — stub it as "everything is present" since icon-theme
 // availability itself is covered by icons.test.ts, not this file.

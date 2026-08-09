@@ -73,9 +73,10 @@ vi.mock("gi://Gio", () => ({
   },
 }));
 
-// internal/gio.ts imports GLib too (unused by anything exercised here) —
-// the import itself must still resolve under Node.
+// internal/gio.ts imports GLib and GioUnix too (unused by anything exercised
+// here) — the imports themselves must still resolve under Node.
 vi.mock("gi://GLib", () => ({ default: { PRIORITY_DEFAULT: 0 } }));
+vi.mock("gi://GioUnix", () => ({ default: { DesktopAppInfo: { new: () => null } } }));
 
 const { logIfUnexpected, readFileAsync, tagError, writeTextFileAsync } =
   await import("../src/internal/gio");
