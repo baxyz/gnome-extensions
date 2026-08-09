@@ -22,13 +22,9 @@ export function iconProps(icon: string | Gio.Icon): { icon_name: string } | { gi
   return typeof icon === "string" ? { icon_name: icon } : { gicon: icon };
 }
 
-// Used whenever a browser's own icon fails to resolve (see
-// internal/desktop-icon.ts's resolveDesktopIcon — undefined isn't rare: a
-// wrong desktopId guess, or a .desktop file whose Icon= name doesn't match
-// anything in the current icon theme, both land here) — same fallback
-// toolbar.ts's default-browser button and indicator.ts's panel icon already
-// use, so a button never renders as a blank square with a tooltip and
-// nothing else to look at.
+// resolveDesktopIcon() ends up undefined fairly often (a wrong desktopId
+// guess, or an Icon= name absent from the current theme) — same fallback
+// name the default-browser button and panel icon already use elsewhere.
 const GENERIC_BROWSER_ICON_NAME = "web-browser-symbolic";
 
 export function makeIconButton(

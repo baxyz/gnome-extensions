@@ -82,15 +82,12 @@ export async function writeTextFileAsync(path: string, contents: string): Promis
   );
 }
 
-// Gio.DesktopAppInfo is Linux-specific (gio-unix-2.0), and was only ever
-// reachable off the Gio namespace as a GJS compatibility shim — one recent
-// enough GJS/GLib builds have started dropping (confirmed: every one of
-// these desktop-lookup calls silently returned null on one such build,
-// breaking icon resolution and setDefaultBrowser() app-wide even though
-// nothing threw). GioUnix.DesktopAppInfo is the real, non-deprecated home.
-// Kept as a minimal structural type rather than @girs's own DesktopAppInfo
-// (whose .new() it types as always returning an instance) since GJS's actual
-// runtime behavior is to return null for an unknown desktop ID.
+// DesktopAppInfo actually belongs to gio-unix-2.0 (GioUnix), not Gio itself.
+// On at least one GJS build, reaching it off Gio returned null for every
+// desktop ID instead of a real lookup — no error, just broken icons and a
+// broken setDefaultBrowser() everywhere. @girs's own DesktopAppInfo type
+// claims .new() always returns an instance; this hand-written one reflects
+// what GJS actually does, which is return null for an unknown ID.
 export type DesktopAppInfo = {
   get_string(key: string): string | null;
   get_icon(): Gio.Icon | null;

@@ -53,17 +53,12 @@ export function desktopIdFor(pkg: ResolvedBrowserPkg): string {
   }
 }
 
-// Package/binary presence rarely changes mid-session — see pkg.ts's cache for
-// the same rationale. Cleared alongside it (clearDesktopIconCache below).
-//
-// Caches only the .desktop lookup (get_icon()) — the actual expensive part,
-// GNOME's app-info database read — not the emblem wrapping below, which is
-// pure object allocation. Keyed by desktopIdFor(pkg) (a string), not the pkg
-// object itself: the default browser's own pkg is rebuilt fresh on every
-// menu open (see default-browser.ts's clearDefaultBrowserCache(), called
-// from the same open-state-changed handler that redraws the toolbar) — an
-// object-identity key would never hit for it, defeating the cache on the one
-// call site that runs on every single menu open.
+// Package/binary presence rarely changes mid-session, same as pkg.ts's
+// cache. Keyed by the desktopId string rather than the pkg object: the
+// default browser's pkg is rebuilt fresh on every menu open, so an
+// object-identity key would just never hit. Only the GNOME app-info lookup
+// (get_icon()) goes through the cache — the emblem wrapping below is cheap
+// enough to redo every time.
 const desktopIconResolver = createCachedResolver(
   (desktopId: string): Gio.Icon | null => getDesktopAppInfo(desktopId)?.get_icon() ?? null,
 );

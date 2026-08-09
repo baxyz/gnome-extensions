@@ -95,13 +95,9 @@ function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
   const withProfilesConfigs = settings.showProfiledBrowsers
     ? PROFILED_FAMILIES.filter((f) => f.enabled(settings)).flatMap((f) => f.configs)
     : [];
-  // filterAvailable, not filterPresent: this row's whole point (see the
-  // docstring above) is "installed, regardless of whether it has profiles"
-  // — filterPresent additionally requires the profile path (profiles.ini,
-  // Local State, ...) to already exist, which a freshly-installed,
-  // never-launched browser hasn't created yet. That silently dropped it
-  // from this row while the very same package still showed up correctly as
-  // the OS default browser (a completely different, profile-less lookup).
+  // filterPresent also requires profiles.ini/Local State to exist, which a
+  // never-launched browser hasn't created yet — this row only needs the
+  // package itself.
   const available = [
     ...filterAvailable(withProfilesConfigs),
     ...(settings.showSimpleBrowsers ? filterAvailable(SIMPLE_BROWSERS) : []),

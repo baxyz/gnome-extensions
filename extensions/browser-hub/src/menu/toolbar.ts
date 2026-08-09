@@ -47,7 +47,7 @@ function makeDonutButton(isLaunching: boolean, onLaunch: () => void): St.Button 
 // not a smaller text-only one bolted on beside it.
 const DEFAULT_BROWSER_ICON_SIZE = 24;
 
-/** Plain, non-expandable default-browser button — used when showDefaultBrowserEdit is off. */
+/** Plain, non-expandable default-browser button, shown when showDefaultBrowserEdit is off. */
 function buildDefaultBrowserRow(
   name: string,
   icon: Gio.Icon | undefined,
@@ -83,10 +83,8 @@ function buildDefaultBrowserPickerRows(
   return (
     browsers
       // Snap excluded: desktopIdFor()'s "<name>_<name>.desktop" guess for Snap
-      // is unverified beyond a couple of browsers, and this picker's pkg feeds
-      // straight into setDefaultBrowser() — a wrong guess there means silently
-      // failing to do the one thing this control promises, not just a missing
-      // icon (findDonutBrowser excludes Snap for its own, different reason).
+      // is only verified against a couple of browsers, and a wrong guess here
+      // feeds straight into setDefaultBrowser() failing silently.
       .filter((b) => b.pkg !== undefined && b.pkg.manager !== PackageManager.Snap)
       .map((b) => {
         const item = new PopupMenuItem(b.label);
@@ -103,13 +101,11 @@ function buildDefaultBrowserPickerRows(
 }
 
 /**
- * A real GNOME PopupSubMenuMenuItem for the default browser: clicking the
- * row expands a "Launch <name>" action plus every other installed browser to
- * switch to. Unlike a plain button, PopupSubMenuMenuItem's own activate()
- * unconditionally toggles the submenu open/closed — there's no way to make
- * its main row do something else — so "Launch" lives as the submenu's first
- * item instead of being the row's own click target the way the plain
- * (non-editable) button above is.
+ * A real GNOME PopupSubMenuMenuItem for the default browser. Clicking the
+ * row itself always just opens/closes the submenu — that's what
+ * PopupSubMenuMenuItem.activate() does, and it can't be repurposed — so
+ * "Launch <name>" is the submenu's first item, followed by a separator and
+ * every other installed browser to switch to.
  */
 function buildDefaultBrowserSubMenuItem(
   defaultBrowser: DefaultBrowserInfo,
@@ -139,13 +135,12 @@ function buildDefaultBrowserSubMenuItem(
 }
 
 /**
- * Builds the default-browser row: a plain launch button, or — when
- * showDefaultBrowserEdit is on — a real expandable PopupSubMenuMenuItem
- * offering "Launch" plus every other installed browser to switch to. A
- * separate row from buildToolbar below: PopupSubMenuMenuItem manages its own
- * open/closed state and slide animation as a top-level menu row, which isn't
- * something that can be embedded as one child among siblings inside another
- * row's horizontal box.
+ * Builds the default-browser row: a plain launch button, or, when
+ * showDefaultBrowserEdit is on, a real expandable PopupSubMenuMenuItem
+ * offering "Launch" plus every other installed browser to switch to.
+ * PopupSubMenuMenuItem manages its own open/closed state and slide
+ * animation as a top-level menu row, so it needs its own row rather than
+ * being one child inside buildToolbar's horizontal box below.
  */
 export function buildDefaultBrowserItem({
   title,
