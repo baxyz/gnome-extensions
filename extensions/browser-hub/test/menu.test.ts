@@ -138,13 +138,16 @@ vi.mock("gi://Gio", () => ({
   default: {
     Subprocess: { new: subprocessNew },
     SubprocessFlags: { NONE: 0 },
-    // menu.ts's buildToolbar resolves the default browser's own icon via
-    // resolveDesktopIcon() — no app matches in this test environment, which
-    // exercises the same "no icon found" tolerance as a real missing .desktop file.
-    DesktopAppInfo: { new: () => null },
     File: FakeGioFile,
     _promisify: () => {},
   },
+}));
+
+// menu.ts's buildToolbar resolves the default browser's own icon via
+// resolveDesktopIcon() — no app matches in this test environment, which
+// exercises the same "no icon found" tolerance as a real missing .desktop file.
+vi.mock("gi://GioUnix", () => ({
+  default: { DesktopAppInfo: { new: () => null } },
 }));
 
 const { fillMenu } = await import("../src/menu");
@@ -223,7 +226,8 @@ describe("fillMenu", () => {
       onRefresh: noop,
     });
 
-    const row = menu.items[2] as FakePopupMenuItem; // [0] toolbar, [1] separator, [2] row
+    // [0] toolbar, [1] row — no separator: "Browsers" is the menu's only entry.
+    const row = menu.items[1] as FakePopupMenuItem;
     const container = row.children[0];
     expect(container.children).toHaveLength(1); // one line, not one child per button
     const line = container.children[0];
@@ -246,11 +250,74 @@ describe("fillMenu", () => {
       onRefresh: noop,
     });
 
-    const row = menu.items[2] as FakePopupMenuItem;
+    // [0] toolbar, [1] row — no separator: "Browsers" is the menu's only entry.
+    const row = menu.items[1] as FakePopupMenuItem;
     const container = row.children[0];
     expect(container.children).toHaveLength(2); // 6 on the first line, 1 on the second
     expect(container.children[0].children).toHaveLength(6);
     expect(container.children[1].children).toHaveLength(1);
+  });
+
+  it("falls back to a generic icon (not a blank button) for a 'Browsers' row item with no icon", () => {
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [
+        {
+          label: "Browsers",
+          group: "simple",
+          items: [{ label: "Some Browser", command: ["some-browser"] }], // no icon
+        },
+      ],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const row = menu.items[1] as FakePopupMenuItem; // [0] toolbar, [1] row — no separator
+    const line = row.children[0].children[0] as FakeBoxLayout;
+    const button = line.children[0] as FakeButton;
+    const icon = button.children[0] as FakeIcon;
+    expect(icon).toBeInstanceOf(FakeIcon);
+    expect(icon.props.icon_name).toBe("web-browser-symbolic");
+  });
+
+  it("keeps the category separator for a lone profiled entry, unlike a lone 'Browsers' row", () => {
+    // Sanity check for the narrower condition: a lone *profiled* family
+    // entry (group !== "simple") still gets its separator/header even when
+    // it's the menu's only entry — only a lone "Browsers" row omits it (see
+    // the next test). Its label is the one thing naming which family the
+    // profile rows below it belong to, worth keeping even alone.
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    expect(menu.items[1]).toBeInstanceOf(FakePopupSeparatorMenuItem);
+  });
+
+  it("omits the category separator when the 'Browsers' row is the menu's only entry", () => {
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [
+        { label: "Browsers", group: "simple", items: [{ label: "Firefox", command: ["firefox"] }] },
+      ],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    // [0] toolbar, [1] the row itself — no separator to skip past.
+    expect(menu.items).toHaveLength(2);
+    expect(menu.items[1]).not.toBeInstanceOf(FakePopupSeparatorMenuItem);
   });
 
   it("shows the browser's icon before the separator label when the entry has one", () => {
@@ -526,8 +593,9 @@ describe("fillMenu", () => {
       showDefaultBrowserEdit: true,
       pickerOpen: false,
     });
-    // [0] toolbar, [1] category separator, [2] the "Browsers" row itself — no picker rows.
-    expect(closedMenu.items).toHaveLength(3);
+    // [0] toolbar, [1] the "Browsers" row itself — no separator (it's the
+    // menu's only entry), no picker rows.
+    expect(closedMenu.items).toHaveLength(2);
 
     const onSetDefaultBrowser = vi.fn();
     const openMenu = makeFakeMenu();
@@ -544,8 +612,8 @@ describe("fillMenu", () => {
       onSetDefaultBrowser,
     });
     // [0] toolbar, [1] picker row (Chromium's pkg-less item is skipped),
-    // [2] category separator, [3] the "Browsers" row itself.
-    expect(openMenu.items).toHaveLength(4);
+    // [2] the "Browsers" row itself — no separator, it's the menu's only entry.
+    expect(openMenu.items).toHaveLength(3);
     const pickerItem = openMenu.items[1] as FakePopupMenuItem;
     expect(pickerItem.label.text).toBe("Firefox");
     pickerItem.emit("activate");
