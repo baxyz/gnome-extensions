@@ -7,7 +7,7 @@ import { findDonutBrowser } from "../donut-browser";
 import { isEmpty } from "@helpers4/array";
 import { noop } from "@helpers4/function";
 import { buildCategorySeparator } from "./shared";
-import { buildDefaultBrowserPicker, buildToolbar } from "./toolbar";
+import { buildDefaultBrowserItem, buildToolbar } from "./toolbar";
 import { buildProfileMenuItem, buildSimpleBrowserRow } from "./browser-rows";
 
 /**
@@ -24,8 +24,6 @@ export function fillMenu({
   defaultBrowser,
   showToolbar = true,
   showDefaultBrowserEdit = true,
-  pickerOpen = false,
-  onTogglePicker = noop,
   onSetDefaultBrowser = noop,
   showDonutBrowser = false,
   donutLaunching = false,
@@ -40,9 +38,6 @@ export function fillMenu({
   defaultBrowser?: DefaultBrowserInfo | null;
   showToolbar?: boolean;
   showDefaultBrowserEdit?: boolean;
-  /** Whether the default-browser picker (opened via the toolbar's caret) is currently expanded. */
-  pickerOpen?: boolean;
-  onTogglePicker?: () => void;
   onSetDefaultBrowser?: (pkg: ResolvedBrowserPkg) => void;
   showDonutBrowser?: boolean;
   /** Whether a Donut profile launch triggered by a previous click is still in flight. */
@@ -69,28 +64,28 @@ export function fillMenu({
   // there's no in-menu way back into preferences (the GNOME Extensions app
   // still works). A deliberate tradeoff, not an oversight.
   if (showToolbar) {
+    if (defaultBrowser) {
+      menu.addMenuItem(
+        buildDefaultBrowserItem({
+          title,
+          defaultBrowser,
+          showDefaultBrowserEdit,
+          browsers,
+          onSetDefaultBrowser,
+          notify,
+          closeMenu,
+        }),
+      );
+    }
     menu.addMenuItem(
       buildToolbar({
-        title,
-        defaultBrowser,
-        showDefaultBrowserEdit,
-        pickerOpen,
-        onTogglePicker,
         showDonutButton: donutBrowser !== null,
         donutLaunching,
         onLaunchDonut: () => onLaunchDonut(donutBrowser!),
-        notify,
         onRefresh,
         onSettings,
-        closeMenu,
       }),
     );
-    // The picker's rows come from the same list — see `browsers` above.
-    if (showDefaultBrowserEdit && pickerOpen) {
-      for (const item of buildDefaultBrowserPicker(browsers, onSetDefaultBrowser)) {
-        menu.addMenuItem(item);
-      }
-    }
   }
 
   // Handle empty state. No separator above this — there's nothing here to
