@@ -9,7 +9,7 @@ import {
 import type { BrowserPkg, ResolvedBrowserEntry } from "../taxonomy";
 import type { FirefoxOptions } from "../taxonomy";
 import { SpaceType } from "../taxonomy/space-type.enum";
-import { buildBaseCommand, filterAvailable, filterPresent, resolveDesktopIcon } from "../internal";
+import { buildBaseCommand, filterAvailable, resolveDesktopIcon } from "../internal";
 import { resolveChromiumBrowsers } from "./chromium";
 import { resolveFalkonBrowsers } from "./falkon";
 import { resolveFirefoxBrowsers } from "./firefox";
@@ -95,8 +95,15 @@ function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
   const withProfilesConfigs = settings.showProfiledBrowsers
     ? PROFILED_FAMILIES.filter((f) => f.enabled(settings)).flatMap((f) => f.configs)
     : [];
+  // filterAvailable, not filterPresent: this row's whole point (see the
+  // docstring above) is "installed, regardless of whether it has profiles"
+  // — filterPresent additionally requires the profile path (profiles.ini,
+  // Local State, ...) to already exist, which a freshly-installed,
+  // never-launched browser hasn't created yet. That silently dropped it
+  // from this row while the very same package still showed up correctly as
+  // the OS default browser (a completely different, profile-less lookup).
   const available = [
-    ...filterPresent(withProfilesConfigs),
+    ...filterAvailable(withProfilesConfigs),
     ...(settings.showSimpleBrowsers ? filterAvailable(SIMPLE_BROWSERS) : []),
   ];
   if (isEmpty(available)) return [];

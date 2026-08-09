@@ -876,6 +876,26 @@ describe("Browsers row (getBrowserEntries)", () => {
     expect(entries.find((e) => e.label === "Browsers")).toBeUndefined();
   });
 
+  it("still lists an installed-but-never-launched profiled browser in the Browsers row", async () => {
+    // No profiles.ini set up at all — resolveBrowsersRow must list Firefox by
+    // package presence alone (filterAvailable), not by requiring its profile
+    // file to already exist (filterPresent) the way its detailed section
+    // does. A freshly-installed browser that's never been launched has no
+    // such file yet, but is still very much "installed".
+    const entries = await getBrowserEntries({
+      showFirefoxFamily: true,
+      showChromeFamily: false,
+      showSimpleBrowsers: false,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: false,
+      enabledSpaces: new Set(),
+      profileGroupsMode: "off",
+    });
+
+    const browsersRow = entries.find((e) => e.label === "Browsers");
+    expect(browsersRow?.items.map((i) => i.label)).toContain("Firefox (classic)");
+  });
+
   it("combines firefox-family and profile-less browsers into one sorted 'Browsers' entry", async () => {
     setFile(
       "/home/user/.mozilla/firefox/profiles.ini",
