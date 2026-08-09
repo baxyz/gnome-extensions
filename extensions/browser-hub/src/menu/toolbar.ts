@@ -1,8 +1,13 @@
 import St from "gi://St";
 import type Gio from "gi://Gio";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
-import { PopupMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
+import {
+  PopupMenuItem,
+  PopupSeparatorMenuItem,
+  PopupSubMenuMenuItem,
+} from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { Spinner } from "resource:///org/gnome/shell/ui/animation.js";
+import { isEmpty } from "@helpers4/array";
 import { PackageManager } from "../taxonomy";
 import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "../taxonomy";
 import type { DefaultBrowserInfo } from "../default-browser";
@@ -42,22 +47,16 @@ function makeDonutButton(isLaunching: boolean, onLaunch: () => void): St.Button 
 // not a smaller text-only one bolted on beside it.
 const DEFAULT_BROWSER_ICON_SIZE = 24;
 
-function makeDefaultBrowserGroup(
+/** Plain, non-expandable default-browser button — used when showDefaultBrowserEdit is off. */
+function buildDefaultBrowserRow(
   name: string,
   icon: Gio.Icon | undefined,
   onLaunch: () => void,
-  onTogglePicker: () => void,
-  showPicker: boolean,
-  pickerOpen: boolean,
-): St.BoxLayout {
-  const group = new St.BoxLayout({ style_class: "browser-hub-btn-group" });
-
+): St.Button {
   const launchBtn = new St.Button({
     can_focus: true,
     accessible_name: name,
-    style_class: showPicker
-      ? "button browser-hub-default-browser-btn"
-      : "button browser-hub-default-browser-btn browser-hub-default-browser-btn--solo",
+    style_class: "button browser-hub-default-browser-btn",
   });
   const content = new St.BoxLayout({ style_class: "browser-hub-default-browser-btn-content" });
   content.add_child(
@@ -70,44 +69,14 @@ function makeDefaultBrowserGroup(
   launchBtn.set_child(content);
   tooltip(launchBtn, name);
   launchBtn.connect("clicked", onLaunch);
-  group.add_child(launchBtn);
-
-  if (showPicker) {
-    const pickerBtn = new St.Button({
-      can_focus: true,
-      accessible_name: "Choose default browser",
-      style_class: "button browser-hub-change-default-btn",
-    });
-    // pan-down/pan-up (not the "open"/"checked" pseudo-classes real
-    // PopupSubMenuMenuItem arrows use) since this isn't a real PopupSubMenu —
-    // see buildDefaultBrowserPicker's own comment for why.
-    pickerBtn.set_child(
-      new St.Icon({
-        icon_name: pickerOpen ? "pan-up-symbolic" : "pan-down-symbolic",
-        icon_size: 12,
-      }),
-    );
-    tooltip(pickerBtn, "Choose default browser");
-    pickerBtn.connect("clicked", onTogglePicker);
-    group.add_child(pickerBtn);
-  }
-
-  return group;
+  return launchBtn;
 }
 
 /**
- * Rows for picking a new default browser, shown directly under the toolbar
- * when its caret is toggled open. A real PopupSubMenu (the class backing
- * GNOME Shell's own expandable submenus, e.g. PopupSubMenuMenuItem) would
- * give this a slide animation for free, but it re-parents its actor onto
- * the *top-level* menu via _setParent — awkward to splice in for just one
- * row of a non-submenu toolbar item without risking breaking that item's own
- * layout. Plain conditional PopupMenuItems, added/removed by fillMenu's
- * existing removeAll()-and-rebuild on every redraw, get the same "list
- * appears right under the toolbar" result with no animation, for much less
- * risk of mis-wiring internals nothing here can visually test.
+ * Rows for picking a new default browser: one per installed browser,
+ * activating onPick with its package.
  */
-export function buildDefaultBrowserPicker(
+function buildDefaultBrowserPickerRows(
   browsers: ResolvedBrowserItem[],
   onPick: (pkg: ResolvedBrowserPkg) => void,
 ): PopupMenuItem[] {
@@ -121,7 +90,6 @@ export function buildDefaultBrowserPicker(
       .filter((b) => b.pkg !== undefined && b.pkg.manager !== PackageManager.Snap)
       .map((b) => {
         const item = new PopupMenuItem(b.label);
-        item.add_style_class_name("browser-hub-default-browser-picker-item");
         if (b.icon) {
           const iconWidget = new St.Icon({ ...iconProps(b.icon), icon_size: 16 });
           item.insert_child_below(iconWidget, item.label);
@@ -135,53 +103,113 @@ export function buildDefaultBrowserPicker(
 }
 
 /**
- * Builds the toolbar row with default browser, spacer, refresh button, and settings button.
+ * A real GNOME PopupSubMenuMenuItem for the default browser: clicking the
+ * row expands a "Launch <name>" action plus every other installed browser to
+ * switch to. Unlike a plain button, PopupSubMenuMenuItem's own activate()
+ * unconditionally toggles the submenu open/closed — there's no way to make
+ * its main row do something else — so "Launch" lives as the submenu's first
+ * item instead of being the row's own click target the way the plain
+ * (non-editable) button above is.
  */
-export function buildToolbar({
+function buildDefaultBrowserSubMenuItem(
+  defaultBrowser: DefaultBrowserInfo,
+  icon: Gio.Icon | undefined,
+  browsers: ResolvedBrowserItem[],
+  onLaunch: () => void,
+  onSetDefaultBrowser: (pkg: ResolvedBrowserPkg) => void,
+  closeMenu: () => void,
+): PopupSubMenuMenuItem {
+  const item = new PopupSubMenuMenuItem(defaultBrowser.name, true);
+  if (item.icon) Object.assign(item.icon, iconProps(icon ?? "web-browser-symbolic"));
+
+  const launchItem = new PopupMenuItem(`Launch ${defaultBrowser.name}`);
+  launchItem.connect("activate", () => {
+    onLaunch();
+    closeMenu();
+  });
+  item.menu.addMenuItem(launchItem);
+
+  const pickerRows = buildDefaultBrowserPickerRows(browsers, onSetDefaultBrowser);
+  if (!isEmpty(pickerRows)) {
+    item.menu.addMenuItem(new PopupSeparatorMenuItem());
+    for (const row of pickerRows) item.menu.addMenuItem(row);
+  }
+
+  return item;
+}
+
+/**
+ * Builds the default-browser row: a plain launch button, or — when
+ * showDefaultBrowserEdit is on — a real expandable PopupSubMenuMenuItem
+ * offering "Launch" plus every other installed browser to switch to. A
+ * separate row from buildToolbar below: PopupSubMenuMenuItem manages its own
+ * open/closed state and slide animation as a top-level menu row, which isn't
+ * something that can be embedded as one child among siblings inside another
+ * row's horizontal box.
+ */
+export function buildDefaultBrowserItem({
   title,
   defaultBrowser,
   showDefaultBrowserEdit,
-  pickerOpen,
-  onTogglePicker,
-  showDonutButton,
-  donutLaunching,
-  onLaunchDonut,
+  browsers,
+  onSetDefaultBrowser,
   notify,
-  onRefresh,
-  onSettings,
   closeMenu,
 }: {
   title: string;
-  defaultBrowser?: DefaultBrowserInfo | null;
+  defaultBrowser: DefaultBrowserInfo;
   showDefaultBrowserEdit: boolean;
-  pickerOpen: boolean;
-  onTogglePicker: () => void;
+  browsers: ResolvedBrowserItem[];
+  onSetDefaultBrowser: (pkg: ResolvedBrowserPkg) => void;
+  notify: typeof Main.notify;
+  closeMenu: () => void;
+}): PopupMenuItem | PopupSubMenuMenuItem {
+  const cmd = defaultBrowser.command;
+  const icon = resolveDesktopIcon(defaultBrowser.pkg);
+  const onLaunch = () => launchBrowser({ command: cmd, title, notify });
+
+  if (showDefaultBrowserEdit) {
+    return buildDefaultBrowserSubMenuItem(
+      defaultBrowser,
+      icon,
+      browsers,
+      onLaunch,
+      onSetDefaultBrowser,
+      closeMenu,
+    );
+  }
+
+  // Plain St.Button isn't itself a valid addMenuItem() argument — hosted in
+  // the same kind of non-reactive row buildToolbar uses for its own icon row.
+  const row = makeIconRow();
+  row.add_child(
+    buildDefaultBrowserRow(defaultBrowser.name, icon, () => {
+      onLaunch();
+      closeMenu();
+    }),
+  );
+  return row;
+}
+
+/**
+ * Builds the toolbar row with spacer, Donut button, refresh button, and
+ * settings button — the default browser gets its own row, see
+ * buildDefaultBrowserItem above.
+ */
+export function buildToolbar({
+  showDonutButton,
+  donutLaunching,
+  onLaunchDonut,
+  onRefresh,
+  onSettings,
+}: {
   showDonutButton: boolean;
   donutLaunching: boolean;
   onLaunchDonut: () => void;
-  notify: typeof Main.notify;
   onRefresh: () => void;
   onSettings: () => void;
-  closeMenu: () => void;
 }): PopupMenuItem {
   const toolbar = makeIconRow();
-
-  if (defaultBrowser) {
-    const cmd = defaultBrowser.command;
-    toolbar.add_child(
-      makeDefaultBrowserGroup(
-        defaultBrowser.name,
-        resolveDesktopIcon(defaultBrowser.pkg),
-        () => {
-          launchBrowser({ command: cmd, title, notify });
-          closeMenu();
-        },
-        onTogglePicker,
-        showDefaultBrowserEdit,
-        pickerOpen,
-      ),
-    );
-  }
 
   toolbar.add_child(new St.Widget({ x_expand: true }));
   // Only shown when a Donut-eligible browser was actually found (see

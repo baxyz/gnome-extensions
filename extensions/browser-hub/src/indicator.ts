@@ -50,11 +50,6 @@ export class BrowserProfilesIndicator extends Button {
   private _menuOpenStateId: number | null = null;
   private _menuSignals!: MenuSignals;
   private _panelIcon: St.Icon;
-  // Whether the default-browser picker (toolbar caret) is expanded. Reset to
-  // closed on every menu open (see the open-state-changed handler below) —
-  // fillMenu() rebuilds the whole menu from scratch on every redraw anyway,
-  // so this is the only place this state actually lives.
-  private _defaultBrowserPickerOpen = false;
   // Guards against a second Donut launch starting while one is already in
   // flight. Deliberately kept here rather than on the toolbar button itself —
   // fillMenu() tears down and rebuilds the whole menu (including that
@@ -80,8 +75,7 @@ export class BrowserProfilesIndicator extends Button {
     // association can change externally (gnome-control-center, xdg-settings)
     // between menu opens. Bust the cache on every menu open so the toolbar
     // never shows a default browser that's gone stale since the last time it
-    // was shown. Also collapses the default-browser picker, if it was left
-    // open from a previous visit.
+    // was shown.
     // Disconnected in this.destroy() below, not via a "destroy" signal
     // handler — that indirection (connect to the signal now, disconnect
     // whenever it happens to fire later) isn't statically traceable back to
@@ -91,7 +85,6 @@ export class BrowserProfilesIndicator extends Button {
     this._menuOpenStateId = this._menuSignals.connect("open-state-changed", (_menu, isOpen) => {
       if (isOpen) {
         clearDefaultBrowserCache();
-        this._defaultBrowserPickerOpen = false;
         this.redrawMenu();
       }
     });
@@ -157,13 +150,7 @@ export class BrowserProfilesIndicator extends Button {
       defaultBrowser,
       showToolbar,
       showDefaultBrowserEdit,
-      pickerOpen: this._defaultBrowserPickerOpen,
-      onTogglePicker: () => {
-        this._defaultBrowserPickerOpen = !this._defaultBrowserPickerOpen;
-        this.redrawMenu();
-      },
       onSetDefaultBrowser: (pkg: ResolvedBrowserPkg) => {
-        this._defaultBrowserPickerOpen = false;
         if (!setDefaultBrowser(pkg)) {
           Main.notify(this._title, "Couldn't set that browser as default");
         }
