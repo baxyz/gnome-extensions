@@ -196,6 +196,15 @@ beforeEach(() => {
 });
 
 describe("fillMenu", () => {
+  it("shows a loading row (not the empty-state message) when entries is null", () => {
+    const menu = makeFakeMenu();
+    fillMenu({ title: "t", menu, entries: null, notify, onSettings: noop, onRefresh: noop });
+
+    const row = menu.items[1] as FakePopupMenuItem; // [0] toolbar, [1] this row
+    expect(row.label.text).toBe("Loading browsers…");
+    expect(row.children[0]).toBeInstanceOf(FakeSpinner);
+  });
+
   it("shows an empty-state message with no separator when entries is empty", () => {
     const menu = makeFakeMenu();
     fillMenu({ title: "t", menu, entries: [], notify, onSettings: noop, onRefresh: noop });

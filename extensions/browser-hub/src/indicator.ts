@@ -46,7 +46,8 @@ export class BrowserProfilesIndicator extends Button {
   // Bumped on every refreshEntries() call so a slow, older scan can't clobber
   // the menu after a newer one has already resolved (out-of-order settling).
   private _refreshSeq = 0;
-  private _lastEntries: ResolvedBrowserEntry[] = [];
+  // null: the browser scan hasn't resolved yet (menu shows a loading row).
+  private _lastEntries: ResolvedBrowserEntry[] | null = null;
   private _menuOpenStateId: number | null = null;
   private _menuSignals!: MenuSignals;
   private _menuIsOpen = false;
@@ -114,6 +115,11 @@ export class BrowserProfilesIndicator extends Button {
   refreshEntries(): void {
     if (!this._alive) return;
     const seq = ++this._refreshSeq;
+    // Shows the loading row immediately — matters both at construction (the
+    // menu must never be empty, or GNOME Shell refuses to open it at all)
+    // and on a manual refresh, while the new scan is still running.
+    this._lastEntries = null;
+    this._draw();
     getBrowserEntries(this._readSettings())
       .then((entries) => {
         if (!this._alive || seq !== this._refreshSeq) return;
@@ -135,18 +141,14 @@ export class BrowserProfilesIndicator extends Button {
     const defaultBrowser = getDefaultBrowser();
     this._updatePanelIcon(showDefaultBrowserPanelIcon, defaultBrowser);
 
-    // fillMenu() builds every row and icon in the popup from scratch (~50
-    // browsers) — pointless work while the menu is closed and none of it is
-    // on screen. The open-state-changed handler above already calls
-    // redrawMenu() the moment it opens, so this only skips the redundant
-    // build that would otherwise happen right after every enable()/refresh,
-    // before the user has ever looked at the menu.
-    if (!this._menuIsOpen) return;
-
     fillMenu({
       title: this._title,
       menu: this.menu,
-      entries: this._lastEntries,
+      // Only the real, icon-heavy entries list (~50 browsers) is withheld
+      // while the menu is closed — showing a loading row instead — since
+      // nothing would be on screen to justify building it. fillMenu() itself
+      // stays cheap either way, so there's no need to skip calling it.
+      entries: this._menuIsOpen ? this._lastEntries : null,
       notify: Main.notify,
       onSettings: this._onSettings,
       onRefresh: () => {
