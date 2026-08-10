@@ -1,5 +1,6 @@
 export {
   decoder,
+  errorMessage,
   getDesktopAppInfo,
   listDirEntries,
   logIfUnexpected,

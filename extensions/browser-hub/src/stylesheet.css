@@ -18,6 +18,11 @@
   margin-right: 0.3em;
 }
 
+/* Banner for what failed during the last scan (see menu/shared.ts's buildErrorRow) */
+.browser-hub-error-label {
+  color: #f57900;
+}
+
 /* Default browser button, shown when showDefaultBrowserEdit is off (see
    toolbar.ts's buildDefaultBrowserRow) — same padding as
    .browser-hub-browser-btn (the "Browsers" row's square buttons) so both

@@ -60,6 +60,15 @@ export function buildLoadingRow(): PopupMenuItem {
   return row;
 }
 
+/** Short, non-selectable banner for what failed during the last scan — see resolve-all.ts's `errors`. */
+export function buildErrorRow(errors: string[]): PopupMenuItem {
+  const row = new PopupMenuItem(`Problem: couldn't list ${errors.join(", ")}`, { reactive: false });
+  row.label.style_class = "browser-hub-error-label";
+  const icon = new St.Icon({ icon_name: "dialog-warning-symbolic", icon_size: 16 });
+  row.insert_child_below(icon, row.label);
+  return row;
+}
+
 /** Builds a category separator, with the browser's own icon before the label when known. */
 export function buildCategorySeparator(
   label: string,

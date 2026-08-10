@@ -852,17 +852,16 @@ describe("Browsers row (getBrowserEntries)", () => {
   // real flatpak install dirs via GLib.file_test, which the virtual fs mock
   // always reports as absent unless explicitly set up.
 
-  it("still returns already-resolved family sections even if the Browsers row itself throws", async () => {
+  it("isolates one failing browser within the Browsers row instead of discarding the whole row", async () => {
     setFile(
       "/home/user/.mozilla/firefox/profiles.ini",
       "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
     );
 
     // showSimpleBrowsers pulls GNOME Web (Epiphany) into resolveBrowsersRow,
-    // where its icon lookup is rigged to throw (see the Gio mock above) —
-    // simulating a bug reachable only from the row's own unsettled .map().
+    // where its icon lookup is rigged to throw (see the Gio mock above).
     epiphanyIconThrows = true;
-    const entries = await getBrowserEntries({
+    const { entries, errors } = await getBrowserEntries({
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: true,
@@ -873,7 +872,11 @@ describe("Browsers row (getBrowserEntries)", () => {
     });
 
     expect(entries.some((e) => e.label === "Firefox (classic)")).toBe(true);
-    expect(entries.find((e) => e.label === "Browsers")).toBeUndefined();
+    const browsersRow = entries.find((e) => e.label === "Browsers");
+    const labels = browsersRow?.items.map((i) => i.label) ?? [];
+    expect(labels).not.toContain("GNOME Web");
+    expect(labels.length).toBeGreaterThan(0);
+    expect(errors.some((e) => e.includes("GNOME Web"))).toBe(true);
   });
 
   it("still lists an installed-but-never-launched profiled browser in the Browsers row", async () => {
@@ -882,7 +885,7 @@ describe("Browsers row (getBrowserEntries)", () => {
     // file to already exist (filterPresent) the way its detailed section
     // does. A freshly-installed browser that's never been launched has no
     // such file yet, but is still very much "installed".
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: false,
@@ -902,7 +905,7 @@ describe("Browsers row (getBrowserEntries)", () => {
       "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
     );
 
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: true,
@@ -928,7 +931,7 @@ describe("Browsers row (getBrowserEntries)", () => {
       "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
     );
 
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: false,
@@ -950,7 +953,7 @@ describe("Browsers row (getBrowserEntries)", () => {
       "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
     );
 
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: false,
       showChromeFamily: false,
       showSimpleBrowsers: true,
@@ -978,7 +981,7 @@ describe("getBrowserEntries", () => {
     // family despite the flags being off, readTextFileAsync would throw on
     // a path with no matching virtual filesystem entry and the settle()
     // call would report it as rejected, still leaving entries === [].
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: false,
       showChromeFamily: false,
       showSimpleBrowsers: false,
@@ -997,7 +1000,7 @@ describe("getBrowserEntries", () => {
       "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
     );
 
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: false,
@@ -1016,7 +1019,7 @@ describe("getBrowserEntries", () => {
       "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
     );
 
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: false,
@@ -1037,7 +1040,7 @@ describe("getBrowserEntries", () => {
       "[Profile0]\nName=default\nIsRelative=1\nPath=abc.default\nDefault=1",
     );
 
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: false,
@@ -1061,7 +1064,7 @@ describe("getBrowserEntries", () => {
         "[Profile1]\nName=work\nIsRelative=1\nPath=abc.work\nDefault=0",
     );
 
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: false,
@@ -1088,7 +1091,7 @@ describe("getBrowserEntries", () => {
       JSON.stringify({ spaces: [{ uuid: "u1", name: "Work", icon: "briefcase" }] }),
     );
 
-    const entries = await getBrowserEntries({
+    const { entries } = await getBrowserEntries({
       showFirefoxFamily: true,
       showChromeFamily: false,
       showSimpleBrowsers: false,

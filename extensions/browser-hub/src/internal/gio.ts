@@ -13,6 +13,11 @@ Gio._promisify(Gio.File.prototype, "enumerate_children_async", "enumerate_childr
 
 export const decoder = new TextDecoder();
 
+/** `e.message` for a real Error, else its string form — for display or logging. */
+export function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
 /**
  * Rethrows `e` with `label` prepended to its message and the original error
  * preserved as `.cause` — used to tag a per-browser resolution failure with
@@ -21,7 +26,7 @@ export const decoder = new TextDecoder();
  * with no way to tell which one.
  */
 export function tagError(label: string, e: unknown): never {
-  throw new Error(`${label}: ${e instanceof Error ? e.message : String(e)}`, { cause: e });
+  throw new Error(`${label}: ${errorMessage(e)}`, { cause: e });
 }
 
 function matchesIOError(e: unknown, code: number): boolean {

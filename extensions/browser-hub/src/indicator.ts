@@ -48,6 +48,10 @@ export class BrowserProfilesIndicator extends Button {
   private _refreshSeq = 0;
   // null: the browser scan hasn't resolved yet (menu shows a loading row).
   private _lastEntries: ResolvedBrowserEntry[] | null = null;
+  // Short messages for whatever failed during the last scan (e.g. a specific
+  // family, or one browser within the Browsers row) — shown as a banner,
+  // not just logged, so a partial failure isn't invisible to the user.
+  private _lastErrors: string[] = [];
   private _menuOpenStateId: number | null = null;
   private _menuSignals!: MenuSignals;
   private _menuIsOpen = false;
@@ -119,11 +123,13 @@ export class BrowserProfilesIndicator extends Button {
     // menu must never be empty, or GNOME Shell refuses to open it at all)
     // and on a manual refresh, while the new scan is still running.
     this._lastEntries = null;
+    this._lastErrors = [];
     this._draw();
     getBrowserEntries(this._readSettings())
-      .then((entries) => {
+      .then(({ entries, errors }) => {
         if (!this._alive || seq !== this._refreshSeq) return;
         this._lastEntries = entries;
+        this._lastErrors = errors;
         this._draw();
       })
       .catch((e: unknown) => logError(e as object, "[browser-hub] refreshEntries failed"));
@@ -149,6 +155,7 @@ export class BrowserProfilesIndicator extends Button {
       // nothing would be on screen to justify building it. fillMenu() itself
       // stays cheap either way, so there's no need to skip calling it.
       entries: this._menuIsOpen ? this._lastEntries : null,
+      errors: this._menuIsOpen ? this._lastErrors : [],
       notify: Main.notify,
       onSettings: this._onSettings,
       onRefresh: () => {

@@ -12,6 +12,7 @@ import { SpaceType } from "../taxonomy/space-type.enum";
 import {
   buildBaseCommand,
   compareByDefault,
+  errorMessage,
   filterPresent,
   logIfUnexpected,
   readTextFileAsync,
@@ -244,9 +245,11 @@ const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
  * Zen Browser workspaces are included when enabledSpaces has ZenWorkspaces and
  * the browser config has spaceType === SpaceType.ZenWorkspaces.
  */
+/** `errors` collects a short message per failed browser — for a menu banner, not just the log. */
 export async function resolveFirefoxBrowsers(
   browsers: FirefoxBrowserConfig[],
   { enabledSpaces, profileGroupsMode }: FirefoxOptions = DEFAULT_FIREFOX_OPTIONS,
+  errors: string[] = [],
 ): Promise<ResolvedBrowserEntry[]> {
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers).map(async (b) => {
@@ -297,6 +300,7 @@ export async function resolveFirefoxBrowsers(
     }),
   );
   for (const reason of rejected) {
+    errors.push(errorMessage(reason));
     logError(reason as object, "[browser-hub] a Firefox-family browser failed to resolve");
   }
   return fulfilled.filter((e) => e.items.length > 0);

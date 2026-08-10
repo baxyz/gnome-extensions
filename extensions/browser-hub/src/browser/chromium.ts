@@ -5,6 +5,7 @@ import type { ChromiumBrowserConfig, ColorPresentation, ResolvedBrowserEntry } f
 import {
   buildBaseCommand,
   compareByDefault,
+  errorMessage,
   filterPresent,
   logIfUnexpected,
   readTextFileAsync,
@@ -58,8 +59,10 @@ function readProfiles(path: string): Promise<ChromiumProfile[]> {
     });
 }
 
+/** `errors` collects a short message per failed browser — for a menu banner, not just the log. */
 export async function resolveChromiumBrowsers(
   browsers: ChromiumBrowserConfig[],
+  errors: string[] = [],
 ): Promise<ResolvedBrowserEntry[]> {
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers).map(async (b) => {
@@ -80,6 +83,7 @@ export async function resolveChromiumBrowsers(
     }),
   );
   for (const reason of rejected) {
+    errors.push(errorMessage(reason));
     logError(reason as object, "[browser-hub] a Chromium-family browser failed to resolve");
   }
   return fulfilled.filter((e) => e.items.length > 0);

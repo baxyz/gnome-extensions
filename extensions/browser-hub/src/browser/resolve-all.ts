@@ -9,7 +9,7 @@ import {
 import type { BrowserPkg, ResolvedBrowserEntry } from "../taxonomy";
 import type { FirefoxOptions } from "../taxonomy";
 import { SpaceType } from "../taxonomy/space-type.enum";
-import { buildBaseCommand, filterAvailable, resolveDesktopIcon } from "../internal";
+import { buildBaseCommand, errorMessage, filterAvailable, resolveDesktopIcon } from "../internal";
 import { resolveChromiumBrowsers } from "./chromium";
 import { resolveFalkonBrowsers } from "./falkon";
 import { resolveFirefoxBrowsers } from "./firefox";
@@ -44,24 +44,25 @@ const ALL_ON: BrowserSettings = {
 type ProfiledFamily = {
   enabled: (settings: BrowserSettings) => boolean;
   configs: readonly { label: string; path: string; pkg: BrowserPkg }[];
-  resolve: (settings: BrowserSettings) => Promise<ResolvedBrowserEntry[]>;
+  /** `errors` collects a short message per failed browser — for a menu banner, not just the log. */
+  resolve: (settings: BrowserSettings, errors: string[]) => Promise<ResolvedBrowserEntry[]>;
 };
 
 const PROFILED_FAMILIES: readonly ProfiledFamily[] = [
   {
     enabled: (s) => s.showFirefoxFamily,
     configs: FIREFOX_BROWSERS,
-    resolve: (s) => resolveFirefoxBrowsers(FIREFOX_BROWSERS, s),
+    resolve: (s, errors) => resolveFirefoxBrowsers(FIREFOX_BROWSERS, s, errors),
   },
   {
     enabled: (s) => s.showChromeFamily,
     configs: CHROMIUM_BROWSERS,
-    resolve: () => resolveChromiumBrowsers(CHROMIUM_BROWSERS),
+    resolve: (_s, errors) => resolveChromiumBrowsers(CHROMIUM_BROWSERS, errors),
   },
   {
     enabled: (s) => s.showChromeFamily,
     configs: FALKON_BROWSERS,
-    resolve: () => resolveFalkonBrowsers(FALKON_BROWSERS),
+    resolve: (_s, errors) => resolveFalkonBrowsers(FALKON_BROWSERS, errors),
   },
 ];
 
@@ -91,7 +92,7 @@ function isSingleProfileEntry(entry: ResolvedBrowserEntry): boolean {
  * getBrowserEntries) — this row is a flat, uniform "just launch it" list
  * alongside those, gated by the same family toggles plus showProfiledBrowsers.
  */
-function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
+function resolveBrowsersRow(settings: BrowserSettings, errors: string[]): ResolvedBrowserEntry[] {
   const withProfilesConfigs = settings.showProfiledBrowsers
     ? PROFILED_FAMILIES.filter((f) => f.enabled(settings)).flatMap((f) => f.configs)
     : [];
@@ -104,30 +105,48 @@ function resolveBrowsersRow(settings: BrowserSettings): ResolvedBrowserEntry[] {
   ];
   if (isEmpty(available)) return [];
 
+  // flatMap + try/catch per browser, not a plain .map(): one bad icon lookup
+  // shouldn't cost every other browser its spot in this row.
   const items = available
-    .map((b) => ({
-      label: b.label,
-      command: buildBaseCommand(b.pkg),
-      icon: resolveDesktopIcon(b.pkg),
-      pkg: b.pkg,
-    }))
+    .flatMap((b) => {
+      try {
+        return [
+          {
+            label: b.label,
+            command: buildBaseCommand(b.pkg),
+            icon: resolveDesktopIcon(b.pkg),
+            pkg: b.pkg,
+          },
+        ];
+      } catch (e) {
+        errors.push(`${b.label}: ${errorMessage(e)}`);
+        logError(e as object, `[browser-hub] ${b.label} failed to resolve for the Browsers row`);
+        return [];
+      }
+    })
     .sort(createSortByStringFn("label"));
-  return [{ label: "Browsers", group: "simple", items }];
+  return isEmpty(items) ? [] : [{ label: "Browsers", group: "simple", items }];
 }
 
 /**
  * Resolves all enabled browser entries based on the provided settings: each
  * family's detailed section (profiles, colors, spaces) plus the flat
- * "Browsers" quick-launch row. If a family resolver fails, its error is
- * logged but other families' entries are still returned.
+ * "Browsers" quick-launch row. A family resolver failing outright (rather
+ * than isolating its own per-browser failures, which it already does) or
+ * the Browsers row itself failing are both logged and reflected in `errors`
+ * — everything else still resolves and renders normally.
  */
 export async function getBrowserEntries(
   settings: BrowserSettings = ALL_ON,
-): Promise<ResolvedBrowserEntry[]> {
+): Promise<{ entries: ResolvedBrowserEntry[]; errors: string[] }> {
+  const errors: string[] = [];
   const { fulfilled, rejected } = await settle(
-    PROFILED_FAMILIES.map((f) => (f.enabled(settings) ? f.resolve(settings) : Promise.resolve([]))),
+    PROFILED_FAMILIES.map((f) =>
+      f.enabled(settings) ? f.resolve(settings, errors) : Promise.resolve([]),
+    ),
   );
   for (const reason of rejected) {
+    errors.push(errorMessage(reason));
     logError(reason as object, "[browser-hub] a browser family failed to resolve");
   }
 
@@ -142,10 +161,11 @@ export async function getBrowserEntries(
   // not discard the family sections already resolved just above.
   let browsersRow: ResolvedBrowserEntry[] = [];
   try {
-    browsersRow = resolveBrowsersRow(settings);
+    browsersRow = resolveBrowsersRow(settings, errors);
   } catch (e: unknown) {
+    errors.push("the Browsers row");
     logError(e as object, "[browser-hub] the Browsers row failed to resolve");
   }
 
-  return [...detailedEntries, ...browsersRow];
+  return { entries: [...detailedEntries, ...browsersRow], errors };
 }

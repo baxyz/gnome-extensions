@@ -6,7 +6,7 @@ import type { DefaultBrowserInfo } from "../default-browser";
 import { findDonutBrowser } from "../donut-browser";
 import { isEmpty } from "@helpers4/array";
 import { noop } from "@helpers4/function";
-import { buildCategorySeparator, buildLoadingRow } from "./shared";
+import { buildCategorySeparator, buildErrorRow, buildLoadingRow } from "./shared";
 import { buildDefaultBrowserItem, buildToolbar } from "./toolbar";
 import { buildProfileMenuItem, buildSimpleBrowserRow } from "./browser-rows";
 
@@ -18,6 +18,7 @@ export function fillMenu({
   title,
   menu,
   entries,
+  errors = [],
   notify,
   onSettings,
   onRefresh,
@@ -33,6 +34,8 @@ export function fillMenu({
   menu: PopupMenu | PopupDummyMenu;
   /** null means the browser scan hasn't resolved yet — shows a loading row instead. */
   entries: ResolvedBrowserEntry[] | null;
+  /** Short messages for whatever failed during the scan — shown as a banner. */
+  errors?: string[];
   notify: typeof Main.notify;
   onSettings: () => void;
   onRefresh: () => void;
@@ -74,6 +77,9 @@ export function fillMenu({
         onSettings,
       }),
     );
+    if (!isEmpty(errors)) {
+      menu.addMenuItem(buildErrorRow(errors));
+    }
     // After the toolbar, not before: as a real PopupSubMenuMenuItem it reads
     // as its own section rather than a compact toolbar control, closer to a
     // preferences category than a quick-action row.
@@ -117,18 +123,29 @@ export function fillMenu({
   // label names the family the profile rows below actually belong to.
   const soloSimpleRow = entries.length === 1 && entries[0].group === "simple";
   for (const entry of entries) {
-    if (!soloSimpleRow) {
-      menu.addMenuItem(buildCategorySeparator(entry.label, entry.icon));
-    }
-
-    if (entry.group === "simple") {
-      // Simple browsers (no profiles) - show as icon buttons in a row
-      menu.addMenuItem(buildSimpleBrowserRow({ title, items: entry.items, notify, closeMenu }));
-    } else {
-      // Firefox/Chromium/Falkon browsers with profiles
-      for (const item of entry.items) {
-        menu.addMenuItem(buildProfileMenuItem({ item, title, notify, closeMenu }));
+    // Each entry (and each profile item within one) renders in its own
+    // try/catch: unexpected data reaching a widget constructor shouldn't
+    // cost every other browser its place in the menu.
+    try {
+      if (!soloSimpleRow) {
+        menu.addMenuItem(buildCategorySeparator(entry.label, entry.icon));
       }
+
+      if (entry.group === "simple") {
+        // Simple browsers (no profiles) - show as icon buttons in a row
+        menu.addMenuItem(buildSimpleBrowserRow({ title, items: entry.items, notify, closeMenu }));
+      } else {
+        // Firefox/Chromium/Falkon browsers with profiles
+        for (const item of entry.items) {
+          try {
+            menu.addMenuItem(buildProfileMenuItem({ item, title, notify, closeMenu }));
+          } catch (e) {
+            logError(e as object, `[browser-hub] failed to render ${entry.label}'s ${item.label}`);
+          }
+        }
+      }
+    } catch (e) {
+      logError(e as object, `[browser-hub] failed to render ${entry.label}`);
     }
   }
 }
