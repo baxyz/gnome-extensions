@@ -49,6 +49,7 @@ export class BrowserProfilesIndicator extends Button {
   private _lastEntries: ResolvedBrowserEntry[] = [];
   private _menuOpenStateId: number | null = null;
   private _menuSignals!: MenuSignals;
+  private _menuIsOpen = false;
   private _panelIcon: St.Icon;
   // Guards against a second Donut launch starting while one is already in
   // flight. Deliberately kept here rather than on the toolbar button itself —
@@ -83,6 +84,7 @@ export class BrowserProfilesIndicator extends Button {
     // GNOME's extension review tooling actually checks for.
     this._menuSignals = this.menu as unknown as MenuSignals;
     this._menuOpenStateId = this._menuSignals.connect("open-state-changed", (_menu, isOpen) => {
+      this._menuIsOpen = isOpen;
       if (isOpen) {
         clearDefaultBrowserCache();
         this.redrawMenu();
@@ -132,6 +134,15 @@ export class BrowserProfilesIndicator extends Button {
       this._readToolbarSettings();
     const defaultBrowser = getDefaultBrowser();
     this._updatePanelIcon(showDefaultBrowserPanelIcon, defaultBrowser);
+
+    // fillMenu() builds every row and icon in the popup from scratch (~50
+    // browsers) — pointless work while the menu is closed and none of it is
+    // on screen. The open-state-changed handler above already calls
+    // redrawMenu() the moment it opens, so this only skips the redundant
+    // build that would otherwise happen right after every enable()/refresh,
+    // before the user has ever looked at the menu.
+    if (!this._menuIsOpen) return;
+
     fillMenu({
       title: this._title,
       menu: this.menu,
