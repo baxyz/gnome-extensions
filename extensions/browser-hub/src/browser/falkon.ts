@@ -4,6 +4,7 @@ import GLib from "gi://GLib";
 import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../taxonomy";
 import {
   buildBaseCommand,
+  errorMessage,
   filterPresent,
   listDirEntries,
   resolveDesktopIcon,
@@ -18,8 +19,10 @@ async function listProfileDirs(dirPath: string): Promise<string[]> {
   return entries.filter((e) => e.type === Gio.FileType.DIRECTORY).map((e) => e.name);
 }
 
+/** `errors` collects a short message per failed browser — for a menu banner, not just the log. */
 export async function resolveFalkonBrowsers(
   browsers: FalkonBrowserConfig[],
+  errors: string[] = [],
 ): Promise<ResolvedBrowserEntry[]> {
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers, GLib.FileTest.IS_DIR).map(async (b) => {
@@ -38,6 +41,7 @@ export async function resolveFalkonBrowsers(
     }),
   );
   for (const reason of rejected) {
+    errors.push(errorMessage(reason));
     logError(reason as object, "[browser-hub] a Falkon browser failed to resolve");
   }
   return fulfilled.filter((e) => e.items.length > 0);

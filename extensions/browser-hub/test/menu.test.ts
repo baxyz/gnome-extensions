@@ -205,6 +205,33 @@ describe("fillMenu", () => {
     expect(row.children[0]).toBeInstanceOf(FakeSpinner);
   });
 
+  it("shows a short error banner right after the toolbar when errors is non-empty", () => {
+    const menu = makeFakeMenu();
+    fillMenu({
+      title: "t",
+      menu,
+      entries: [],
+      errors: ["Firefox (snap): profiles.ini not found"],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const banner = menu.items[1] as FakePopupMenuItem; // [0] toolbar, [1] this row
+    expect(banner.label.text).toBe("Problem: couldn't list Firefox (snap): profiles.ini not found");
+    expect(banner.children[0]).toBeInstanceOf(FakeIcon);
+  });
+
+  it("shows no banner at all when errors is empty", () => {
+    const menu = makeFakeMenu();
+    fillMenu({ title: "t", menu, entries: [], notify, onSettings: noop, onRefresh: noop });
+
+    // [0] toolbar, [1] straight to the empty-state message — no banner in between.
+    expect((menu.items[1] as FakePopupMenuItem).label.text).toBe(
+      "Nothing to show — check Settings, or install a browser",
+    );
+  });
+
   it("shows an empty-state message with no separator when entries is empty", () => {
     const menu = makeFakeMenu();
     fillMenu({ title: "t", menu, entries: [], notify, onSettings: noop, onRefresh: noop });
