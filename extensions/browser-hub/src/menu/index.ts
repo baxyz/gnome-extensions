@@ -64,6 +64,18 @@ export function fillMenu({
   // there's no in-menu way back into preferences (the GNOME Extensions app
   // still works). A deliberate tradeoff, not an oversight.
   if (showToolbar) {
+    menu.addMenuItem(
+      buildToolbar({
+        showDonutButton: donutBrowser !== null,
+        donutLaunching,
+        onLaunchDonut: () => onLaunchDonut(donutBrowser!),
+        onRefresh,
+        onSettings,
+      }),
+    );
+    // After the toolbar, not before: as a real PopupSubMenuMenuItem it reads
+    // as its own section rather than a compact toolbar control, closer to a
+    // preferences category than a quick-action row.
     if (defaultBrowser) {
       menu.addMenuItem(
         buildDefaultBrowserItem({
@@ -77,15 +89,6 @@ export function fillMenu({
         }),
       );
     }
-    menu.addMenuItem(
-      buildToolbar({
-        showDonutButton: donutBrowser !== null,
-        donutLaunching,
-        onLaunchDonut: () => onLaunchDonut(donutBrowser!),
-        onRefresh,
-        onSettings,
-      }),
-    );
   }
 
   // Handle empty state. No separator above this — there's nothing here to

@@ -563,7 +563,7 @@ describe("fillMenu", () => {
       defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
       showDefaultBrowserEdit: true,
     });
-    const item = menuWithEdit.items[0] as FakePopupSubMenuMenuItem;
+    const item = menuWithEdit.items[1] as FakePopupSubMenuMenuItem; // [0] toolbar, [1] this row
     expect(item).toBeInstanceOf(FakePopupSubMenuMenuItem);
     expect(item.label.text).toBe("Firefox");
     expect(item.icon).toBeInstanceOf(FakeIcon);
@@ -587,7 +587,7 @@ describe("fillMenu", () => {
       defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
       showDefaultBrowserEdit: false,
     });
-    const row = menu.items[0] as FakePopupMenuItem;
+    const row = menu.items[1] as FakePopupMenuItem; // [0] toolbar, [1] this row
     expect(row).not.toBeInstanceOf(FakePopupSubMenuMenuItem);
     const btnGroup = row.children[0] as FakeButton;
     expect(btnGroup).toBeInstanceOf(FakeButton);
@@ -618,12 +618,12 @@ describe("fillMenu", () => {
       showDefaultBrowserEdit: true,
       onSetDefaultBrowser,
     });
-    // [0] the default-browser submenu item, [1] the donut/refresh/settings
-    // toolbar, [2] the "Browsers" row itself — no separator, it's the menu's
-    // only entry.
+    // [0] the donut/refresh/settings toolbar, [1] the default-browser
+    // submenu item, [2] the "Browsers" row itself — no separator, it's the
+    // menu's only entry.
     expect(menu.items).toHaveLength(3);
 
-    const item = menu.items[0] as FakePopupSubMenuMenuItem;
+    const item = menu.items[1] as FakePopupSubMenuMenuItem;
     // Launch, separator, Firefox (Chromium skipped — no pkg).
     expect(item.menu.items).toHaveLength(3);
     expect((item.menu.items[0] as FakePopupMenuItem).label.text).toBe("Launch Firefox");
