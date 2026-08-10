@@ -6,7 +6,7 @@ import type { DefaultBrowserInfo } from "../default-browser";
 import { findDonutBrowser } from "../donut-browser";
 import { isEmpty } from "@helpers4/array";
 import { noop } from "@helpers4/function";
-import { buildCategorySeparator } from "./shared";
+import { buildCategorySeparator, buildLoadingRow } from "./shared";
 import { buildDefaultBrowserItem, buildToolbar } from "./toolbar";
 import { buildProfileMenuItem, buildSimpleBrowserRow } from "./browser-rows";
 
@@ -31,7 +31,8 @@ export function fillMenu({
 }: {
   title: string;
   menu: PopupMenu | PopupDummyMenu;
-  entries: ResolvedBrowserEntry[];
+  /** null means the browser scan hasn't resolved yet — shows a loading row instead. */
+  entries: ResolvedBrowserEntry[] | null;
   notify: typeof Main.notify;
   onSettings: () => void;
   onRefresh: () => void;
@@ -57,7 +58,7 @@ export function fillMenu({
   // Both the picker and the Donut button act on the same "Browsers" row
   // items the quick-launch icons below are built from — one row per
   // installed browser identity, already carrying pkg.
-  const browsers = entries.find((e) => e.group === "simple")?.items ?? [];
+  const browsers = entries?.find((e) => e.group === "simple")?.items ?? [];
   const donutBrowser = showDonutBrowser ? findDonutBrowser(browsers, defaultBrowser ?? null) : null;
 
   // Off, this hides the whole row — including Refresh and Settings, so
@@ -91,10 +92,13 @@ export function fillMenu({
     }
   }
 
-  // Handle empty state. No separator above this — there's nothing here to
-  // separate the message from (the toolbar's own buttons already read as
-  // distinct content), unlike the labeled separator before each real entry
-  // group further down.
+  // No separator above either row below — nothing here to separate it from,
+  // unlike the labeled separator before each real entry group further down.
+  if (entries === null) {
+    menu.addMenuItem(buildLoadingRow());
+    return;
+  }
+
   if (isEmpty(entries)) {
     // Every toggle disabled in Settings is a far more likely cause of this
     // than a genuine absence of any installed browser — lead with that.

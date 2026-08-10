@@ -1,6 +1,7 @@
 import St from "gi://St";
 import type Gio from "gi://Gio";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
+import { Spinner } from "resource:///org/gnome/shell/ui/animation.js";
 import { isCssColor } from "@helpers4/guard";
 
 // St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
@@ -47,6 +48,15 @@ export function makeIconButton(
 export function makeIconRow(): PopupMenuItem {
   const row = new PopupMenuItem("", { reactive: false, can_focus: false });
   row.label.hide();
+  return row;
+}
+
+/** Placeholder row shown while the browser scan is still running. */
+export function buildLoadingRow(): PopupMenuItem {
+  const row = new PopupMenuItem("Loading browsers…", { reactive: false });
+  const spinner = new Spinner(16, { animate: true, hideOnStop: false });
+  spinner.play();
+  row.insert_child_below(spinner, row.label);
   return row;
 }
 
