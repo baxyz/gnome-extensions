@@ -14,7 +14,7 @@ import { buildProfileMenuItem, buildSimpleBrowserRow } from "./browser-rows";
  * Builds the complete extension menu: toolbar (default browser, refresh, settings),
  * separators, and all browser entries with their profiles/spaces.
  */
-export function fillMenu({
+export async function fillMenu({
   title,
   menu,
   entries,
@@ -29,6 +29,7 @@ export function fillMenu({
   showDonutBrowser = false,
   donutLaunching = false,
   onLaunchDonut = noop,
+  isLive = () => true,
 }: {
   title: string;
   menu: PopupMenu | PopupDummyMenu;
@@ -47,7 +48,13 @@ export function fillMenu({
   /** Whether a Donut profile launch triggered by a previous click is still in flight. */
   donutLaunching?: boolean;
   onLaunchDonut?: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) => void;
-}): void {
+  /**
+   * Checked before the (staggered, so potentially slow) Browsers row is
+   * added to the menu — false means a later fillMenu() call has already
+   * cleared and rebuilt `menu`, so this one must stop touching it.
+   */
+  isLive?: () => boolean;
+}): Promise<void> {
   if ("removeAll" in menu) {
     menu.removeAll();
   }
@@ -132,8 +139,16 @@ export function fillMenu({
       }
 
       if (entry.group === "simple") {
-        // Simple browsers (no profiles) - show as icon buttons in a row
-        menu.addMenuItem(buildSimpleBrowserRow({ title, items: entry.items, notify, closeMenu }));
+        // Simple browsers (no profiles) - show as icon buttons in a row,
+        // built in staggered batches (see buildSimpleBrowserRow) — the
+        // await can leave this row appearing after the entries below it,
+        // but Browsers is always last in getBrowserEntries()'s own output.
+        const row = await buildSimpleBrowserRow(
+          { title, items: entry.items, notify, closeMenu },
+          isLive,
+        );
+        if (!isLive()) return;
+        if (row) menu.addMenuItem(row);
       } else {
         // Firefox/Chromium/Falkon browsers with profiles
         for (const item of entry.items) {

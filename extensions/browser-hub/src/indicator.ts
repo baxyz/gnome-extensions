@@ -46,6 +46,12 @@ export class BrowserProfilesIndicator extends Button {
   // Bumped on every refreshEntries() call so a slow, older scan can't clobber
   // the menu after a newer one has already resolved (out-of-order settling).
   private _refreshSeq = 0;
+  // Bumped on every _draw() call — fillMenu() now builds the Browsers row in
+  // staggered batches (see buildSimpleBrowserRow), so a redraw can still be
+  // in flight when a newer one starts (menu closed/reopened, a setting
+  // changed). isLive() below lets a superseded build detect that and stop
+  // touching a menu a newer _draw() has already cleared and rebuilt.
+  private _drawSeq = 0;
   // null: the browser scan hasn't resolved yet (menu shows a loading row).
   private _lastEntries: ResolvedBrowserEntry[] | null = null;
   // Short messages for whatever failed during the last scan (e.g. a specific
@@ -147,7 +153,9 @@ export class BrowserProfilesIndicator extends Button {
     const defaultBrowser = getDefaultBrowser();
     this._updatePanelIcon(showDefaultBrowserPanelIcon, defaultBrowser);
 
+    const drawSeq = ++this._drawSeq;
     fillMenu({
+      isLive: () => this._alive && drawSeq === this._drawSeq,
       title: this._title,
       menu: this.menu,
       // Only the real, icon-heavy entries list (~50 browsers) is withheld
@@ -194,7 +202,7 @@ export class BrowserProfilesIndicator extends Button {
             this.menu.close();
           });
       },
-    });
+    }).catch((e: unknown) => logError(e as object, "[browser-hub] fillMenu failed"));
   }
 
   // Falls back to the generic icon whenever the setting is off, no default

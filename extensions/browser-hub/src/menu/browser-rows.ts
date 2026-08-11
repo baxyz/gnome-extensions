@@ -4,6 +4,7 @@ import { PopupMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import type { BrowserSpace, ResolvedBrowserItem } from "../taxonomy";
 import { launchBrowser } from "../internal";
 import { chunk } from "@helpers4/array";
+import { delay } from "@helpers4/promise";
 import { iconProps, makeIconButton, makeIconRow, safeCssColor, tooltip } from "./shared";
 
 function makeSpaceGroup(
@@ -60,25 +61,52 @@ function makeSpaceGroup(
 // width at this button's actual size (24px icon + 8px padding each side).
 const BROWSERS_ROW_ITEMS_PER_LINE = 6;
 
-/** Builds a menu item row for simple (profile-less) browsers with icon buttons. */
-export function buildSimpleBrowserRow({
-  title,
-  items,
-  notify,
-  closeMenu,
-}: {
-  title: string;
-  items: ResolvedBrowserItem[];
-  notify: typeof Main.notify;
-  closeMenu: () => void;
-}): PopupMenuItem {
+// Pause between lines while building the Browsers row (see below) — enough
+// for GNOME Shell's icon theme loader to actually finish the previous
+// batch's async pixbuf loads before the next one starts, not just enough to
+// yield the main loop for a tick (an idle callback alone fires again
+// immediately with nothing else queued, so it wouldn't actually space out
+// the underlying async loads).
+const BROWSERS_ROW_LINE_DELAY_MS = 30;
+
+/**
+ * Builds a menu item row for simple (profile-less) browsers with icon
+ * buttons, one line (BROWSERS_ROW_ITEMS_PER_LINE icons) at a time instead of
+ * all at once — GNOME Shell has a known class of crash where its icon theme
+ * loader corrupts state under many concurrent icon loads (confirmed via
+ * journalctl: St:ERROR in st-icon-theme.c, signal 6). With ~50 installed
+ * browsers all resolving real .desktop icons, this row is the single
+ * largest burst of icon loads anywhere in the menu.
+ *
+ * `isLive` is checked before every line and before returning: if the menu
+ * was closed and reopened (or anything else triggered a redraw) while this
+ * was still running, `container`/`row` already belong to a discarded build
+ * and must not be touched further.
+ */
+export async function buildSimpleBrowserRow(
+  {
+    title,
+    items,
+    notify,
+    closeMenu,
+  }: {
+    title: string;
+    items: ResolvedBrowserItem[];
+    notify: typeof Main.notify;
+    closeMenu: () => void;
+  },
+  isLive: () => boolean,
+): Promise<PopupMenuItem | null> {
   const row = makeIconRow();
   const container = new St.BoxLayout({
     vertical: true,
     x_expand: true,
     style_class: "browser-hub-browsers-lines",
   });
-  for (const lineItems of chunk(items, BROWSERS_ROW_ITEMS_PER_LINE)) {
+  const lines = chunk(items, BROWSERS_ROW_ITEMS_PER_LINE);
+  for (const [index, lineItems] of lines.entries()) {
+    if (!isLive()) return null;
+    if (index > 0) await delay(BROWSERS_ROW_LINE_DELAY_MS);
     const line = new St.BoxLayout({ style_class: "browser-hub-browsers-line" });
     for (const item of lineItems) {
       const cmd = item.command;
@@ -91,6 +119,7 @@ export function buildSimpleBrowserRow({
     }
     container.add_child(line);
   }
+  if (!isLive()) return null;
   row.add_child(container);
   return row;
 }
