@@ -84,10 +84,9 @@ try/catch can prevent it, only reducing how hard we push the icon loader.
       independent of whether staggering alone is enough — 50 icons total
       across every entry, spent in entry order; a trailing row reports how
       many more are hidden. `truncateEntriesToIconBudget()`.
-- [ ] Document a manual smoke-test checklist (open the menu with many
+- [x] Document a manual smoke-test checklist (open the menu with many
       browsers installed, toggle every setting, click every button) to run
-      on a real machine before each release — would have caught at least
-      two of the regressions found this way already, before they shipped.
+      on a real machine before each release — see `SMOKE-TEST.md`.
 - [ ] Real e2e harness via a nested GNOME Shell session
       (`dbus-run-session -- gnome-shell --nested --wayland` + AT-SPI/Looking
       Glass) to script "open the menu, assert it doesn't crash" in CI. The
