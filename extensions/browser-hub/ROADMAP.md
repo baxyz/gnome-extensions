@@ -65,6 +65,44 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 - [ ] Chrome family support — `--user-data-dir` gives an isolated profile easily enough, but there's no `resistFingerprinting` equivalent; would need a force-installed extension (`ExtensionInstallForcelist` policy) for real anti-fingerprinting, not just an isolated profile.
 - [ ] Manual browser selection for Donut, in addition to the automatic pick — let the user override `findDonutBrowser()`'s choice from the toolbar.
 
+### Icon-loading crash hardening (GNOME Shell native bug)
+
+GNOME Shell has a native crash class (`St:ERROR` in `st-icon-theme.c`,
+assertion on `icon_info_get_pixbuf_ready`, signal 6) triggered by requesting
+many icon loads at once — confirmed via `journalctl` on real hardware
+(NVIDIA + Wayland). It's a native `g_assert` abort, not a JS exception: no
+try/catch can prevent it, only reducing how hard we push the icon loader.
+
+- [x] Stagger the "Browsers" row's icon construction — one line (6 icons) at
+      a time with a real delay in between, instead of requesting up to ~50
+      icons in one synchronous burst. `buildSimpleBrowserRow()`.
+- [ ] Extend the same batching to the profiled-family entries loop
+      (`buildProfileMenuItem` in `fillMenu()`) — currently still builds a
+      whole family's profile icons in one synchronous pass. Same risk
+      class, just usually a smaller N than the Browsers row.
+- [ ] Hard cap on how many rows/icons `fillMenu()` ever builds in one pass,
+      independent of whether staggering alone is enough (e.g. show the
+      first 50, note that N more are hidden) — bounds the pathological case
+      (200+ installed browsers) regardless of anything else here.
+- [ ] Document a manual smoke-test checklist (open the menu with many
+      browsers installed, toggle every setting, click every button) to run
+      on a real machine before each release — would have caught at least
+      two of the regressions found this way already, before they shipped.
+- [ ] Real e2e harness via a nested GNOME Shell session
+      (`dbus-run-session -- gnome-shell --nested --wayland` + AT-SPI/Looking
+      Glass) to script "open the menu, assert it doesn't crash" in CI. The
+      only real automated protection against this whole class of bug, but
+      no known precedent in the GNOME extensions ecosystem to build on —
+      big lift, lowest priority unless this recurs.
+- [ ] File the bug upstream against `mutter` (`st-icon-theme.c` lives
+      there, not `gnome-shell`) — real diagnosis in hand now (exact
+      assertion, NVIDIA + Wayland environment, a `journalctl` trace). No
+      fix on our side is final; this is a native bug. Closest existing
+      precedent found:
+      [gnome-shell#1743](https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/1743)
+      (2019, same assertion, GTK's icon theme code rather than St's own
+      fork of it).
+
 ## Ideas to explore (not committed)
 
 ### Per-tab media indicator
