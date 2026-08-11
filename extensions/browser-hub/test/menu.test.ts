@@ -196,18 +196,18 @@ beforeEach(() => {
 });
 
 describe("fillMenu", () => {
-  it("shows a loading row (not the empty-state message) when entries is null", () => {
+  it("shows a loading row (not the empty-state message) when entries is null", async () => {
     const menu = makeFakeMenu();
-    fillMenu({ title: "t", menu, entries: null, notify, onSettings: noop, onRefresh: noop });
+    await fillMenu({ title: "t", menu, entries: null, notify, onSettings: noop, onRefresh: noop });
 
     const row = menu.items[1] as FakePopupMenuItem; // [0] toolbar, [1] this row
     expect(row.label.text).toBe("Loading browsers…");
     expect(row.children[0]).toBeInstanceOf(FakeSpinner);
   });
 
-  it("shows a short error banner right after the toolbar when errors is non-empty", () => {
+  it("shows a short error banner right after the toolbar when errors is non-empty", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [],
@@ -222,9 +222,9 @@ describe("fillMenu", () => {
     expect(banner.children[0]).toBeInstanceOf(FakeIcon);
   });
 
-  it("shows no banner at all when errors is empty", () => {
+  it("shows no banner at all when errors is empty", async () => {
     const menu = makeFakeMenu();
-    fillMenu({ title: "t", menu, entries: [], notify, onSettings: noop, onRefresh: noop });
+    await fillMenu({ title: "t", menu, entries: [], notify, onSettings: noop, onRefresh: noop });
 
     // [0] toolbar, [1] straight to the empty-state message — no banner in between.
     expect((menu.items[1] as FakePopupMenuItem).label.text).toBe(
@@ -232,9 +232,9 @@ describe("fillMenu", () => {
     );
   });
 
-  it("shows an empty-state message with no separator when entries is empty", () => {
+  it("shows an empty-state message with no separator when entries is empty", async () => {
     const menu = makeFakeMenu();
-    fillMenu({ title: "t", menu, entries: [], notify, onSettings: noop, onRefresh: noop });
+    await fillMenu({ title: "t", menu, entries: [], notify, onSettings: noop, onRefresh: noop });
 
     const message = menu.items[1]; // [0] is the toolbar row, nothing separates the message from it
     expect(message).not.toBeInstanceOf(FakePopupSeparatorMenuItem);
@@ -243,9 +243,9 @@ describe("fillMenu", () => {
     );
   });
 
-  it("renders an empty St.Bin icon slot (not St.Icon) for a profile item with no icon", () => {
+  it("renders an empty St.Bin icon slot (not St.Icon) for a profile item with no icon", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
@@ -260,9 +260,9 @@ describe("fillMenu", () => {
     expect(iconSlot.children).toHaveLength(0);
   });
 
-  it("puts the 'Browsers' row's icon buttons on a single line when they fit", () => {
+  it("puts the 'Browsers' row's icon buttons on a single line when they fit", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -289,13 +289,13 @@ describe("fillMenu", () => {
     expect(line.children).toHaveLength(2);
   });
 
-  it("wraps the 'Browsers' row's icon buttons onto additional lines past the per-line cap", () => {
+  it("wraps the 'Browsers' row's icon buttons onto additional lines past the per-line cap", async () => {
     const menu = makeFakeMenu();
     const items = Array.from({ length: 7 }, (_, i) => ({
       label: `Browser ${i}`,
       command: [`browser${i}`],
     }));
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [{ label: "Browsers", group: "simple", items }],
@@ -312,9 +312,37 @@ describe("fillMenu", () => {
     expect(container.children[1].children).toHaveLength(1);
   });
 
-  it("falls back to a generic icon (not a blank button) for a 'Browsers' row item with no icon", () => {
+  it("drops the whole 'Browsers' row instead of adding a partial one when isLive turns false mid-build", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    const items = Array.from({ length: 7 }, (_, i) => ({
+      label: `Browser ${i}`,
+      command: [`browser${i}`],
+    }));
+    let live = true;
+    // fillMenu awaits a real (short) delay between the Browsers row's lines
+    // (see buildSimpleBrowserRow) — flipping `live` right after the call,
+    // without awaiting yet, lands in that gap: the first line has already
+    // been built synchronously, the second hasn't started.
+    const pending = fillMenu({
+      title: "t",
+      menu,
+      entries: [{ label: "Browsers", group: "simple", items }],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      isLive: () => live,
+    });
+    live = false;
+    await pending;
+
+    // [0] toolbar only — the Browsers row never made it in, not even the
+    // first line that was already built when the build was superseded.
+    expect(menu.items).toHaveLength(1);
+  });
+
+  it("falls back to a generic icon (not a blank button) for a 'Browsers' row item with no icon", async () => {
+    const menu = makeFakeMenu();
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -337,14 +365,14 @@ describe("fillMenu", () => {
     expect(icon.props.icon_name).toBe("web-browser-symbolic");
   });
 
-  it("keeps the category separator for a lone profiled entry, unlike a lone 'Browsers' row", () => {
+  it("keeps the category separator for a lone profiled entry, unlike a lone 'Browsers' row", async () => {
     // Sanity check for the narrower condition: a lone *profiled* family
     // entry (group !== "simple") still gets its separator/header even when
     // it's the menu's only entry — only a lone "Browsers" row omits it (see
     // the next test). Its label is the one thing naming which family the
     // profile rows below it belong to, worth keeping even alone.
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
@@ -356,9 +384,9 @@ describe("fillMenu", () => {
     expect(menu.items[1]).toBeInstanceOf(FakePopupSeparatorMenuItem);
   });
 
-  it("omits the category separator when the 'Browsers' row is the menu's only entry", () => {
+  it("omits the category separator when the 'Browsers' row is the menu's only entry", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -374,10 +402,10 @@ describe("fillMenu", () => {
     expect(menu.items[1]).not.toBeInstanceOf(FakePopupSeparatorMenuItem);
   });
 
-  it("shows the browser's icon before the separator label when the entry has one", () => {
+  it("shows the browser's icon before the separator label when the entry has one", async () => {
     const menu = makeFakeMenu();
     const fakeGicon = {} as Gio.Icon;
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -398,9 +426,9 @@ describe("fillMenu", () => {
     expect(iconWidget.props.gicon).toBe(fakeGicon);
   });
 
-  it("renders no icon before the separator label when the entry has none", () => {
+  it("renders no icon before the separator label when the entry has none", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
@@ -413,9 +441,9 @@ describe("fillMenu", () => {
     expect(separator.children).toHaveLength(0);
   });
 
-  it("renders a real St.Icon for a profile item with an icon", () => {
+  it("renders a real St.Icon for a profile item with an icon", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -437,9 +465,9 @@ describe("fillMenu", () => {
     expect(icon.props.icon_name).toBe("firefox-symbolic");
   });
 
-  it("applies color.mode 'badge' fgColor as an icon tint with no fgColor bgColor pill", () => {
+  it("applies color.mode 'badge' fgColor as an icon tint with no fgColor bgColor pill", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -466,9 +494,9 @@ describe("fillMenu", () => {
     expect(icon.props.icon_size).toBe(16); // no pill — full size, nothing to shrink for
   });
 
-  it("applies color.mode 'badge' bgColor as a background pill, shrinking the icon so the total footprint matches a plain icon", () => {
+  it("applies color.mode 'badge' bgColor as a background pill, shrinking the icon so the total footprint matches a plain icon", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -498,9 +526,9 @@ describe("fillMenu", () => {
     expect(icon.props.icon_size).toBe(14);
   });
 
-  it("renders color.mode 'dot' as a separate indicator, not an icon badge (Chromium)", () => {
+  it("renders color.mode 'dot' as a separate indicator, not an icon badge (Chromium)", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -529,9 +557,9 @@ describe("fillMenu", () => {
     expect(dot.style).toContain("background-color: rgb(17,34,51)");
   });
 
-  it("renders space buttons with the same icon size for real icons and the neutral fallback dot", () => {
+  it("renders space buttons with the same icon size for real icons and the neutral fallback dot", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -569,9 +597,9 @@ describe("fillMenu", () => {
     expect((untitledBtn.children[0] as FakeIcon).props.icon_size).toBe(16);
   });
 
-  it("launches the item's command via Gio.Subprocess when a profile menu item is activated", () => {
+  it("launches the item's command via Gio.Subprocess when a profile menu item is activated", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [
@@ -587,9 +615,9 @@ describe("fillMenu", () => {
     expect(subprocessNew).toHaveBeenCalledWith(["firefox", "-P", "default"], 0);
   });
 
-  it("uses a real PopupSubMenuMenuItem for the default browser when showDefaultBrowserEdit is true", () => {
+  it("uses a real PopupSubMenuMenuItem for the default browser when showDefaultBrowserEdit is true", async () => {
     const menuWithEdit = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu: menuWithEdit,
       entries: [],
@@ -611,9 +639,9 @@ describe("fillMenu", () => {
     expect(subprocessNew).toHaveBeenCalledWith(["firefox"], 0);
   });
 
-  it("falls back to a plain, non-expandable button when showDefaultBrowserEdit is false", () => {
+  it("falls back to a plain, non-expandable button when showDefaultBrowserEdit is false", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [],
@@ -631,7 +659,7 @@ describe("fillMenu", () => {
     expect(subprocessNew).toHaveBeenCalledWith(["firefox"], 0);
   });
 
-  it("puts a 'Launch' action plus every other installed browser inside the default-browser submenu", () => {
+  it("puts a 'Launch' action plus every other installed browser inside the default-browser submenu", async () => {
     const browsersEntry = {
       label: "Browsers",
       group: "simple" as const,
@@ -643,7 +671,7 @@ describe("fillMenu", () => {
 
     const onSetDefaultBrowser = vi.fn();
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [browsersEntry],
@@ -670,7 +698,7 @@ describe("fillMenu", () => {
     expect(onSetDefaultBrowser).toHaveBeenCalledWith(FAKE_DEFAULT_BROWSER_PKG);
   });
 
-  it("shows the Donut button only when showDonutBrowser is on and an eligible browser is installed", () => {
+  it("shows the Donut button only when showDonutBrowser is on and an eligible browser is installed", async () => {
     const eligibleEntries = [
       {
         label: "Browsers",
@@ -680,7 +708,7 @@ describe("fillMenu", () => {
     ];
 
     const off = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu: off,
       entries: eligibleEntries,
@@ -695,7 +723,7 @@ describe("fillMenu", () => {
 
     // No eligible browser in `entries` — button stays hidden even though the setting is on.
     const noBrowsers = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu: noBrowsers,
       entries: [],
@@ -708,7 +736,7 @@ describe("fillMenu", () => {
     expect(toolbarNoBrowsers.children).toHaveLength(3);
 
     const eligible = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu: eligible,
       entries: eligibleEntries,
@@ -721,7 +749,7 @@ describe("fillMenu", () => {
     expect(toolbarEligible.children).toHaveLength(4); // + the Donut button
   });
 
-  it("calls onLaunchDonut with the eligible item when the Donut button is clicked", () => {
+  it("calls onLaunchDonut with the eligible item when the Donut button is clicked", async () => {
     const entries = [
       {
         label: "Browsers",
@@ -732,7 +760,7 @@ describe("fillMenu", () => {
     const onLaunchDonut = vi.fn();
 
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries,
@@ -753,7 +781,7 @@ describe("fillMenu", () => {
     });
   });
 
-  it("shows a spinner and an inert button when donutLaunching is true", () => {
+  it("shows a spinner and an inert button when donutLaunching is true", async () => {
     const entries = [
       {
         label: "Browsers",
@@ -763,7 +791,7 @@ describe("fillMenu", () => {
     ];
 
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries,
@@ -780,9 +808,9 @@ describe("fillMenu", () => {
     expect(donutBtn.reactive).toBe(false);
   });
 
-  it("omits the whole toolbar row when showToolbar is false", () => {
+  it("omits the whole toolbar row when showToolbar is false", async () => {
     const menu = makeFakeMenu();
-    fillMenu({
+    await fillMenu({
       title: "t",
       menu,
       entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
