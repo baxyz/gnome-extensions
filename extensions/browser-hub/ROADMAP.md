@@ -80,10 +80,10 @@ try/catch can prevent it, only reducing how hard we push the icon loader.
       (`buildProfileMenuItem` in `fillMenu()`) — same batch size/delay as
       the Browsers row, paced across every entry's items via a shared
       counter (`makePacer()`).
-- [ ] Hard cap on how many rows/icons `fillMenu()` ever builds in one pass,
-      independent of whether staggering alone is enough (e.g. show the
-      first 50, note that N more are hidden) — bounds the pathological case
-      (200+ installed browsers) regardless of anything else here.
+- [x] Hard cap on how many rows/icons `fillMenu()` ever builds in one pass,
+      independent of whether staggering alone is enough — 50 icons total
+      across every entry, spent in entry order; a trailing row reports how
+      many more are hidden. `truncateEntriesToIconBudget()`.
 - [ ] Document a manual smoke-test checklist (open the menu with many
       browsers installed, toggle every setting, click every button) to run
       on a real machine before each release — would have caught at least

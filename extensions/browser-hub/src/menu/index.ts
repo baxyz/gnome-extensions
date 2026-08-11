@@ -7,7 +7,12 @@ import { findDonutBrowser } from "../donut-browser";
 import { isEmpty } from "@helpers4/array";
 import { noop } from "@helpers4/function";
 import { delay } from "@helpers4/promise";
-import { buildCategorySeparator, buildErrorRow, buildLoadingRow } from "./shared";
+import {
+  buildCategorySeparator,
+  buildErrorRow,
+  buildLoadingRow,
+  buildTruncatedRow,
+} from "./shared";
 import { buildDefaultBrowserItem, buildToolbar } from "./toolbar";
 import { buildProfileMenuItem, buildSimpleBrowserRow } from "./browser-rows";
 
@@ -26,6 +31,31 @@ function makePacer(batchSize: number, delayMs: number): () => Promise<void> {
     count++;
     if (count % batchSize === 0) await delay(delayMs);
   };
+}
+
+// Bounds the pathological case (hundreds of profiles/Zen workspaces across
+// many browsers) regardless of how well staggering alone holds up —
+// independent of PROFILE_ITEM_BATCH_SIZE, which only spaces icon loads out
+// over time rather than limiting how many a single fillMenu() pass builds.
+const MAX_ICONS_PER_PASS = 50;
+
+/** Drops entries/items past `maxIcons`, preserving each entry's own item order. */
+function truncateEntriesToIconBudget(
+  entries: ResolvedBrowserEntry[],
+  maxIcons: number,
+): { visible: ResolvedBrowserEntry[]; hiddenCount: number } {
+  let budget = maxIcons;
+  let hiddenCount = 0;
+  const visible: ResolvedBrowserEntry[] = [];
+  for (const entry of entries) {
+    const visibleItems = entry.items.slice(0, Math.max(budget, 0));
+    hiddenCount += entry.items.length - visibleItems.length;
+    budget -= visibleItems.length;
+    if (visibleItems.length > 0) {
+      visible.push({ ...entry, items: visibleItems });
+    }
+  }
+  return { visible, hiddenCount };
 }
 
 /**
@@ -141,14 +171,19 @@ export async function fillMenu({
     return;
   }
 
+  const { visible: visibleEntries, hiddenCount } = truncateEntriesToIconBudget(
+    entries,
+    MAX_ICONS_PER_PASS,
+  );
+
   // Build browser entries. The category separator also acts as a section
   // header, so a lone "Browsers" row (every profiled family disabled or
   // filtered out) skips it — nothing left to separate it from. A lone
   // profiled entry (only Firefox enabled, say) still gets its header: its
   // label names the family the profile rows below actually belong to.
-  const soloSimpleRow = entries.length === 1 && entries[0].group === "simple";
+  const soloSimpleRow = visibleEntries.length === 1 && visibleEntries[0].group === "simple";
   const paceProfileItem = makePacer(PROFILE_ITEM_BATCH_SIZE, PROFILE_ITEM_BATCH_DELAY_MS);
-  for (const entry of entries) {
+  for (const entry of visibleEntries) {
     // Each entry (and each profile item within one) renders in its own
     // try/catch: unexpected data reaching a widget constructor shouldn't
     // cost every other browser its place in the menu.
@@ -183,5 +218,9 @@ export async function fillMenu({
     } catch (e) {
       logError(e as object, `[browser-hub] failed to render ${entry.label}`);
     }
+  }
+
+  if (hiddenCount > 0) {
+    menu.addMenuItem(buildTruncatedRow(hiddenCount));
   }
 }
