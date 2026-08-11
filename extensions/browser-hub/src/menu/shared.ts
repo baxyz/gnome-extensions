@@ -69,6 +69,13 @@ export function buildErrorRow(errors: string[]): PopupMenuItem {
   return row;
 }
 
+/** Shown when fillMenu() truncates rows/icons past MAX_ICONS_PER_PASS. */
+export function buildTruncatedRow(hiddenCount: number): PopupMenuItem {
+  return new PopupMenuItem(`…and ${hiddenCount} more hidden (see Settings to narrow this down)`, {
+    reactive: false,
+  });
+}
+
 /** Builds a category separator, with the browser's own icon before the label when known. */
 export function buildCategorySeparator(
   label: string,

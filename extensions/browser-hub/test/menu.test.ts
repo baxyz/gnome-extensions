@@ -312,6 +312,59 @@ describe("fillMenu", () => {
     expect(container.children[1].children).toHaveLength(1);
   });
 
+  it("caps the 'Browsers' row at 50 icons and reports the rest as hidden", async () => {
+    const menu = makeFakeMenu();
+    const items = Array.from({ length: 55 }, (_, i) => ({
+      label: `Browser ${i}`,
+      command: [`browser${i}`],
+    }));
+    await fillMenu({
+      title: "t",
+      menu,
+      entries: [{ label: "Browsers", group: "simple", items }],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    // [0] toolbar, [1] row (50 icons across lines), [2] truncation banner.
+    const row = menu.items[1] as FakePopupMenuItem;
+    const container = row.children[0];
+    const shown = container.children.reduce((n: number, line) => n + line.children.length, 0);
+    expect(shown).toBe(50);
+    const banner = menu.items[2] as FakePopupMenuItem;
+    expect(banner.label.text).toBe("…and 5 more hidden (see Settings to narrow this down)");
+  });
+
+  it("spreads the icon budget across entries, hiding a whole profiled entry once it's exhausted", async () => {
+    const menu = makeFakeMenu();
+    const simpleItems = Array.from({ length: 48 }, (_, i) => ({
+      label: `Browser ${i}`,
+      command: [`browser${i}`],
+    }));
+    const profileItems = [
+      { label: "Default", command: ["firefox", "-p", "default"] },
+      { label: "Work", command: ["firefox", "-p", "work"] },
+      { label: "Personal", command: ["firefox", "-p", "personal"] },
+    ];
+    await fillMenu({
+      title: "t",
+      menu,
+      entries: [
+        { label: "Firefox", items: profileItems },
+        { label: "Browsers", group: "simple", items: simpleItems },
+      ],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    // Firefox gets its full 3 profiles (budget 50 - 3 = 47 left for Browsers),
+    // Browsers only fits 47 of its 48 — 1 hidden overall.
+    const truncated = menu.items[menu.items.length - 1] as FakePopupMenuItem;
+    expect(truncated.label.text).toBe("…and 1 more hidden (see Settings to narrow this down)");
+  });
+
   it("drops the whole 'Browsers' row instead of adding a partial one when isLive turns false mid-build", async () => {
     const menu = makeFakeMenu();
     const items = Array.from({ length: 7 }, (_, i) => ({
