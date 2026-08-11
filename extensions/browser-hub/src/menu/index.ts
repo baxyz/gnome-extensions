@@ -6,9 +6,27 @@ import type { DefaultBrowserInfo } from "../default-browser";
 import { findDonutBrowser } from "../donut-browser";
 import { isEmpty } from "@helpers4/array";
 import { noop } from "@helpers4/function";
+import { delay } from "@helpers4/promise";
 import { buildCategorySeparator, buildErrorRow, buildLoadingRow } from "./shared";
 import { buildDefaultBrowserItem, buildToolbar } from "./toolbar";
 import { buildProfileMenuItem, buildSimpleBrowserRow } from "./browser-rows";
+
+// Same batch size/delay as the Browsers row (buildSimpleBrowserRow) — pacing
+// profile-item icon construction the same way, since a browser family with
+// many profiles (or Zen workspaces per profile) is the same risk on a
+// smaller scale: GNOME Shell's icon theme loader corrupting state under
+// many concurrent icon loads.
+const PROFILE_ITEM_BATCH_SIZE = 6;
+const PROFILE_ITEM_BATCH_DELAY_MS = 30;
+
+/** Pauses every `batchSize`-th call — shared across every entry's items, not reset per entry. */
+function makePacer(batchSize: number, delayMs: number): () => Promise<void> {
+  let count = 0;
+  return async () => {
+    count++;
+    if (count % batchSize === 0) await delay(delayMs);
+  };
+}
 
 /**
  * Builds the complete extension menu: toolbar (default browser, refresh, settings),
@@ -129,6 +147,7 @@ export async function fillMenu({
   // profiled entry (only Firefox enabled, say) still gets its header: its
   // label names the family the profile rows below actually belong to.
   const soloSimpleRow = entries.length === 1 && entries[0].group === "simple";
+  const paceProfileItem = makePacer(PROFILE_ITEM_BATCH_SIZE, PROFILE_ITEM_BATCH_DELAY_MS);
   for (const entry of entries) {
     // Each entry (and each profile item within one) renders in its own
     // try/catch: unexpected data reaching a widget constructor shouldn't
@@ -157,6 +176,8 @@ export async function fillMenu({
           } catch (e) {
             logError(e as object, `[browser-hub] failed to render ${entry.label}'s ${item.label}`);
           }
+          await paceProfileItem();
+          if (!isLive()) return;
         }
       }
     } catch (e) {

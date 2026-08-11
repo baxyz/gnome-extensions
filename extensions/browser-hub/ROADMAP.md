@@ -76,10 +76,10 @@ try/catch can prevent it, only reducing how hard we push the icon loader.
 - [x] Stagger the "Browsers" row's icon construction — one line (6 icons) at
       a time with a real delay in between, instead of requesting up to ~50
       icons in one synchronous burst. `buildSimpleBrowserRow()`.
-- [ ] Extend the same batching to the profiled-family entries loop
-      (`buildProfileMenuItem` in `fillMenu()`) — currently still builds a
-      whole family's profile icons in one synchronous pass. Same risk
-      class, just usually a smaller N than the Browsers row.
+- [x] Extend the same batching to the profiled-family entries loop
+      (`buildProfileMenuItem` in `fillMenu()`) — same batch size/delay as
+      the Browsers row, paced across every entry's items via a shared
+      counter (`makePacer()`).
 - [ ] Hard cap on how many rows/icons `fillMenu()` ever builds in one pass,
       independent of whether staggering alone is enough (e.g. show the
       first 50, note that N more are hidden) — bounds the pathological case
