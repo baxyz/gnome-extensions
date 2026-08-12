@@ -142,6 +142,24 @@ When adding a new GNOME Shell major version to an extension:
 - Use `Main.notify` for user-visible notifications.
 - Use `logError` with a context tag for unexpected exceptions.
 
+### Native crashes are not JS exceptions
+
+GNOME Shell/mutter has a real crash class where a native `g_assert` aborts
+the whole process (signal 6) — no JS try/catch can prevent it, only reduce
+how often the failing code path runs. Confirmed in `browser-hub`: `St:ERROR`
+in `st-icon-theme.c`, assertion on `icon_info_get_pixbuf_ready`, hit when
+an `St.Icon` is built from a `Gio.Icon` that genuinely fails to decode
+(`journalctl` shows `Could not load a pixbuf from icon theme.` right
+before every crash). It takes the whole session down, not just the shell —
+`gnome-session` tears down every other service the moment
+`org.gnome.Shell@ubuntu.service` dumps core.
+
+Any extension handing an untrusted `Gio.Icon` to `St.Icon` — a `Gio.FileIcon`
+from a `.desktop` file, a `Gio.EmblemedIcon`, anything not looked up through
+`St.IconTheme.has_icon()` first — is exposed to this. See
+`extensions/browser-hub/ROADMAP.md`'s "Icon-loading crash hardening"
+section for the full diagnosis and fix plan.
+
 ---
 
 This document is maintained by project contributors. Keep it concise and actionable.
