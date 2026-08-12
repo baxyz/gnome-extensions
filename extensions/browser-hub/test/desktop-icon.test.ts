@@ -185,12 +185,12 @@ describe("resolveDesktopIcon — package manager badge", () => {
   });
 });
 
-// Covers the crash hardening in ROADMAP.md's "Icon-loading crash hardening"
-// section: a Gio.FileIcon whose underlying file fails to decode must never
-// reach St.Icon. These tests never exercise resolveDesktopIcon()'s badge
-// step (setBadgeIconsDir() is only called in the describe block above), so
-// results are asserted directly against the raw icon, same as the
-// unbadged tests earlier in this file.
+// A Gio.FileIcon whose file fails to decode must never reach St.Icon — it
+// aborts GNOME Shell natively (see desktop-icon.ts's isFileIcon/
+// isDecodableIconFile). These tests never exercise resolveDesktopIcon()'s
+// badge step (setBadgeIconsDir() is only called in the describe block
+// above), so results are asserted directly against the raw icon, same as
+// the unbadged tests earlier in this file.
 describe("resolveDesktopIcon — icon decode validation", () => {
   beforeEach(() => {
     globalThis.logError = vi.fn();
