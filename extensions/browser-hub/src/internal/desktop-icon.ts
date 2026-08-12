@@ -5,25 +5,25 @@ import { PackageManager } from "../taxonomy";
 import type { ResolvedBrowserPkg } from "../taxonomy";
 import { getDesktopAppInfo, logIfUnexpected } from "./gio";
 
-// GNOME's own icon-theme cache (St's fork of it) has a native crash class
-// triggered by a Gio.FileIcon whose underlying file fails to decode — see
-// ROADMAP.md's "Icon-loading crash hardening" section for the full
-// journalctl-confirmed diagnosis. Duck-typed rather than `instanceof`:
-// modern GJS exposes FileIcon.file as a plain property with no get_file()
-// method (confirmed against this project's pinned @girs/gio-2.0 types),
-// and duck-typing also works against this file's own test/CLI-script fakes.
+// A Gio.FileIcon whose file fails to decode aborts GNOME Shell itself:
+// St:ERROR in st-icon-theme.c, assertion on icon_info_get_pixbuf_ready,
+// signal 6 — journalctl always shows "Could not load a pixbuf from icon
+// theme." right before it. Duck-typed rather than `instanceof`: modern GJS
+// exposes FileIcon.file as a plain property with no get_file() method
+// (confirmed against this project's pinned @girs/gio-2.0 types), and
+// duck-typing also works against this file's own test/CLI-script fakes.
 function isFileIcon(icon: Gio.Icon): icon is Gio.FileIcon {
   return "file" in icon;
 }
 
 // Icon files are tiny (packaged app icons, not user content), so a real
 // decode is cheap — unlike a bare existence check, it actually exercises
-// the failure mode confirmed in journalctl ("Could not load a pixbuf from
-// icon theme."). Bounded well above every icon_size this extension renders
-// (16/24) so an oversized packaged icon can't make the probe itself slow.
-// A decode that succeeds but yields a 0-dimension pixbuf is also rejected —
-// the same degenerate-source shape as gtk#3077 (linked in ROADMAP.md),
-// where a 1px-wide thumbnail crashed scaling code one layer up.
+// the decode failure above. Bounded well above every icon_size this
+// extension renders (16/24) so an oversized packaged icon can't make the
+// probe itself slow. A decode that succeeds but yields a 0-dimension
+// pixbuf is also rejected: GTK hit the same assertion one layer up from a
+// 1px-wide thumbnail, when gdk_pixbuf_scale_simple returned null for it
+// (https://gitlab.gnome.org/GNOME/gtk/-/issues/3077).
 const ICON_DECODE_PROBE_SIZE = 64;
 
 // Cached per path — a bad file is decoded at most once per session, same
