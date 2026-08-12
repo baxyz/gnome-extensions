@@ -17,6 +17,16 @@ vi.mock("gi://GLib", () => ({
   },
 }));
 
+// internal/desktop-icon.ts (transitively imported) also imports
+// "gi://GdkPixbuf" to validate .desktop icons before use — irrelevant to
+// what this file tests, so a stub that always "succeeds" is enough for the
+// module to load under Node.
+vi.mock("gi://GdkPixbuf", () => ({
+  default: {
+    Pixbuf: { new_from_file_at_size: () => ({ get_width: () => 1, get_height: () => 1 }) },
+  },
+}));
+
 // Safety-net tests for the CURRENT rendering behavior of menu.ts,
 // written before the Phase 2 color/icon type rework (see the approved plan).
 // Only fillMenu is exported — everything else is driven through it and

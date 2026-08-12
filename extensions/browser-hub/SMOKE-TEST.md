@@ -12,6 +12,12 @@ Chromium with 3+ profiles each) plus several simple browsers, to exercise
 the icon-heavy code paths — a machine with only one or two browsers won't
 trigger the icon-loading crash class or the 50-icon cap.
 
+The icon-loading crash specifically (see ROADMAP.md's "Icon-loading crash
+hardening") has looked fixed before and wasn't — a green `pnpm test` run
+does not close that item. Watch `journalctl` for a repeat of the
+`st-icon-theme.c` assertion across a few real sessions on the affected
+(NVIDIA + Wayland) hardware before considering it confirmed.
+
 ## Setup
 
 - [ ] `pnpm --filter @baxyz/browser-hub install:local` — builds and copies
