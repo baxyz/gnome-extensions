@@ -20,6 +20,16 @@ vi.mock("gi://GLib", () => ({
   },
 }));
 
+// internal/desktop-icon.ts (transitively imported) also imports
+// "gi://GdkPixbuf" to validate .desktop icons before use — irrelevant to
+// what this file tests, so a stub that always "succeeds" is enough for the
+// module to load under Node.
+vi.mock("gi://GdkPixbuf", () => ({
+  default: {
+    Pixbuf: { new_from_file_at_size: () => ({ get_width: () => 1, get_height: () => 1 }) },
+  },
+}));
+
 // internal/gio.ts calls Gio._promisify(Gio.File.prototype, ...) at module
 // scope on import, which needs an actual prototype to patch even though
 // nothing here exercises the promisified methods themselves.

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import type Gio from "gi://Gio";
 
 // Maps desktop id -> fake Gio.Icon (or absent = "no app installed under that id").
@@ -27,6 +27,10 @@ vi.mock("gi://Gio", () => ({
     EmblemedIcon: { new: emblemedIconNew },
     File: FakeGioFile,
     _promisify: () => {},
+    // logIfUnexpected() (used by the decode-validation tests below) checks
+    // these — none of our fake errors carry a real .matches(), so the exact
+    // values here never actually match, only need to exist.
+    IOErrorEnum: { NOT_FOUND: 1, PERMISSION_DENIED: 2 },
   },
 }));
 
@@ -38,6 +42,23 @@ vi.mock("gi://GioUnix", () => ({
 // internal/gio.ts (imported transitively via ./gio) also references GLib —
 // unused by anything these tests exercise, but the import itself must resolve.
 vi.mock("gi://GLib", () => ({ default: { PRIORITY_DEFAULT: 0 } }));
+
+// Controls the outcome of the decode probe for the "validation" describe
+// block below — defaults to a fake that always throws, so any test that
+// forgets to configure it fails loudly instead of silently passing.
+let pixbufOutcome: () => { get_width(): number; get_height(): number } = () => {
+  throw new Error("gdk-pixbuf-mock: no outcome configured");
+};
+const newFromFileAtSize = vi.fn((_path: string, _w: number, _h: number) => pixbufOutcome());
+
+vi.mock("gi://GdkPixbuf", () => ({
+  default: { Pixbuf: { new_from_file_at_size: newFromFileAtSize } },
+}));
+
+/** A Gio.FileIcon-shaped fake — real GJS exposes FileIcon.file as a plain property. */
+function fakeFileIcon(path: string): { file: { get_path(): string } } {
+  return { file: { get_path: () => path } };
+}
 
 const { resolveDesktopIcon, clearDesktopIconCache, setBadgeIconsDir } =
   await import("../src/internal/desktop-icon");
@@ -161,5 +182,93 @@ describe("resolveDesktopIcon — package manager badge", () => {
     fileIconNew.mockClear();
     expect(resolveDesktopIcon(pkg)).toBeUndefined();
     expect(fileIconNew).not.toHaveBeenCalled();
+  });
+});
+
+// Covers the crash hardening in ROADMAP.md's "Icon-loading crash hardening"
+// section: a Gio.FileIcon whose underlying file fails to decode must never
+// reach St.Icon. These tests never exercise resolveDesktopIcon()'s badge
+// step (setBadgeIconsDir() is only called in the describe block above), so
+// results are asserted directly against the raw icon, same as the
+// unbadged tests earlier in this file.
+describe("resolveDesktopIcon — icon decode validation", () => {
+  beforeEach(() => {
+    globalThis.logError = vi.fn();
+    newFromFileAtSize.mockClear();
+  });
+
+  it("keeps a Gio.FileIcon whose file decodes to a real size", () => {
+    const icon = fakeFileIcon("/apps/good.png");
+    installedApps.set("decodable.desktop", icon);
+    pixbufOutcome = () => ({ get_width: () => 32, get_height: () => 32 });
+
+    expect(resolveDesktopIcon({ manager: PackageManager.Native, binary: "decodable" })).toBe(icon);
+  });
+
+  it("drops a Gio.FileIcon whose file throws on decode, falling back to no icon", () => {
+    const icon = fakeFileIcon("/apps/corrupt.png");
+    installedApps.set("corrupt.desktop", icon);
+    pixbufOutcome = () => {
+      throw new Error("Could not load a pixbuf from icon theme.");
+    };
+
+    expect(
+      resolveDesktopIcon({ manager: PackageManager.Native, binary: "corrupt" }),
+    ).toBeUndefined();
+  });
+
+  it("drops a Gio.FileIcon that decodes to a degenerate (0×0) size", () => {
+    const icon = fakeFileIcon("/apps/degenerate.png");
+    installedApps.set("degenerate.desktop", icon);
+    pixbufOutcome = () => ({ get_width: () => 0, get_height: () => 32 });
+
+    expect(
+      resolveDesktopIcon({ manager: PackageManager.Native, binary: "degenerate" }),
+    ).toBeUndefined();
+  });
+
+  it("logs a warning naming the desktopId and path when a decode fails", () => {
+    installedApps.set("noisy.desktop", fakeFileIcon("/apps/noisy.png"));
+    pixbufOutcome = () => {
+      throw new Error("bad image");
+    };
+
+    resolveDesktopIcon({ manager: PackageManager.Native, binary: "noisy" });
+
+    expect(globalThis.logError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.stringContaining("noisy.png"),
+    );
+  });
+
+  it("only decodes once per desktopId, even across repeated resolves", () => {
+    installedApps.set("cached-icon.desktop", fakeFileIcon("/apps/cached.png"));
+    pixbufOutcome = () => ({ get_width: () => 16, get_height: () => 16 });
+
+    const pkg = { manager: PackageManager.Native, binary: "cached-icon" } as const;
+    resolveDesktopIcon(pkg);
+    resolveDesktopIcon(pkg);
+
+    expect(newFromFileAtSize).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-probes after clearDesktopIconCache()", () => {
+    installedApps.set("refreshed-icon.desktop", fakeFileIcon("/apps/refreshed.png"));
+    pixbufOutcome = () => ({ get_width: () => 16, get_height: () => 16 });
+
+    const pkg = { manager: PackageManager.Native, binary: "refreshed-icon" } as const;
+    resolveDesktopIcon(pkg);
+    clearDesktopIconCache();
+    resolveDesktopIcon(pkg);
+
+    expect(newFromFileAtSize).toHaveBeenCalledTimes(2);
+  });
+
+  it("passes a Gio.ThemedIcon-shaped result through unvalidated", () => {
+    const icon = { names: ["some-icon"] };
+    installedApps.set("themed.desktop", icon);
+
+    expect(resolveDesktopIcon({ manager: PackageManager.Native, binary: "themed" })).toBe(icon);
+    expect(newFromFileAtSize).not.toHaveBeenCalled();
   });
 });

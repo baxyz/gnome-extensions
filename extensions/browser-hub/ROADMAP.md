@@ -72,6 +72,9 @@ assertion on `icon_info_get_pixbuf_ready`, signal 6) triggered by requesting
 many icon loads at once — confirmed via `journalctl` on real hardware
 (NVIDIA + Wayland). It's a native `g_assert` abort, not a JS exception: no
 try/catch can prevent it, only reducing how hard we push the icon loader.
+It also takes the whole session down, not just gnome-shell — `journalctl`
+shows `gnome-session` tearing down every other service the moment
+`org.gnome.Shell@ubuntu.service` dumps core.
 
 - [x] Stagger the "Browsers" row's icon construction — one line (6 icons) at
       a time with a real delay in between, instead of requesting up to ~50
@@ -87,6 +90,63 @@ try/catch can prevent it, only reducing how hard we push the icon loader.
 - [x] Document a manual smoke-test checklist (open the menu with many
       browsers installed, toggle every setting, click every button) to run
       on a real machine before each release — see `SMOKE-TEST.md`.
+
+**Staggering/capping alone did not fix it.** Confirmed by `journalctl`: the
+exact same crash recurred on 2026-08-12 12:23, a full day after all four
+`[x]` items above had already shipped and been reinstalled. Root cause
+found by reading the source, not yet fixed:
+
+- `resolveDesktopIcon()` (`internal/desktop-icon.ts`) returns each
+  browser's _real_ `.desktop` icon via `Gio.DesktopAppInfo.get_icon()`.
+  For the Flatpak/Snap browsers (Zen, Chrome, brave, firefox, opera in
+  local testing) this is a `Gio.FileIcon`, sometimes wrapped in a
+  `Gio.EmblemedIcon` for the package-manager badge. It's handed straight
+  to `St.Icon` via `iconProps()` (`menu/shared.ts`) with **no
+  existence/load validation** — a plain file path, trusted as-is.
+- Contrast with `resolve-icon.ts`'s symbolic catalog path, which _does_
+  validate every name via `theme().has_icon()` before use
+  (`firstExistingIcon()`). That asymmetry is exactly why a crash-repro
+  extension built from `icon-catalog.ts`'s symbolic names never
+  reproduced anything (it was deleted — see below): it only bursts icons
+  guaranteed to load successfully. The real crashes are always preceded
+  in `journalctl` by `Could not load a pixbuf from icon theme.` — a
+  genuine decode failure, not a pure timing race. Staggering makes a
+  single bad load less likely to land inside a burst, but doesn't stop
+  it from crashing the shell the moment it does land, staggered or not.
+- Deleted `extensions/icon-burst-crash-repro/` (2026-08-12, untracked,
+  never a real fix candidate) rather than fixing it, since a correct
+  repro would need to target this FileIcon/EmblemedIcon path specifically
+  — burst _that_ instead of symbolic names, if a repro is ever worth
+  rebuilding.
+
+- [x] Validate every `Gio.FileIcon` from `resolveDesktopIcon()` before it
+      reaches `St.Icon` — a real, cached `GdkPixbuf.Pixbuf.new_from_file_at_size()`
+      decode probe (bounded to 64×64, above every `icon_size` this extension
+      renders), rejecting both a thrown decode error and a decoded-but-
+      degenerate (0×0) pixbuf — the same failure shape as
+      [GNOME/gtk#3077](https://gitlab.gnome.org/GNOME/gtk/-/issues/3077)
+      (a 1px-wide thumbnail made `gdk_pixbuf_scale_simple` return null,
+      tripping the same "pixbuf not ready" assertion one layer down). A
+      file that fails either check degrades exactly like an unmatched `desktopId` always
+      has: `resolveDesktopIcon()` returns `undefined`, and every consumer
+      (`shared.ts`, `toolbar.ts`, `indicator.ts`'s panel icon) already
+      falls back to the generic icon with no changes needed. `Gio.ThemedIcon`
+      results are left unvalidated — deliberately: they aren't a
+      `Gio.LoadableIcon`, so validating one would mean reimplementing
+      `St.IconTheme`'s own name resolution, and there's no evidence this
+      path is involved (the same reason the symbolic-icon catalog never
+      reproduced the crash applies here — the risk is specifically files
+      third-party packaging pipelines ship, not GNOME's own).
+      `internal/desktop-icon.ts`'s `isFileIcon()`/`isDecodableIconFile()`.
+      A failed decode is logged once (`desktopId` + path via
+      `logIfUnexpected()`), giving the concrete example needed to file
+      upstream — folded into validation instead of separate instrumentation.
+      Considered and rejected: a dedicated `icons/safe-icon.ts` wrapping
+      every `St.Icon` construction site — a `src/`-wide grep found exactly
+      one call site that ever fetches a real `.desktop` icon
+      (`desktopIconResolver`), so a cross-cutting abstraction would be pure
+      indirection with no additional safety. Not yet confirmed against the
+      real crash — see the note below.
 - [ ] Real e2e harness via a nested GNOME Shell session
       (`dbus-run-session -- gnome-shell --nested --wayland` + AT-SPI/Looking
       Glass) to script "open the menu, assert it doesn't crash" in CI. The
@@ -100,7 +160,20 @@ try/catch can prevent it, only reducing how hard we push the icon loader.
       precedent found:
       [gnome-shell#1743](https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/1743)
       (2019, same assertion, GTK's icon theme code rather than St's own
-      fork of it).
+      fork of it) — a broad web search (2026-08-12) found no filed issue
+      against this exact assertion in St's own fork specifically, so this
+      still looks like a real gap worth filing once the decode-validation
+      logging above gives a concrete `Gio.Icon` example to attach. Also worth checking
+      whether Fedora's mutter build differs (patch, or just a different
+      GPU/driver/session-type combination than the NVIDIA+Wayland box this
+      was diagnosed on) — anecdotally Fedora shows a generic icon instead
+      of crashing on the same kind of load failure.
+
+**Not closed from green tests alone.** The staggering/capping mitigations
+above also looked sufficient until a full day of real use proved otherwise
+— this fix isn't considered confirmed until it survives a few real sessions
+on the affected (NVIDIA + Wayland) hardware with no repeat of the
+`st-icon-theme.c` assertion in `journalctl`.
 
 ## Ideas to explore (not committed)
 

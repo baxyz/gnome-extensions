@@ -6,6 +6,7 @@ allowBuilds:
   esbuild: true
 
 catalog:
+  '@girs/gdkpixbuf-2.0': 4.1.0
   '@girs/gjs': 4.1.0
   '@girs/gnome-shell': '^50.0.4'
   '@girs/gnome-shell-46': 'npm:@girs/gnome-shell@^46.0.2'

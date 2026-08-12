@@ -1,12 +1,55 @@
 import Gio from "gi://Gio";
+import GdkPixbuf from "gi://GdkPixbuf";
 import { createCachedResolver } from "@helpers4/function";
 import { PackageManager } from "../taxonomy";
 import type { ResolvedBrowserPkg } from "../taxonomy";
-import { getDesktopAppInfo } from "./gio";
+import { getDesktopAppInfo, logIfUnexpected } from "./gio";
+
+// GNOME's own icon-theme cache (St's fork of it) has a native crash class
+// triggered by a Gio.FileIcon whose underlying file fails to decode — see
+// ROADMAP.md's "Icon-loading crash hardening" section for the full
+// journalctl-confirmed diagnosis. Duck-typed rather than `instanceof`:
+// modern GJS exposes FileIcon.file as a plain property with no get_file()
+// method (confirmed against this project's pinned @girs/gio-2.0 types),
+// and duck-typing also works against this file's own test/CLI-script fakes.
+function isFileIcon(icon: Gio.Icon): icon is Gio.FileIcon {
+  return "file" in icon;
+}
+
+// Icon files are tiny (packaged app icons, not user content), so a real
+// decode is cheap — unlike a bare existence check, it actually exercises
+// the failure mode confirmed in journalctl ("Could not load a pixbuf from
+// icon theme."). Bounded well above every icon_size this extension renders
+// (16/24) so an oversized packaged icon can't make the probe itself slow.
+// A decode that succeeds but yields a 0-dimension pixbuf is also rejected —
+// the same degenerate-source shape as gtk#3077 (linked in ROADMAP.md),
+// where a 1px-wide thumbnail crashed scaling code one layer up.
+const ICON_DECODE_PROBE_SIZE = 64;
+
+// Cached per path — a bad file is decoded at most once per session, same
+// as every other lookup in this module. logIfUnexpected keeps the existing
+// silent-on-not-found/warn-on-everything-else split (see internal/gio.ts)
+// instead of treating a stale, uninstalled-app icon path as noteworthy.
+const isDecodableIconFile = createCachedResolver((path: string): boolean => {
+  try {
+    const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
+      path,
+      ICON_DECODE_PROBE_SIZE,
+      ICON_DECODE_PROBE_SIZE,
+    );
+    return pixbuf.get_width() > 0 && pixbuf.get_height() > 0;
+  } catch (e) {
+    logIfUnexpected(e, `[browser-hub] couldn't decode icon file ${path}`);
+    return false;
+  }
+});
 
 // Filenames under the badge assets dir set via setBadgeIconsDir() below (see
 // vite.config.ts's staticAssets plugin for how assets/badges/ ends up in
 // dist/assets/badges/). Native has no badge — it's the unmarked default.
+// These ship with the extension itself (never third-party-controlled), so
+// they skip the decode validation below — only a browser's own .desktop
+// icon is untrusted enough to need it.
 const BADGE_FILENAMES: Partial<Record<PackageManager, string>> = {
   [PackageManager.Flatpak]: "flatpak-badge.svg",
   [PackageManager.Snap]: "snap-badge.svg",
@@ -57,14 +100,32 @@ export function desktopIdFor(pkg: ResolvedBrowserPkg): string {
 // cache. Keyed by the desktopId string rather than the pkg object: the
 // default browser's pkg is rebuilt fresh on every menu open, so an
 // object-identity key would just never hit. Only the GNOME app-info lookup
-// (get_icon()) goes through the cache — the emblem wrapping below is cheap
-// enough to redo every time.
-const desktopIconResolver = createCachedResolver(
-  (desktopId: string): Gio.Icon | null => getDesktopAppInfo(desktopId)?.get_icon() ?? null,
-);
+// (get_icon(), plus the decode validation below) goes through the cache —
+// the emblem wrapping further down is cheap enough to redo every time.
+//
+// This is the only place in the codebase allowed to call .get_icon() — any
+// new call site would bypass the decode validation below and reintroduce
+// the crash this module exists to prevent.
+const desktopIconResolver = createCachedResolver((desktopId: string): Gio.Icon | null => {
+  const baseIcon = getDesktopAppInfo(desktopId)?.get_icon() ?? null;
+  if (baseIcon && isFileIcon(baseIcon)) {
+    const path = baseIcon.file.get_path();
+    // A null path means a non-local URI, essentially never true for a
+    // static .desktop Icon= value — pass through unvalidated rather than
+    // guess it's bad with no actual evidence.
+    if (path !== null && !isDecodableIconFile.resolve(path)) {
+      console.warn(`[browser-hub] dropping undecodable icon for ${desktopId}: ${path}`);
+      return null;
+    }
+  }
+  return baseIcon;
+});
 
 /** Clears the desktop icon cache. Called on extension disable and manual refresh. */
-export const clearDesktopIconCache = desktopIconResolver.clear;
+export function clearDesktopIconCache(): void {
+  desktopIconResolver.clear();
+  isDecodableIconFile.clear();
+}
 
 /**
  * Resolves a browser's own real icon, as declared in its installed .desktop

@@ -42,6 +42,7 @@
     "sqlite-reader": "^0.3.0"
   },
   "devDependencies": {
+    "@girs/gdkpixbuf-2.0": "catalog:",
     "@girs/gjs": "catalog:",
     "@girs/gnome-shell": "catalog:",
     "@girs/gnome-shell-50": "catalog:",
