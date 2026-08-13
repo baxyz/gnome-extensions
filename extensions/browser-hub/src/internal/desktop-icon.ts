@@ -18,38 +18,55 @@ function isFileIcon(icon: Gio.Icon): icon is Gio.FileIcon {
 
 // Icon files are tiny (packaged app icons, not user content), so a real
 // decode is cheap — unlike a bare existence check, it actually exercises
-// the decode failure above. Bounded well above every icon_size this
-// extension renders (16/24) so an oversized packaged icon can't make the
-// probe itself slow. A decode that succeeds but yields a 0-dimension
-// pixbuf is also rejected: GTK hit the same assertion one layer up from a
-// 1px-wide thumbnail, when gdk_pixbuf_scale_simple returned null for it
-// (https://gitlab.gnome.org/GNOME/gtk/-/issues/3077).
-const ICON_DECODE_PROBE_SIZE = 64;
+// the decode failure above. Probed at every size this extension actually
+// renders an icon at (see menu/*.ts icon_size usages: 14/16 for profile
+// rows, 24 for the Browsers row), plus two defensive bounds: 2 (near the
+// smallest anything could ever be asked to render at) and 64 (above every
+// real size — the original bound this probe shipped with). A source that
+// decodes cleanly at one target size can still round to a degenerate 0×0
+// pixbuf at another — confirmed in production: the very first version of
+// this probe (a single 64px check) still let a real crash through, because
+// the failure only showed up at a size this module never tested (see
+// badgeIconResolver below — the actual culprit was the *emblem*, which
+// St renders at a fraction of icon_size this module has no visibility
+// into). GTK hit the same assertion shape from a 1px-wide thumbnail, when
+// gdk_pixbuf_scale_simple returned null for it
+// (https://gitlab.gnome.org/GNOME/gtk/-/issues/3077) — every probed size
+// here is a variant of that same "scale produces a 0 dimension" failure.
+// Exported only for tests, to size their call-count assertions off this
+// list instead of a hardcoded, easily-stale duplicate of its length.
+export const ICON_DECODE_PROBE_SIZES = [2, 14, 16, 24, 64] as const;
 
-// Cached per path — a bad file is decoded at most once per session, same
-// as every other lookup in this module. logIfUnexpected keeps the existing
-// silent-on-not-found/warn-on-everything-else split (see internal/gio.ts)
-// instead of treating a stale, uninstalled-app icon path as noteworthy.
+// Cached per path — a bad file is decoded at most once per session (across
+// every probed size), same as every other lookup in this module.
+// logIfUnexpected keeps the existing silent-on-not-found/warn-on-everything
+// -else split (see internal/gio.ts) instead of treating a stale,
+// uninstalled-app icon path as noteworthy. Stops at the first size that
+// fails a decode — one bad size is enough to condemn the whole file, no
+// need to keep probing once that's established.
 const isDecodableIconFile = createCachedResolver((path: string): boolean => {
-  try {
-    const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
-      path,
-      ICON_DECODE_PROBE_SIZE,
-      ICON_DECODE_PROBE_SIZE,
-    );
-    return pixbuf.get_width() > 0 && pixbuf.get_height() > 0;
-  } catch (e) {
-    logIfUnexpected(e, `[browser-hub] couldn't decode icon file ${path}`);
-    return false;
+  for (const size of ICON_DECODE_PROBE_SIZES) {
+    try {
+      const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(path, size, size);
+      if (pixbuf.get_width() <= 0 || pixbuf.get_height() <= 0) return false;
+    } catch (e) {
+      logIfUnexpected(e, `[browser-hub] couldn't decode icon file ${path} at ${size}px`);
+      return false;
+    }
   }
+  return true;
 });
 
 // Filenames under the badge assets dir set via setBadgeIconsDir() below (see
 // vite.config.ts's staticAssets plugin for how assets/badges/ ends up in
 // dist/assets/badges/). Native has no badge — it's the unmarked default.
-// These ship with the extension itself (never third-party-controlled), so
-// they skip the decode validation below — only a browser's own .desktop
-// icon is untrusted enough to need it.
+// These ship with the extension itself — never third-party-controlled — but
+// "trusted provenance" turned out not to mean "safe to render": they're
+// rendered as a GEmblemedIcon's *emblem*, at whatever fraction of icon_size
+// St's own compositor picks internally, a size this module can't observe or
+// control. That's exactly the failure mode ICON_DECODE_PROBE_SIZES's 2px
+// bound exists to catch, so these go through the same isDecodableIconFile
+// check as a browser's own .desktop icon — see badgeIconResolver below.
 const BADGE_FILENAMES: Partial<Record<PackageManager, string>> = {
   [PackageManager.Flatpak]: "flatpak-badge.svg",
   [PackageManager.Snap]: "snap-badge.svg",
@@ -70,14 +87,28 @@ export function setBadgeIconsDir(dir: Gio.File): void {
 
 // Only 2 possible icons ever exist — cached by filename, never invalidated
 // (the files ship with the extension and can't change while it's running).
-const badgeIconResolver = createCachedResolver((filename: string): Gio.Icon =>
-  Gio.FileIcon.new(badgeIconsDir!.get_child(filename)),
-);
+// Returns null (not undefined) for a badge that fails decode validation —
+// callers fall back to an unbadged icon exactly like an unmatched desktopId
+// already does, rather than crash the shell over a cosmetic package-manager
+// marker.
+const badgeIconResolver = createCachedResolver((filename: string): Gio.Icon | null => {
+  const file = badgeIconsDir!.get_child(filename);
+  const path = file.get_path();
+  // A null path would mean a non-local Gio.File, essentially never true for
+  // a static asset shipped inside the extension's own install directory —
+  // pass through unvalidated rather than guess it's bad with no evidence,
+  // same convention desktopIconResolver below follows.
+  if (path !== null && !isDecodableIconFile.resolve(path)) {
+    console.warn(`[browser-hub] dropping undecodable package-manager badge: ${path}`);
+    return null;
+  }
+  return Gio.FileIcon.new(file);
+});
 
 function badgeIconFor(manager: PackageManager): Gio.Icon | undefined {
   const filename = BADGE_FILENAMES[manager];
   if (!filename || !badgeIconsDir) return undefined;
-  return badgeIconResolver.resolve(filename);
+  return badgeIconResolver.resolve(filename) ?? undefined;
 }
 
 /** Also used by default-browser.ts's setDefaultBrowser() to resolve a Gio.DesktopAppInfo. */
@@ -124,6 +155,7 @@ const desktopIconResolver = createCachedResolver((desktopId: string): Gio.Icon |
 /** Clears the desktop icon cache. Called on extension disable and manual refresh. */
 export function clearDesktopIconCache(): void {
   desktopIconResolver.clear();
+  badgeIconResolver.clear();
   isDecodableIconFile.clear();
 }
 

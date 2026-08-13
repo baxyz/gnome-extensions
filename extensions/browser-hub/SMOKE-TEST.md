@@ -13,10 +13,17 @@ the icon-heavy code paths — a machine with only one or two browsers won't
 trigger the icon-loading crash class or the 50-icon cap.
 
 The icon-loading crash specifically (see ROADMAP.md's "Icon-loading crash
-hardening") has looked fixed before and wasn't — a green `pnpm test` run
-does not close that item. Watch `journalctl` for a repeat of the
-`st-icon-theme.c` assertion across a few real sessions on the affected
-(NVIDIA + Wayland) hardware before considering it confirmed.
+hardening") has now looked fixed twice and wasn't, either time — a green
+`pnpm test` run does not close that item, and neither does confirming the
+fix is actually installed/active (both were true the second time and it
+still crashed 4 times in one boot). Watch `journalctl -g st-icon-theme` for
+a repeat of the `st-icon-theme.c` assertion across a few real sessions on
+the affected (NVIDIA + Wayland) hardware before considering it confirmed.
+If it recurs again, don't assume the same fix shape (decode-validate a
+specific `Gio.FileIcon`) is even the right layer — check first whether
+`journalctl --user -g browser-hub` around the crash timestamp shows a
+"dropping undecodable..." warning; its absence means the crashing icon
+isn't going through either validated path (base icon or badge) at all.
 
 ## Setup
 
