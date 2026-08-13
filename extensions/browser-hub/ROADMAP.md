@@ -175,6 +175,72 @@ above also looked sufficient until a full day of real use proved otherwise
 on the affected (NVIDIA + Wayland) hardware with no repeat of the
 `st-icon-theme.c` assertion in `journalctl`.
 
+**The decode-validation fix above still wasn't enough.** Confirmed installed
+and active (verified byte-identical against the running session's
+`~/.local/share/gnome-shell/extensions/browser-hub@baxyz.dev/internal.js`),
+it still let the crash recur 4 times in one boot on 2026-08-13
+(22:02:57, 22:03:39, 22:04:06, 22:07:34) — and critically, **no
+`[browser-hub] couldn't decode icon file` warning was logged before any of
+them**, meaning the crashing icon never went through the validated path at
+all. Reading `desktop-icon.ts` end-to-end (not just the changed function)
+found the actual gap:
+
+- The package-manager **badge** SVGs (`badgeIconResolver`, feeding
+  `Gio.EmblemedIcon`'s emblem) were never validated — the fix only covered
+  `resolveDesktopIcon()`'s _base_ `Gio.FileIcon`. The comment justifying
+  that exclusion reasoned "ships with the extension, trusted" — true for
+  provenance, irrelevant to the actual failure mode: an emblem is rendered
+  by St at some fraction of `icon_size` that this module never sees or
+  controls, and a source that decodes fine at one target size can still
+  round to a degenerate 0×0 pixbuf at a smaller one. The badge is attached
+  to *every* Flatpak/Snap browser's icon — exactly the package types every
+  crash observed since 2026-08-09 has involved.
+- Separately, the probe itself only ever checked one size (64×64) — well
+  above every size this extension renders at (16/24), but nowhere near
+  the much smaller size an emblem overlay actually gets rendered at. A
+  file passing a 64px probe says nothing about whether it survives
+  scaling down to ~5-10px.
+
+Both gaps are the same root mistake: validating at a provenance/size that
+doesn't match how St actually renders the icon, instead of validating
+against every size and every `Gio.FileIcon` that reaches `St.Icon`.
+
+- [x] Validate the package-manager badge SVGs through the same decode
+      probe as a browser's own `.desktop` icon, instead of skipping them —
+      `badgeIconResolver` now rejects an undecodable badge file the same
+      way `desktopIconResolver` rejects an undecodable app icon: falls
+      back to the unbadged base icon (never to no icon at all — a missing
+      badge is cosmetic, not worth losing the whole entry over).
+- [x] Widened `ICON_DECODE_PROBE_SIZES` from a single 64px check to
+      `[2, 14, 16, 24, 64]` — every `icon_size` this extension actually
+      renders at (14/16 profile rows, 24 Browsers row), plus a 2px floor
+      near the smallest anything could ever be asked to render (catches an
+      emblem-scale failure regardless of the exact fraction St picks) and
+      the original 64px ceiling (the large-source-thumbnail shape from
+      [GNOME/gtk#3077](https://gitlab.gnome.org/GNOME/gtk/-/issues/3077)).
+      Stops at the first size that fails — one bad size condemns the whole
+      file, no need to keep probing.
+- [x] Fixed `clearDesktopIconCache()`: it cleared `desktopIconResolver`
+      and the decode-probe cache, but not `badgeIconResolver`'s own
+      cache — meaning a badge's pass/fail verdict, once cached, could
+      never actually be re-evaluated even after a manual refresh. Latent
+      since the badge resolver was added; harmless before badges were
+      ever validated, a real bug now that they are.
+- [x] Test coverage in `test/desktop-icon.test.ts`: a clean badge still
+      badges normally; a badge that throws on decode falls back to the
+      unbadged icon; a badge that's degenerate at only the *smallest*
+      probed size (the exact shape that slipped past the old 64px-only
+      probe) is caught and falls back too; the decode failure is logged
+      with the badge's own path; a badge is validated at most once and
+      shared across every browser using that package manager; validation
+      re-runs after `clearDesktopIconCache()`. Plus a probe-loop
+      short-circuit test on the existing base-icon suite.
+- [ ] Still not confirmed against the real crash — this is now the second
+      fix attempt. Watch `journalctl -g st-icon-theme` across real sessions
+      on the affected (NVIDIA + Wayland) hardware; don't consider this
+      closed just because it's shipped and tests are green (see the note
+      above — that's exactly what happened last time).
+
 ## Ideas to explore (not committed)
 
 ### Per-tab media indicator
