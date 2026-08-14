@@ -13,17 +13,13 @@ the icon-heavy code paths — a machine with only one or two browsers won't
 trigger the icon-loading crash class or the 50-icon cap.
 
 The icon-loading crash specifically (see ROADMAP.md's "Icon-loading crash
-hardening") has now looked fixed twice and wasn't, either time — a green
-`pnpm test` run does not close that item, and neither does confirming the
-fix is actually installed/active (both were true the second time and it
-still crashed 4 times in one boot). Watch `journalctl -g st-icon-theme` for
-a repeat of the `st-icon-theme.c` assertion across a few real sessions on
-the affected (NVIDIA + Wayland) hardware before considering it confirmed.
-If it recurs again, don't assume the same fix shape (decode-validate a
-specific `Gio.FileIcon`) is even the right layer — check first whether
-`journalctl --user -g browser-hub` around the crash timestamp shows a
-"dropping undecodable..." warning; its absence means the crashing icon
-isn't going through either validated path (base icon or badge) at all.
+hardening") is confirmed fixed as of 2026-08-14, after two earlier fix
+attempts each looked sufficient from a green `pnpm test` run and real-machine
+confirmation that the fix was installed/active, and weren't. A third round
+moved the package-manager badge off the same validated-`Gio.FileIcon` path
+entirely (CSS `background-image` instead), which changes what's actually at
+risk again — still worth a `journalctl -g st-icon-theme` check across a few
+real sessions after any change in this area, not just trusting green tests.
 
 ## Setup
 
@@ -50,6 +46,13 @@ isn't going through either validated path (base icon or badge) at all.
       the right workspace isn't expected yet).
 - [ ] Close the menu mid-load (open it, close it immediately) a few times —
       no crash, no stuck "Loading…" row on the next open.
+- [ ] Open the menu, close it, open it again: the content appears instantly
+      the second time, with no re-staggering/flicker — the menu is only
+      rebuilt on an actual data change (refresh, a setting, setting the
+      default browser, a Donut launch finishing), not on every open.
+- [ ] If you have a browser with both an old (`~/.mozilla/...`) and new
+      (`$XDG_CONFIG_HOME/...`) profile location — commonly Firefox itself —
+      it appears exactly once in the flat icon row, not twice.
 
 ## Toolbar
 
@@ -59,7 +62,7 @@ isn't going through either validated path (base icon or badge) at all.
 - [ ] Settings button opens the preferences window.
 - [ ] Default-browser row: shows the current default; expanding it lists
       every browser; picking one sets it as default with no error, and the
-      panel/menu reflect the change on next open.
+      panel/menu reflect the change immediately.
 
 ## Settings — each toggle, on and off
 
