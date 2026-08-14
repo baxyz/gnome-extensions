@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
-import type Gio from "gi://Gio";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Maps desktop id -> fake Gio.Icon (or absent = "no app installed under that id").
 const installedApps = new Map<string, object>();
@@ -8,28 +7,18 @@ const desktopAppInfoNew = vi.fn((id: string) => {
   return icon ? { get_icon: () => icon, get_string: () => null } : null;
 });
 
-// Fakes for the emblem-wrapping path — only exercised once a test calls
-// setBadgeIconsDir(); every test above that point never does, so these are
-// never invoked there (see resolveDesktopIcon's badgeIconsDir-null guard).
-const fileIconNew = vi.fn((file: { get_path(): string }) => ({ __fileIcon: file.get_path() }));
-const emblemNew = vi.fn((icon: unknown) => ({ __emblem: icon }));
-const emblemedIconNew = vi.fn((icon: unknown, emblem: unknown) => ({ __emblemed: icon, emblem }));
-
-// internal/desktop-icon.ts imports from "./gio" — its Gio._promisify(Gio.File.prototype, ...)
-// call at module scope needs an actual prototype to patch even though
-// nothing here exercises the promisified methods themselves.
+// internal/gio.ts (imported transitively via ./gio) calls
+// Gio._promisify(Gio.File.prototype, ...) at module scope, needing an actual
+// prototype to patch even though nothing here exercises the promisified
+// methods themselves, and references Gio.IOErrorEnum via logIfUnexpected()
+// — none of our fake errors carry a real .matches(), so the exact values
+// here never actually match, only need to exist.
 class FakeGioFile {}
 
 vi.mock("gi://Gio", () => ({
   default: {
-    FileIcon: { new: fileIconNew },
-    Emblem: { new: emblemNew },
-    EmblemedIcon: { new: emblemedIconNew },
     File: FakeGioFile,
     _promisify: () => {},
-    // logIfUnexpected() (used by the decode-validation tests below) checks
-    // these — none of our fake errors carry a real .matches(), so the exact
-    // values here never actually match, only need to exist.
     IOErrorEnum: { NOT_FOUND: 1, PERMISSION_DENIED: 2 },
   },
 }));
@@ -39,8 +28,8 @@ vi.mock("gi://GioUnix", () => ({
   default: { DesktopAppInfo: { new: desktopAppInfoNew } },
 }));
 
-// internal/gio.ts (imported transitively via ./gio) also references GLib —
-// unused by anything these tests exercise, but the import itself must resolve.
+// internal/gio.ts also references GLib — unused by anything these tests
+// exercise, but the import itself must resolve.
 vi.mock("gi://GLib", () => ({ default: { PRIORITY_DEFAULT: 0 } }));
 
 // Controls the outcome of the decode probe for the "validation" describe
@@ -55,23 +44,28 @@ vi.mock("gi://GdkPixbuf", () => ({
   default: { Pixbuf: { new_from_file_at_size: newFromFileAtSize } },
 }));
 
+// Controls which symbolic icon names "exist" in the current theme, for the
+// symbolic-fallback describe block below — resolveDesktopIcon() imports
+// iconExists() (icons/resolve-icon.ts), which reaches St.IconTheme.has_icon().
+const existingIconNames = new Set<string>();
+vi.mock("gi://St", () => ({
+  default: {
+    IconTheme: class {
+      has_icon(name: string): boolean {
+        return existingIconNames.has(name);
+      }
+    },
+  },
+}));
+
 /** A Gio.FileIcon-shaped fake — real GJS exposes FileIcon.file as a plain property. */
 function fakeFileIcon(path: string): { file: { get_path(): string } } {
   return { file: { get_path: () => path } };
 }
 
-const { resolveDesktopIcon, clearDesktopIconCache, setBadgeIconsDir, ICON_DECODE_PROBE_SIZES } =
+const { resolveDesktopIcon, clearDesktopIconCache, ICON_DECODE_PROBE_SIZES } =
   await import("../src/internal/desktop-icon");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
-
-// A minimal fake Gio.File — only get_child()/get_path() are exercised,
-// mirroring the real Gio.File API (a get_path() method, not a plain
-// property) since badgeIconResolver now calls it to validate the badge.
-function fakeDir(path: string): Gio.File {
-  return {
-    get_child: (name: string) => ({ get_path: () => `${path}/${name}` }),
-  } as unknown as Gio.File;
-}
 
 describe("resolveDesktopIcon", () => {
   it("guesses '<binary>.desktop' for a Native package", () => {
@@ -114,7 +108,7 @@ describe("resolveDesktopIcon", () => {
     expect(desktopAppInfoNew).toHaveBeenCalledWith("org.gnome.Epiphany.desktop");
   });
 
-  it("returns undefined when the guessed desktop id matches no installed app", () => {
+  it("returns undefined when the guessed desktop id matches no installed app and no symbolic fallback exists", () => {
     const pkg = { manager: PackageManager.Native, binary: "totally-made-up-binary" } as const;
     expect(resolveDesktopIcon(pkg)).toBeUndefined();
   });
@@ -143,72 +137,14 @@ describe("resolveDesktopIcon", () => {
   });
 });
 
-describe("resolveDesktopIcon — package manager badge", () => {
-  beforeAll(() => {
-    setBadgeIconsDir(fakeDir("/ext/assets/badges"));
-    // Badge files now go through the same decode validation as a browser's
-    // own .desktop icon (see desktop-icon.ts's badgeIconResolver) — default
-    // to a clean decode so these pre-existing "does it badge at all" tests
-    // aren't about validation. See the dedicated "badge decode validation"
-    // describe block below for the failure-path coverage.
-    pixbufOutcome = () => ({ get_width: () => 16, get_height: () => 16 });
-  });
-
-  it("wraps a Flatpak package's icon in an EmblemedIcon carrying the flatpak badge", () => {
-    const icon = {};
-    installedApps.set("org.badged.Flatpak.desktop", icon);
-    const pkg = { manager: PackageManager.Flatpak, appId: "org.badged.Flatpak" } as const;
-
-    const result = resolveDesktopIcon(pkg);
-    expect(fileIconNew.mock.calls.at(-1)?.[0]?.get_path()).toBe(
-      "/ext/assets/badges/flatpak-badge.svg",
-    );
-    expect(emblemedIconNew).toHaveBeenCalledWith(icon, {
-      __emblem: { __fileIcon: expect.any(String) },
-    });
-    expect(result).toEqual({ __emblemed: icon, emblem: expect.anything() });
-  });
-
-  it("wraps a Snap package's icon with the snap badge, not the flatpak one", () => {
-    const icon = {};
-    installedApps.set("badged-snap_badged-snap.desktop", icon);
-    const pkg = { manager: PackageManager.Snap, name: "badged-snap" } as const;
-
-    resolveDesktopIcon(pkg);
-    expect(fileIconNew.mock.calls.at(-1)?.[0]?.get_path()).toBe(
-      "/ext/assets/badges/snap-badge.svg",
-    );
-  });
-
-  it("does not badge a Native package's icon — native is the unmarked default", () => {
-    const icon = {};
-    installedApps.set("badged-native.desktop", icon);
-    const pkg = { manager: PackageManager.Native, binary: "badged-native" } as const;
-
-    fileIconNew.mockClear();
-    expect(resolveDesktopIcon(pkg)).toBe(icon);
-    expect(fileIconNew).not.toHaveBeenCalled();
-  });
-
-  it("does not badge when there's no icon to badge (app not installed)", () => {
-    const pkg = { manager: PackageManager.Flatpak, appId: "org.not.Installed" } as const;
-
-    fileIconNew.mockClear();
-    expect(resolveDesktopIcon(pkg)).toBeUndefined();
-    expect(fileIconNew).not.toHaveBeenCalled();
-  });
-});
-
 // A Gio.FileIcon whose file fails to decode must never reach St.Icon — it
 // aborts GNOME Shell natively (see desktop-icon.ts's isFileIcon/
-// isDecodableIconFile). These tests never exercise resolveDesktopIcon()'s
-// badge step (setBadgeIconsDir() is only called in the describe block
-// above), so results are asserted directly against the raw icon, same as
-// the unbadged tests earlier in this file.
+// isDecodableIconFile).
 describe("resolveDesktopIcon — icon decode validation", () => {
   beforeEach(() => {
     globalThis.logError = vi.fn();
     newFromFileAtSize.mockClear();
+    existingIconNames.clear();
   });
 
   it("keeps a Gio.FileIcon whose file decodes to a real size", () => {
@@ -300,113 +236,66 @@ describe("resolveDesktopIcon — icon decode validation", () => {
   });
 });
 
-// Reproduces the real production gap found via journalctl on 2026-08-13: the
-// original decode-validation fix (a single-size probe) only ever covered a
-// browser's own .desktop icon, never the package-manager badge — but the
-// badge is rendered as a GEmblemedIcon's *emblem*, at a fraction of icon_size
-// this module can't observe, and it kept crashing the shell after that fix
-// had already shipped and was confirmed active. See ROADMAP.md's "Icon
-// -loading crash hardening" section for the full timeline.
-describe("resolveDesktopIcon — badge decode validation", () => {
+describe("resolveDesktopIcon — symbolic icon fallback", () => {
   beforeEach(() => {
-    setBadgeIconsDir(fakeDir("/ext/assets/badges"));
+    existingIconNames.clear();
+  });
+
+  it("falls back to '<binary>-symbolic' when no .desktop match exists and the theme has that icon", () => {
+    existingIconNames.add("nomatch-symbolic");
+    const pkg = { manager: PackageManager.Native, binary: "nomatch" } as const;
+
+    expect(resolveDesktopIcon(pkg)).toBe("nomatch-symbolic");
+  });
+
+  it("prefers '<desktopId>-symbolic' over '<binary>-symbolic' for a Native package with an explicit desktopId", () => {
+    existingIconNames.add("org.symtest.App-symbolic");
+    const pkg = {
+      manager: PackageManager.Native,
+      binary: "symtest-app",
+      desktopId: "org.symtest.App.desktop",
+    } as const;
+
+    expect(resolveDesktopIcon(pkg)).toBe("org.symtest.App-symbolic");
+  });
+
+  it("falls back to '<appId>-symbolic' for a Flatpak package", () => {
+    existingIconNames.add("org.symtest.Flatpak-symbolic");
+    const pkg = { manager: PackageManager.Flatpak, appId: "org.symtest.Flatpak" } as const;
+
+    expect(resolveDesktopIcon(pkg)).toBe("org.symtest.Flatpak-symbolic");
+  });
+
+  it("falls back to '<name>-symbolic' for a Snap package", () => {
+    existingIconNames.add("symtest-snap-symbolic");
+    const pkg = { manager: PackageManager.Snap, name: "symtest-snap" } as const;
+
+    expect(resolveDesktopIcon(pkg)).toBe("symtest-snap-symbolic");
+  });
+
+  it("returns undefined when neither a real icon nor a symbolic fallback is available", () => {
+    const pkg = { manager: PackageManager.Native, binary: "totally-unknown" } as const;
+    expect(resolveDesktopIcon(pkg)).toBeUndefined();
+  });
+
+  it("prefers the real .desktop icon over the symbolic fallback when both are available", () => {
+    const icon = {};
+    installedApps.set("has-both.desktop", icon);
+    existingIconNames.add("has-both-symbolic");
+
+    expect(resolveDesktopIcon({ manager: PackageManager.Native, binary: "has-both" })).toBe(icon);
+  });
+
+  it("still tries the symbolic fallback when the real icon exists but fails decode validation", () => {
+    installedApps.set("corrupt-but-symbolic.desktop", fakeFileIcon("/apps/corrupt.png"));
+    existingIconNames.add("corrupt-but-symbolic-symbolic");
     globalThis.logError = vi.fn();
     newFromFileAtSize.mockClear();
-    // Badge validation is cached per filename (only 2 ever exist) — clear
-    // it every test so "good" and "bad" scenarios for the same filename
-    // don't leak into each other via a stale cached verdict.
-    clearDesktopIconCache();
-  });
-
-  // Base icons here are plain objects (like the "package manager badge"
-  // describe block above), not fakeFileIcon() — isFileIcon() only matches
-  // objects with a "file" property, so these never enter the base-icon
-  // decode path and every newFromFileAtSize call below is attributable
-  // solely to badge validation. Using a FileIcon-shaped base instead would
-  // make it decode through the *same* isDecodableIconFile probe, confounding
-  // whatever failure/count each test is trying to isolate on the badge.
-
-  it("badges a Flatpak icon when the badge file decodes cleanly at every probed size", () => {
-    const icon = {};
-    installedApps.set("good.flatpak.desktop", icon);
-    pixbufOutcome = () => ({ get_width: () => 16, get_height: () => 16 });
-
-    const result = resolveDesktopIcon({ manager: PackageManager.Flatpak, appId: "good.flatpak" });
-
-    expect(result).toEqual({ __emblemed: icon, emblem: expect.anything() });
-  });
-
-  it("drops the badge (keeps the base icon) when the badge file throws on decode", () => {
-    const icon = {};
-    installedApps.set("degraded.flatpak.desktop", icon);
     pixbufOutcome = () => {
-      throw new Error("Could not load a pixbuf from icon theme.");
+      throw new Error("bad image");
     };
 
-    const result = resolveDesktopIcon({
-      manager: PackageManager.Flatpak,
-      appId: "degraded.flatpak",
-    });
-
-    expect(result).toBe(icon);
-  });
-
-  it("drops the badge when it decodes to a degenerate size at only the smallest probed size", () => {
-    const icon = {};
-    installedApps.set("tiny.flatpak.desktop", icon);
-    let calls = 0;
-    // Fails only on the first (smallest) probed size — the exact shape that
-    // slipped through the original single-64px probe in production: fine at
-    // 64px, degenerate at whatever tiny size St actually renders the emblem.
-    pixbufOutcome = () => {
-      calls += 1;
-      return calls === 1
-        ? { get_width: () => 0, get_height: () => 0 }
-        : { get_width: () => 16, get_height: () => 16 };
-    };
-
-    const result = resolveDesktopIcon({ manager: PackageManager.Flatpak, appId: "tiny.flatpak" });
-
-    expect(result).toBe(icon);
-    expect(newFromFileAtSize).toHaveBeenCalledTimes(1);
-  });
-
-  it("logs a warning naming the badge path when its decode fails", () => {
-    installedApps.set("noisy.flatpak.desktop", {});
-    pixbufOutcome = () => {
-      throw new Error("bad svg");
-    };
-
-    resolveDesktopIcon({ manager: PackageManager.Flatpak, appId: "noisy.flatpak" });
-
-    expect(globalThis.logError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.stringContaining("flatpak-badge.svg"),
-    );
-  });
-
-  it("validates a badge at most once, shared across every browser using that package manager", () => {
-    pixbufOutcome = () => ({ get_width: () => 16, get_height: () => 16 });
-    installedApps.set("first.flatpak.desktop", {});
-    installedApps.set("second.flatpak.desktop", {});
-
-    resolveDesktopIcon({ manager: PackageManager.Flatpak, appId: "first.flatpak" });
-    const callsAfterFirst = newFromFileAtSize.mock.calls.length;
-    resolveDesktopIcon({ manager: PackageManager.Flatpak, appId: "second.flatpak" });
-
-    expect(newFromFileAtSize.mock.calls.length).toBe(callsAfterFirst);
-  });
-
-  it("re-validates the badge after clearDesktopIconCache()", () => {
-    pixbufOutcome = () => ({ get_width: () => 16, get_height: () => 16 });
-    installedApps.set("refreshed.flatpak.desktop", {});
-    const pkg = { manager: PackageManager.Flatpak, appId: "refreshed.flatpak" } as const;
-
-    resolveDesktopIcon(pkg);
-    const callsAfterFirst = newFromFileAtSize.mock.calls.length;
-    clearDesktopIconCache();
-    resolveDesktopIcon(pkg);
-
-    expect(newFromFileAtSize.mock.calls.length).toBe(callsAfterFirst * 2);
+    const pkg = { manager: PackageManager.Native, binary: "corrupt-but-symbolic" } as const;
+    expect(resolveDesktopIcon(pkg)).toBe("corrupt-but-symbolic-symbolic");
   });
 });

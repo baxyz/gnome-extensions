@@ -64,10 +64,10 @@ export type ResolvedBrowserEntry = {
   /** "simple" groups all profile-less browsers into a single icon-button row */
   group?: "simple";
   /**
-   * The browser's own real icon, fetched from its installed .desktop file
-   * (see src/internal/desktop-icon.ts) — shown once next to the section
-   * label instead of being repeated on every profile item. Absent for the
+   * The browser's own real icon (or a same-named symbolic fallback), fetched
+   * via src/internal/desktop-icon.ts — shown once next to the section label
+   * instead of being repeated on every profile item. Absent for the
    * "simple" row, which aggregates many different browsers.
    */
-  icon?: Gio.Icon;
+  icon?: string | Gio.Icon;
 };

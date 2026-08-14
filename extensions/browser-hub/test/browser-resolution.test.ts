@@ -239,6 +239,11 @@ describe("resolveFirefoxBrowsers", () => {
     expect(entries).toEqual([
       {
         label: "Firefox",
+        // No .desktop app installed in this test's DesktopAppInfo mock —
+        // falls back to the "<binary>-symbolic" icon (this file's St mock
+        // reports every icon name as present, see "Icon-theme availability"
+        // comment above).
+        icon: "firefox-symbolic",
         items: [
           {
             label: "default",

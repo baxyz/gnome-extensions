@@ -52,6 +52,24 @@
   padding: 8px;
 }
 
+/* Package-manager badge overlaid on a "Browsers" row icon (see
+   menu/shared.ts's withBadge()) — a plain CSS background-image, not a
+   composited Gio.Icon, so it never touches St's icon-theme loader. */
+.browser-hub-badge {
+  width: 9px;
+  height: 9px;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.browser-hub-badge-flatpak {
+  background-image: url("assets/badges/flatpak-badge.svg");
+}
+
+.browser-hub-badge-snap {
+  background-image: url("assets/badges/snap-badge.svg");
+}
+
 /* Vertical gap between wrapped lines of the "Browsers" row */
 .browser-hub-browsers-lines {
   spacing: 4px;

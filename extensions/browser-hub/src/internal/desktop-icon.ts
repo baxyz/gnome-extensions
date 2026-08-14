@@ -1,8 +1,9 @@
-import Gio from "gi://Gio";
+import type Gio from "gi://Gio";
 import GdkPixbuf from "gi://GdkPixbuf";
 import { createCachedResolver } from "@helpers4/function";
 import { PackageManager } from "../taxonomy";
 import type { ResolvedBrowserPkg } from "../taxonomy";
+import { iconExists } from "../icons";
 import { getDesktopAppInfo, logIfUnexpected } from "./gio";
 
 // A Gio.FileIcon whose file fails to decode aborts GNOME Shell itself:
@@ -16,26 +17,12 @@ function isFileIcon(icon: Gio.Icon): icon is Gio.FileIcon {
   return "file" in icon;
 }
 
-// Icon files are tiny (packaged app icons, not user content), so a real
-// decode is cheap — unlike a bare existence check, it actually exercises
-// the decode failure above. Probed at every size this extension actually
-// renders an icon at (see menu/*.ts icon_size usages: 14/16 for profile
-// rows, 24 for the Browsers row), plus two defensive bounds: 2 (near the
-// smallest anything could ever be asked to render at) and 64 (above every
-// real size — the original bound this probe shipped with). A source that
-// decodes cleanly at one target size can still round to a degenerate 0×0
-// pixbuf at another — confirmed in production: the very first version of
-// this probe (a single 64px check) still let a real crash through, because
-// the failure only showed up at a size this module never tested (see
-// badgeIconResolver below — the actual culprit was the *emblem*, which
-// St renders at a fraction of icon_size this module has no visibility
-// into). GTK hit the same assertion shape from a 1px-wide thumbnail, when
-// gdk_pixbuf_scale_simple returned null for it
-// (https://gitlab.gnome.org/GNOME/gtk/-/issues/3077) — every probed size
-// here is a variant of that same "scale produces a 0 dimension" failure.
-// Exported only for tests, to size their call-count assertions off this
-// list instead of a hardcoded, easily-stale duplicate of its length.
-export const ICON_DECODE_PROBE_SIZES = [2, 14, 16, 24, 64] as const;
+// The two real icon_size values this extension ever renders a .desktop icon
+// at (menu/shared.ts's makeIconButton call sites: 24 for the Browsers row,
+// 16 for the default-browser picker rows). Package-manager badges are no
+// longer Gio.Icon compositing (see menu/shared.ts) — nothing else needs
+// probing at a size this module doesn't already know is real.
+export const ICON_DECODE_PROBE_SIZES = [16, 24] as const;
 
 // Cached per path — a bad file is decoded at most once per session (across
 // every probed size), same as every other lookup in this module.
@@ -57,60 +44,6 @@ const isDecodableIconFile = createCachedResolver((path: string): boolean => {
   return true;
 });
 
-// Filenames under the badge assets dir set via setBadgeIconsDir() below (see
-// vite.config.ts's staticAssets plugin for how assets/badges/ ends up in
-// dist/assets/badges/). Native has no badge — it's the unmarked default.
-// These ship with the extension itself — never third-party-controlled — but
-// "trusted provenance" turned out not to mean "safe to render": they're
-// rendered as a GEmblemedIcon's *emblem*, at whatever fraction of icon_size
-// St's own compositor picks internally, a size this module can't observe or
-// control. That's exactly the failure mode ICON_DECODE_PROBE_SIZES's 2px
-// bound exists to catch, so these go through the same isDecodableIconFile
-// check as a browser's own .desktop icon — see badgeIconResolver below.
-const BADGE_FILENAMES: Partial<Record<PackageManager, string>> = {
-  [PackageManager.Flatpak]: "flatpak-badge.svg",
-  [PackageManager.Snap]: "snap-badge.svg",
-};
-
-// Set once from extension.ts's enable() (this.dir.get_child("assets").get_child("badges")),
-// which is the only place with access to the extension's own install
-// directory — internal/ modules are otherwise plain functions with no `this`.
-// Left null in tests and anywhere else that never calls the setter, which
-// makes badge lookup (and therefore emblem-wrapping below) a deliberate no-op
-// rather than a crash.
-let badgeIconsDir: Gio.File | null = null;
-
-/** Sets the directory badge SVGs are loaded from. Call once, from enable(). */
-export function setBadgeIconsDir(dir: Gio.File): void {
-  badgeIconsDir = dir;
-}
-
-// Only 2 possible icons ever exist — cached by filename, never invalidated
-// (the files ship with the extension and can't change while it's running).
-// Returns null (not undefined) for a badge that fails decode validation —
-// callers fall back to an unbadged icon exactly like an unmatched desktopId
-// already does, rather than crash the shell over a cosmetic package-manager
-// marker.
-const badgeIconResolver = createCachedResolver((filename: string): Gio.Icon | null => {
-  const file = badgeIconsDir!.get_child(filename);
-  const path = file.get_path();
-  // A null path would mean a non-local Gio.File, essentially never true for
-  // a static asset shipped inside the extension's own install directory —
-  // pass through unvalidated rather than guess it's bad with no evidence,
-  // same convention desktopIconResolver below follows.
-  if (path !== null && !isDecodableIconFile.resolve(path)) {
-    console.warn(`[browser-hub] dropping undecodable package-manager badge: ${path}`);
-    return null;
-  }
-  return Gio.FileIcon.new(file);
-});
-
-function badgeIconFor(manager: PackageManager): Gio.Icon | undefined {
-  const filename = BADGE_FILENAMES[manager];
-  if (!filename || !badgeIconsDir) return undefined;
-  return badgeIconResolver.resolve(filename) ?? undefined;
-}
-
 /** Also used by default-browser.ts's setDefaultBrowser() to resolve a Gio.DesktopAppInfo. */
 export function desktopIdFor(pkg: ResolvedBrowserPkg): string {
   switch (pkg.manager) {
@@ -128,11 +61,9 @@ export function desktopIdFor(pkg: ResolvedBrowserPkg): string {
 }
 
 // Package/binary presence rarely changes mid-session, same as pkg.ts's
-// cache. Keyed by the desktopId string rather than the pkg object: the
-// default browser's pkg is rebuilt fresh on every menu open, so an
-// object-identity key would just never hit. Only the GNOME app-info lookup
-// (get_icon(), plus the decode validation below) goes through the cache —
-// the emblem wrapping further down is cheap enough to redo every time.
+// cache. Keyed by the desktopId string rather than the pkg object: a manual
+// refresh rebuilds the default browser's pkg as a fresh object, so an
+// object-identity key would just never hit.
 //
 // This is the only place in the codebase allowed to call .get_icon() — any
 // new call site would bypass the decode validation below and reintroduce
@@ -155,26 +86,47 @@ const desktopIconResolver = createCachedResolver((desktopId: string): Gio.Icon |
 /** Clears the desktop icon cache. Called on extension disable and manual refresh. */
 export function clearDesktopIconCache(): void {
   desktopIconResolver.clear();
-  badgeIconResolver.clear();
   isDecodableIconFile.clear();
 }
 
+// Plausible "<name>-symbolic" candidates for a package's own icon set — many
+// apps ship one alongside their main icon (e.g. Firefox's own
+// firefox-symbolic), checked via the same St.IconTheme.has_icon() lookup the
+// Firefox-avatar/Zen-workspace icons already use (see icons/resolve-icon.ts)
+// — a name lookup, not a file decode, so it carries none of the risk
+// resolveDesktopIcon() above exists to guard against. Purely a guess at
+// naming convention: absent candidates just mean iconExists() finds nothing
+// and the caller falls through to the fully generic icon, same as today.
+function symbolicIconCandidates(pkg: ResolvedBrowserPkg): string[] {
+  switch (pkg.manager) {
+    case PackageManager.Native: {
+      const fromDesktopId = pkg.desktopId?.replace(/\.desktop$/, "");
+      return [...new Set([fromDesktopId, pkg.binary].filter((n) => n !== undefined))].map(
+        (n) => `${n}-symbolic`,
+      );
+    }
+    case PackageManager.Flatpak:
+      return [`${pkg.appId}-symbolic`];
+    case PackageManager.Snap:
+      return [`${pkg.name}-symbolic`];
+  }
+}
+
 /**
- * Resolves a browser's own real icon, as declared in its installed .desktop
- * file, via GNOME's own app database — no guessed icon-theme name involved.
+ * Resolves a browser's own icon: its real .desktop icon when one decodes
+ * safely, else a same-named "-symbolic" icon from its own icon set when the
+ * current theme actually has one, else undefined (every caller already
+ * falls back to a fully generic icon for that case).
+ *
  * `${binary|appId|name}.desktop` is a guess (not guaranteed for Native/Snap,
  * always correct for Flatpak sandboxing), but a wrong guess just means no
- * matching app is found: returns undefined and the menu shows nothing rather
- * than a wrong icon.
+ * matching app is found — same graceful degradation as a validation failure.
  *
- * Flatpak/Snap results are wrapped in a Gio.EmblemedIcon carrying a small
- * package-manager badge — St's texture cache renders GEmblemedIcon natively
- * (composites and positions the emblem itself), so this needs no rendering
- * code of its own anywhere icons are drawn.
+ * Carries no package-manager badge — that's a CSS overlay applied at render
+ * time (see menu/shared.ts), not part of the resolved icon itself.
  */
-export function resolveDesktopIcon(pkg: ResolvedBrowserPkg): Gio.Icon | undefined {
+export function resolveDesktopIcon(pkg: ResolvedBrowserPkg): string | Gio.Icon | undefined {
   const baseIcon = desktopIconResolver.resolve(desktopIdFor(pkg));
-  if (!baseIcon) return undefined;
-  const badge = badgeIconFor(pkg.manager);
-  return badge ? Gio.EmblemedIcon.new(baseIcon, Gio.Emblem.new(badge)) : baseIcon;
+  if (baseIcon) return baseIcon;
+  return symbolicIconCandidates(pkg).find(iconExists);
 }

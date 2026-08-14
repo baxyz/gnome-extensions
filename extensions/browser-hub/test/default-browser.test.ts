@@ -59,13 +59,24 @@ vi.mock("gi://GLib", () => ({
   },
 }));
 
-// internal/desktop-icon.ts (transitively imported) also imports
-// "gi://GdkPixbuf" to validate .desktop icons before use — irrelevant to
-// what this file tests, so a stub that always "succeeds" is enough for the
-// module to load under Node.
+// internal/desktop-icon.ts (transitively imported via the "./internal"
+// barrel, even though default-browser.ts itself never calls
+// resolveDesktopIcon()) also imports "gi://GdkPixbuf" to validate .desktop
+// icons before use, and "gi://St" for its symbolic-icon fallback — both
+// irrelevant to what this file tests, so stubs that always "succeed"/"don't
+// match" are enough for the module to load under Node.
 vi.mock("gi://GdkPixbuf", () => ({
   default: {
     Pixbuf: { new_from_file_at_size: () => ({ get_width: () => 1, get_height: () => 1 }) },
+  },
+}));
+vi.mock("gi://St", () => ({
+  default: {
+    IconTheme: class {
+      has_icon() {
+        return false;
+      }
+    },
   },
 }));
 

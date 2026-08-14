@@ -50,7 +50,7 @@ const DEFAULT_BROWSER_ICON_SIZE = 24;
 /** Plain, non-expandable default-browser button, shown when showDefaultBrowserEdit is off. */
 function buildDefaultBrowserRow(
   name: string,
-  icon: Gio.Icon | undefined,
+  icon: string | Gio.Icon | undefined,
   onLaunch: () => void,
 ): St.Button {
   const launchBtn = new St.Button({
@@ -109,7 +109,7 @@ function buildDefaultBrowserPickerRows(
  */
 function buildDefaultBrowserSubMenuItem(
   defaultBrowser: DefaultBrowserInfo,
-  icon: Gio.Icon | undefined,
+  icon: string | Gio.Icon | undefined,
   browsers: ResolvedBrowserItem[],
   onLaunch: () => void,
   onSetDefaultBrowser: (pkg: ResolvedBrowserPkg) => void,
