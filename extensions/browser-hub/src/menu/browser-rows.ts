@@ -111,10 +111,17 @@ export async function buildSimpleBrowserRow(
     for (const item of lineItems) {
       const cmd = item.command;
       line.add_child(
-        makeIconButton(item.label, item.icon, 24, () => {
-          launchBrowser({ command: cmd, title, notify });
-          closeMenu();
-        }),
+        makeIconButton(
+          item.label,
+          item.icon,
+          24,
+          () => {
+            launchBrowser({ command: cmd, title, notify });
+            closeMenu();
+          },
+          undefined,
+          item.pkg?.manager,
+        ),
       );
     }
     container.add_child(line);

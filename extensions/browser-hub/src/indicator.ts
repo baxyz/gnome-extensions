@@ -216,7 +216,9 @@ export class BrowserProfilesIndicator extends Button {
   ): void {
     const icon =
       showDefaultBrowserPanelIcon && defaultBrowser && resolveDesktopIcon(defaultBrowser.pkg);
-    if (icon) {
+    if (typeof icon === "string") {
+      this._panelIcon.set_icon_name(icon);
+    } else if (icon) {
       this._panelIcon.set_gicon(icon);
     } else {
       this._panelIcon.set_icon_name(GENERIC_PANEL_ICON_NAME);

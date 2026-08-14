@@ -3,12 +3,7 @@ import GLib from "gi://GLib";
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { BrowserSettings, ProfileGroupsMode } from "./browser";
-import {
-  clearDesktopIconCache,
-  clearPathPresenceCache,
-  clearPkgResolutionCache,
-  setBadgeIconsDir,
-} from "./internal";
+import { clearDesktopIconCache, clearPathPresenceCache, clearPkgResolutionCache } from "./internal";
 import { clearDefaultBrowserCache } from "./default-browser";
 import { SpaceType } from "./taxonomy/space-type.enum";
 import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
@@ -30,7 +25,6 @@ export default class BrowserProfilesExtension extends Extension {
   private _pendingNeedsRescan = false;
 
   enable() {
-    setBadgeIconsDir(this.dir.get_child("assets").get_child("badges"));
     const settings = this.getSettings();
     this._settings = settings;
 

@@ -92,6 +92,17 @@ vi.mock("gi://St", () => ({
   },
 }));
 
+// menu/shared.ts's withBadge() overlays a package-manager badge using
+// Clutter.BinLayout — FakeWidget already accepts an arbitrary props object
+// (including layout_manager) without validating it, so a minimal stub of
+// the two symbols it references is enough.
+vi.mock("gi://Clutter", () => ({
+  default: {
+    BinLayout: class {},
+    ActorAlign: { END: "end" },
+  },
+}));
+
 class FakeLabel extends FakeWidget {
   text: string;
   constructor(text: string) {
@@ -297,6 +308,48 @@ describe("fillMenu", () => {
     const line = container.children[0];
     expect(line).toBeInstanceOf(FakeBoxLayout);
     expect(line.children).toHaveLength(2);
+  });
+
+  it("overlays a package-manager badge on a Flatpak/Snap browser's icon button, not on a Native one", async () => {
+    const menu = makeFakeMenu();
+    await fillMenu({
+      title: "t",
+      menu,
+      entries: [
+        {
+          label: "Browsers",
+          group: "simple",
+          items: [
+            {
+              label: "Zen (flatpak)",
+              command: ["flatpak", "run", "app.zen_browser.zen"],
+              pkg: { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" },
+            },
+            {
+              label: "Firefox",
+              command: ["firefox"],
+              pkg: { manager: PackageManager.Native, binary: "firefox" },
+            },
+          ],
+        },
+      ],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const row = menu.items[1] as FakePopupMenuItem;
+    const line = row.children[0].children[0];
+    const [flatpakButton, nativeButton] = line.children as FakeButton[];
+
+    // Flatpak: icon wrapped in a badge container (icon + badge overlay).
+    const badgeContainer = flatpakButton.children[0];
+    expect(badgeContainer.children).toHaveLength(2);
+    expect(badgeContainer.children[0]).toBeInstanceOf(FakeIcon);
+    expect(badgeContainer.children[1].props.style_class).toContain("browser-hub-badge-flatpak");
+
+    // Native: no badge, the button's direct child is the plain icon.
+    expect(nativeButton.children[0]).toBeInstanceOf(FakeIcon);
   });
 
   it("wraps the 'Browsers' row's icon buttons onto additional lines past the per-line cap", async () => {
