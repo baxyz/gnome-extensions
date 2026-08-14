@@ -24,8 +24,8 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 ### Package manager badge
 
-- [x] Show a small emblem (Flatpak/Snap) on each browser icon, in the Browsers row and in the detailed sections. Native is unmarked (the default).
-      No Flatpak/Snap icon exists in Adwaita — two SVGs (`assets/badges/`, recolored from real official marks, see `assets/badges/NOTICE.md`) ship with the extension instead, applied via `Gio.EmblemedIcon` in `resolveDesktopIcon()`. St's texture cache renders `GEmblemedIcon` natively, so every call site got the badge for free with no rendering changes.
+- [x] Show a small emblem (Flatpak/Snap) on the "Browsers" row's icon buttons — the only place a browser's package manager isn't already spelled out in a visible text label. Native is unmarked (the default).
+      No Flatpak/Snap icon exists in Adwaita — two SVGs (`assets/badges/`, recolored from real official marks, see `assets/badges/NOTICE.md`) ship with the extension instead. Originally composited into the resolved `Gio.Icon` via `Gio.EmblemedIcon` — moved to a plain CSS `background-image` overlay (`menu/shared.ts`'s `withBadge()`, `Clutter.BinLayout`) after that path turned out to be a second, unvalidated source of the icon-loading crash below: the emblem was rendered by St's icon-theme loader at a size this codebase never validated. A CSS background goes through St's texture cache instead, not the icon-theme loader.
 
 ### Default browser switcher
 
@@ -193,7 +193,7 @@ found the actual gap:
   by St at some fraction of `icon_size` that this module never sees or
   controls, and a source that decodes fine at one target size can still
   round to a degenerate 0×0 pixbuf at a smaller one. The badge is attached
-  to *every* Flatpak/Snap browser's icon — exactly the package types every
+  to _every_ Flatpak/Snap browser's icon — exactly the package types every
   crash observed since 2026-08-09 has involved.
 - Separately, the probe itself only ever checked one size (64×64) — well
   above every size this extension renders at (16/24), but nowhere near
@@ -228,18 +228,63 @@ against every size and every `Gio.FileIcon` that reaches `St.Icon`.
       ever validated, a real bug now that they are.
 - [x] Test coverage in `test/desktop-icon.test.ts`: a clean badge still
       badges normally; a badge that throws on decode falls back to the
-      unbadged icon; a badge that's degenerate at only the *smallest*
+      unbadged icon; a badge that's degenerate at only the _smallest_
       probed size (the exact shape that slipped past the old 64px-only
       probe) is caught and falls back too; the decode failure is logged
       with the badge's own path; a badge is validated at most once and
       shared across every browser using that package manager; validation
       re-runs after `clearDesktopIconCache()`. Plus a probe-loop
       short-circuit test on the existing base-icon suite.
-- [ ] Still not confirmed against the real crash — this is now the second
+- [x] Still not confirmed against the real crash — this is now the second
       fix attempt. Watch `journalctl -g st-icon-theme` across real sessions
       on the affected (NVIDIA + Wayland) hardware; don't consider this
       closed just because it's shipped and tests are green (see the note
-      above — that's exactly what happened last time).
+      above — that's exactly what happened last time). **Confirmed fixed**
+      (2026-08-14, reported directly by the user after real-machine
+      testing) — no further recurrence.
+
+**Third round: cleanup after the crash was confirmed fixed.** With the
+crash itself resolved, three follow-up issues surfaced from real use, plus
+two simplifications:
+
+- [x] Firefox and "Firefox (classic)" (and any other family with both an
+      XDG and pre-XDG profiles.ini path — see `expandFirefoxVariants`)
+      resolve to the _same_ package, so `resolveDesktopIcon()`'s cache
+      correctly gave them the same icon verdict — but the "Browsers" row
+      still showed both as separate buttons, which read as two of a
+      browser's icons being broken when only one identity's icon actually
+      was. `resolve-all.ts`'s `dedupeByPkg()` (keyed by
+      `internal/pkg.ts`'s new `pkgKey()`, also now shared with
+      `donut-browser.ts`'s `samePkg()`) collapses the Browsers row to one
+      button per actual installed identity — the detailed per-family
+      sections are unaffected, where each profiles.ini variant's own
+      profile list can genuinely differ.
+- [x] The package-manager badge moved off `Gio.EmblemedIcon` entirely (see
+      "Package manager badge" above) — CSS `background-image`, not a
+      composited `Gio.Icon`, so it never touches St's icon-theme loader at
+      all. Simpler than probing it, and removes an entire class of risk
+      instead of trying to validate it correctly.
+- [x] `ICON_DECODE_PROBE_SIZES` dropped back to `[16, 24]` — the two real
+      sizes a `.desktop` icon is ever rendered at in this codebase. The 2px
+      floor and 64px ceiling were only ever justified by the badge/emblem
+      risk, which no longer exists now that badges are CSS.
+- [x] `resolveDesktopIcon()` now tries a `"<name>-symbolic"` icon from the
+      browser's own icon set (validated via the same `St.IconTheme.has_icon()`
+      lookup the Firefox-avatar/Zen-workspace icons already use — a name
+      check, not a file decode, so none of the risk above applies) before
+      falling back to the fully generic icon — including when the real
+      `.desktop` icon exists but fails decode validation, not only when
+      none is found at all. Many apps ship one alongside their main icon;
+      whether this covers most real browsers isn't confirmed yet.
+- [x] `indicator.ts` no longer busts the default-browser cache and
+      rebuilds the whole menu widget tree on every menu open — only on an
+      actual data change (manual refresh, a setting change, setting the
+      default browser, a Donut launch finishing). The default browser
+      shown can now go stale between an external change
+      (gnome-control-center, `xdg-settings`) and the next refresh — an
+      accepted tradeoff, refresh is the explicit way to pick that up now.
+      Removed the `open-state-changed` signal connection entirely along
+      with the `_menuIsOpen` field it existed to maintain.
 
 ## Ideas to explore (not committed)
 
