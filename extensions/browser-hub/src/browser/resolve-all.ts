@@ -6,10 +6,16 @@ import {
   FIREFOX_BROWSERS,
   SIMPLE_BROWSERS,
 } from "../constants";
-import type { BrowserPkg, ResolvedBrowserEntry } from "../taxonomy";
+import type { BrowserPkg, ResolvedBrowserEntry, ResolvedBrowserPkg } from "../taxonomy";
 import type { FirefoxOptions } from "../taxonomy";
 import { SpaceType } from "../taxonomy/space-type.enum";
-import { buildBaseCommand, errorMessage, filterAvailable, resolveDesktopIcon } from "../internal";
+import {
+  buildBaseCommand,
+  errorMessage,
+  filterAvailable,
+  pkgKey,
+  resolveDesktopIcon,
+} from "../internal";
 import { resolveChromiumBrowsers } from "./chromium";
 import { resolveFalkonBrowsers } from "./falkon";
 import { resolveFirefoxBrowsers } from "./firefox";
@@ -85,6 +91,26 @@ function isSingleProfileEntry(entry: ResolvedBrowserEntry): boolean {
 }
 
 /**
+ * A family with multiple profiles.ini path variants (e.g. Firefox's XDG vs
+ * pre-XDG "classic" layout — see expandFirefoxVariants) resolves to the same
+ * underlying pkg from more than one config, each with its own label
+ * ("Firefox", "Firefox (classic)") — real for the detailed section below,
+ * where each variant's profile list can genuinely differ, but not for this
+ * flat row: it's one identity, so it gets one icon. Keeps the first config
+ * seen for a given pkg (array order already puts the plain, unsuffixed
+ * variant before "(classic)" — see expandFirefoxVariants).
+ */
+function dedupeByPkg<T extends { pkg: ResolvedBrowserPkg }>(configs: readonly T[]): T[] {
+  const seen = new Set<string>();
+  return configs.filter((c) => {
+    const key = pkgKey(c.pkg);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
  * Builds the "Browsers" quick-launch row: one icon per installed browser
  * identity, regardless of family or whether it has profiles — always its
  * base command (no profile arg, no profile-groups/spaces handling), sorted
@@ -99,10 +125,10 @@ function resolveBrowsersRow(settings: BrowserSettings, errors: string[]): Resolv
   // filterPresent also requires profiles.ini/Local State to exist, which a
   // never-launched browser hasn't created yet — this row only needs the
   // package itself.
-  const available = [
+  const available = dedupeByPkg([
     ...filterAvailable(withProfilesConfigs),
     ...(settings.showSimpleBrowsers ? filterAvailable(SIMPLE_BROWSERS) : []),
-  ];
+  ]);
   if (isEmpty(available)) return [];
 
   // flatMap + try/catch per browser, not a plain .map(): one bad icon lookup

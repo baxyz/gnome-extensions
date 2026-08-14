@@ -4,7 +4,7 @@ import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { PackageManager } from "./taxonomy";
 import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "./taxonomy";
 import type { DefaultBrowserInfo } from "./default-browser";
-import { launchBrowser, writeTextFileAsync } from "./internal";
+import { launchBrowser, pkgKey, writeTextFileAsync } from "./internal";
 
 // Ordered by preference when the current default browser isn't itself
 // eligible (see findDonutBrowser). Real Mozilla Gecko builds only — deliberately
@@ -38,22 +38,7 @@ function baseLabel(label: string): string {
 }
 
 function samePkg(a: ResolvedBrowserPkg, b: ResolvedBrowserPkg): boolean {
-  switch (a.manager) {
-    case PackageManager.Native:
-      // Compared by basename, not the raw string: a's binary comes from
-      // GLib.find_program_in_path() (typically a full resolved path) while
-      // b's can come from Gio.AppInfo.get_executable() (often just the bare
-      // command from the .desktop file's Exec= line) — same browser, two
-      // different string shapes.
-      return (
-        b.manager === PackageManager.Native &&
-        GLib.path_get_basename(a.binary) === GLib.path_get_basename(b.binary)
-      );
-    case PackageManager.Flatpak:
-      return b.manager === PackageManager.Flatpak && a.appId === b.appId;
-    case PackageManager.Snap:
-      return b.manager === PackageManager.Snap && a.name === b.name;
-  }
+  return pkgKey(a) === pkgKey(b);
 }
 
 /**
