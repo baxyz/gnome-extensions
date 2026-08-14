@@ -92,3 +92,23 @@ export function buildBaseCommand(pkg: ResolvedBrowserPkg): string[] {
       return ["snap", "run", pkg.name];
   }
 }
+
+/**
+ * A string identity for a resolved package — equal for two ResolvedBrowserPkg
+ * values that name the same actual install (e.g. "Firefox" and "Firefox
+ * (classic)" both resolve to the same native firefox binary, just found via
+ * two different profiles.ini path variants). Native compares by basename,
+ * not the raw string: it can come from GLib.find_program_in_path() (typically
+ * a full resolved path) in one place and Gio.AppInfo.get_executable() (often
+ * just the bare command from a .desktop file's Exec= line) in another.
+ */
+export function pkgKey(pkg: ResolvedBrowserPkg): string {
+  switch (pkg.manager) {
+    case PackageManager.Native:
+      return `native:${GLib.path_get_basename(pkg.binary)}`;
+    case PackageManager.Flatpak:
+      return `flatpak:${pkg.appId}`;
+    case PackageManager.Snap:
+      return `snap:${pkg.name}`;
+  }
+}

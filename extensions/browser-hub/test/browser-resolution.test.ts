@@ -910,8 +910,27 @@ describe("Browsers row (getBrowserEntries)", () => {
       profileGroupsMode: "off",
     });
 
+    // "Firefox" and "Firefox (classic)" both resolve to the same native
+    // firefox package — the Browsers row shows one identity once (see
+    // resolve-all.ts's dedupeByPkg()), keeping the plain, unsuffixed label.
     const browsersRow = entries.find((e) => e.label === "Browsers");
-    expect(browsersRow?.items.map((i) => i.label)).toContain("Firefox (classic)");
+    expect(browsersRow?.items.map((i) => i.label)).toContain("Firefox");
+  });
+
+  it("shows Firefox exactly once in the Browsers row even though both its XDG and classic profile paths resolve to the same package", async () => {
+    const { entries } = await getBrowserEntries({
+      showFirefoxFamily: true,
+      showChromeFamily: false,
+      showSimpleBrowsers: false,
+      showProfiledBrowsers: true,
+      collapseSingleProfileBrowsers: false,
+      enabledSpaces: new Set(),
+      profileGroupsMode: "off",
+    });
+
+    const browsersRow = entries.find((e) => e.label === "Browsers");
+    const labels = browsersRow?.items.map((i) => i.label) ?? [];
+    expect(labels.filter((l) => l === "Firefox" || l === "Firefox (classic)")).toEqual(["Firefox"]);
   });
 
   it("combines firefox-family and profile-less browsers into one sorted 'Browsers' entry", async () => {
@@ -934,7 +953,7 @@ describe("Browsers row (getBrowserEntries)", () => {
     expect(browsersRow?.group).toBe("simple");
 
     const labels = browsersRow?.items.map((i) => i.label) ?? [];
-    expect(labels).toContain("Firefox (classic)");
+    expect(labels).toContain("Firefox");
     expect(labels).toContain("GNOME Web");
     expect(labels).toContain("qutebrowser");
     expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
@@ -958,7 +977,7 @@ describe("Browsers row (getBrowserEntries)", () => {
 
     const browsersRow = entries.find((e) => e.label === "Browsers");
     const labels = browsersRow?.items.map((i) => i.label) ?? [];
-    expect(labels).toContain("Firefox (classic)");
+    expect(labels).toContain("Firefox");
     expect(labels).not.toContain("GNOME Web");
   });
 
@@ -1046,7 +1065,7 @@ describe("getBrowserEntries", () => {
 
     expect(entries.some((e) => e.label === "Firefox (classic)")).toBe(false);
     const browsersRow = entries.find((e) => e.label === "Browsers");
-    expect(browsersRow?.items.map((i) => i.label)).toContain("Firefox (classic)");
+    expect(browsersRow?.items.map((i) => i.label)).toContain("Firefox");
   });
 
   it("collapses a single-profile browser even when showProfiledBrowsers is off — collapseSingleProfileBrowsers is independent of it", async () => {

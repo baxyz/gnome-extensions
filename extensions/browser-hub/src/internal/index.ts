@@ -18,6 +18,7 @@ export {
   filterAvailable,
   filterPresent,
   pathIsPresent,
+  pkgKey,
   resolvePkg,
 } from "./pkg";
 export { compareByDefault } from "./sort";
