@@ -1,14 +1,70 @@
 import St from "gi://St";
 import Clutter from "gi://Clutter";
+import GLib from "gi://GLib";
 import type Gio from "gi://Gio";
+import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { Spinner } from "resource:///org/gnome/shell/ui/animation.js";
 import { isCssColor } from "@helpers4/guard";
 import { PackageManager } from "../taxonomy";
 
-// St.Button.tooltip_text exists at the GObject property level but isn't in @girs types.
-export function tooltip(btn: St.Button, text: string): void {
-  (btn as unknown as { tooltip_text: string }).tooltip_text = text;
+// Delay before a hovered button's tooltip appears — long enough that
+// sweeping the cursor across several icon buttons in the "Browsers" row
+// doesn't flash a tooltip for each one on the way to the button actually
+// being aimed at.
+const TOOLTIP_HOVER_DELAY_MS = 400;
+// Gap between the actor's bottom edge and the tooltip label below it.
+const TOOLTIP_GAP_PX = 6;
+
+/**
+ * St has no built-in tooltip support to hook into — confirmed against a
+ * real St.Button's full GObject property list (89 properties, nothing
+ * named "tooltip" or similar) and against GNOME Shell's own shipped
+ * gresource bundle (no "tooltip" anywhere in its CSS or JS). The previous
+ * version of this function set a `tooltip_text` property that doesn't
+ * exist on any St type; GJS silently accepts an assignment to an unknown
+ * property as an inert plain JS expando, so every tooltip in this
+ * extension was a no-op with no error to notice.
+ *
+ * This hand-rolled version shows a small floating label after a hover
+ * delay, styled with GNOME Shell's own "dash-label" class — the Dash's own
+ * app-name tooltip, reused here for the same rounded dark pill in both
+ * light/dark themes with no CSS of our own to maintain. Added to
+ * Main.layoutManager.uiGroup, not as a child of `actor` itself: a popup
+ * menu clips its own content to its bounds, which a child tooltip would be
+ * clipped by too.
+ */
+export function tooltip(actor: St.Widget, text: string): void {
+  let label: St.Label | undefined;
+  let timeoutId = 0;
+
+  const clearTimer = (): void => {
+    if (timeoutId !== 0) {
+      GLib.source_remove(timeoutId);
+      timeoutId = 0;
+    }
+  };
+  const hide = (): void => {
+    clearTimer();
+    label?.destroy();
+    label = undefined;
+  };
+
+  actor.connect("enter-event", () => {
+    clearTimer();
+    timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, TOOLTIP_HOVER_DELAY_MS, () => {
+      timeoutId = 0;
+      label = new St.Label({ style_class: "dash-label", text });
+      Main.layoutManager.uiGroup.add_child(label);
+      const [x, y] = actor.get_transformed_position();
+      const [, height] = actor.get_transformed_size();
+      label.set_position(Math.round(x), Math.round(y + height + TOOLTIP_GAP_PX));
+      return GLib.SOURCE_REMOVE;
+    });
+  });
+  actor.connect("leave-event", hide);
+  actor.connect("clicked", hide);
+  actor.connect("destroy", hide);
 }
 
 // Firefox profile theme colors come straight from a SQLite column (see

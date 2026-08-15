@@ -14,7 +14,21 @@ vi.mock("gi://GLib", () => ({
     get_home_dir: () => "/home/user",
     getenv: () => null,
     find_program_in_path: () => null,
+    // menu/shared.ts's tooltip() uses these for its hover-delay timer — never
+    // actually fired in these tests (nothing simulates an "enter-event"), but
+    // the module import itself needs the mock shape to exist.
+    timeout_add: () => 0,
+    source_remove: () => {},
+    PRIORITY_DEFAULT: 0,
+    SOURCE_REMOVE: false,
   },
+}));
+
+// menu/shared.ts's tooltip() adds its floating label to Main.layoutManager's
+// uiGroup instead of as a child of the hovered button, so it isn't clipped
+// by the popup menu's own bounds — see tooltip()'s own comment.
+vi.mock("resource:///org/gnome/shell/ui/main.js", () => ({
+  layoutManager: { uiGroup: { add_child: () => {} } },
 }));
 
 // internal/desktop-icon.ts (transitively imported) also imports
