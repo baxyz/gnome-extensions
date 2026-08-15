@@ -1,8 +1,58 @@
+import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import { createCachedResolver } from "@helpers4/function";
 import { PackageManager } from "../taxonomy";
 import type { BrowserPkg, ResolvedBrowserPkg } from "../taxonomy";
 import { HOME_DIR } from "../constants/paths.constant";
+
+// A real browser's own binary is never a shell script — a shim check only
+// ever needs to look at a handful of bytes, so cap the read instead of
+// risking a synchronous read of a multi-hundred-MB real binary on GNOME
+// Shell's single UI thread just to confirm it isn't one.
+const SHIM_SNIFF_BYTES = 512;
+
+/**
+ * True when `path` (a `find_program_in_path()` hit) isn't a real native
+ * install at all, just a second pointer at the exact same install
+ * PackageManager.Snap's own `/snap/<name>` check (below) already covers —
+ * confirmed on a real system with Ubuntu's `apt install firefox`, which
+ * doesn't ship Firefox at all, only a redirect to the snap:
+ *   - Every snap's own launcher shim, `/snap/bin/<name>` (put on $PATH by
+ *     snapd), is a symlink to `/usr/bin/snap` regardless of which snap
+ *     (confirmed: `readlink /snap/bin/opera` -> `/usr/bin/snap` — snapd
+ *     dispatches on argv[0], there's no real per-app binary there at all).
+ *   - Ubuntu's own "firefox"/"thunderbird" apt packages install a small
+ *     shell wrapper at `/usr/bin/<name>` whose only job is to `exec` the
+ *     snap binary — a real file, not a symlink, so the check above misses
+ *     it. Caught by its shebang plus a reference to the snap launcher,
+ *     confirmed on the real Ubuntu firefox wrapper — read within
+ *     SHIM_SNIFF_BYTES, well short of the file's actual full size.
+ * Without this, both shapes pass `find_program_in_path()` and produce a
+ * second, redundant Native identity next to the real Snap one — with no
+ * `.desktop` file of its own (`opera.desktop`/`firefox.desktop` don't
+ * exist; only the Snap-specific `opera_opera.desktop` etc. do — see
+ * desktop-icon.ts's desktopIdFor), it falls back to a generic icon instead
+ * of the browser's real one: a duplicate, icon-less entry next to the
+ * correct one.
+ */
+function isSnapLauncherShim(path: string): boolean {
+  try {
+    const target = GLib.file_read_link(path);
+    if (GLib.path_get_basename(target) === "snap") return true;
+  } catch {
+    // Not a symlink at all — fall through to the wrapper-script check.
+  }
+  try {
+    const stream = Gio.File.new_for_path(path).read(null);
+    const data = stream.read_bytes(SHIM_SNIFF_BYTES, null).get_data();
+    stream.close(null);
+    if (data === null) return false;
+    const head = new TextDecoder().decode(data);
+    return head.startsWith("#!") && /\/snap\/bin\//.test(head);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Resolves a package to a concrete binary/path without using the cache.
@@ -13,7 +63,10 @@ import { HOME_DIR } from "../constants/paths.constant";
 function resolvePkgUncached(pkg: BrowserPkg): ResolvedBrowserPkg | null {
   switch (pkg.manager) {
     case PackageManager.Native: {
-      const binary = [pkg.binary].flat().find((b) => GLib.find_program_in_path(b) !== null);
+      const binary = [pkg.binary].flat().find((b) => {
+        const path = GLib.find_program_in_path(b);
+        return path !== null && !isSnapLauncherShim(path);
+      });
       return binary !== undefined
         ? { manager: PackageManager.Native, binary, desktopId: pkg.desktopId }
         : null;
