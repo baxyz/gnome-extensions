@@ -5,6 +5,7 @@ import { Button } from "resource:///org/gnome/shell/ui/panelMenu.js";
 import { getBrowserEntries } from "./browser";
 import type { BrowserSettings } from "./browser";
 import { fillMenu } from "./menu";
+import type { MenuPage } from "./menu";
 import {
   clearDesktopIconCache,
   clearPathPresenceCache,
@@ -15,6 +16,14 @@ import { clearDefaultBrowserCache, getDefaultBrowser, setDefaultBrowser } from "
 import type { DefaultBrowserInfo } from "./default-browser";
 import { launchDonutBrowser } from "./donut-browser";
 import type { ResolvedBrowserEntry, ResolvedBrowserItem, ResolvedBrowserPkg } from "./taxonomy";
+
+// this.menu is typed as PopupMenu | PopupDummyMenu — a union whose two
+// `connect`/`disconnect` overloads don't unify for an ad-hoc signal name, so
+// it's accessed through this minimal cast (same pattern as menu/shared.ts's tooltip()).
+type MenuSignals = {
+  connect(sig: "open-state-changed", cb: (menu: unknown, isOpen: boolean) => void): number;
+  disconnect(id: number): void;
+};
 
 const GENERIC_PANEL_ICON_NAME = "web-browser-symbolic";
 
@@ -51,6 +60,14 @@ export class BrowserProfilesIndicator extends Button {
   // family, or one browser within the Browsers row) — shown as a banner,
   // not just logged, so a partial failure isn't invisible to the user.
   private _lastErrors: string[] = [];
+  private _menuOpenStateId: number | null = null;
+  private _menuSignals!: MenuSignals;
+  // "main" is the whole menu; the other two are a picker sub-page (see
+  // menu/index.ts's MenuPage). Reset to "main" only when the popup closes
+  // (see the open-state-changed listener below) — never on open, which
+  // would reintroduce the "rebuild the whole menu on every open" flicker
+  // removed earlier this session.
+  private _page: MenuPage = "main";
   private _panelIcon: St.Icon;
   // Guards against a second Donut launch starting while one is already in
   // flight. Deliberately kept here rather than on the toolbar button itself —
@@ -72,6 +89,21 @@ export class BrowserProfilesIndicator extends Button {
     this._readSettings = readSettings;
     this._readToolbarSettings = readToolbarSettings;
 
+    // Only resets _page — while the popup is hidden, so this costs nothing
+    // visually. Without it, closing the popup mid-navigation and reopening
+    // it later would show whatever picker page you'd last left it on.
+    // Disconnected in this.destroy() below, not via a "destroy" signal
+    // handler — that indirection isn't statically traceable back to
+    // disable() the way overriding destroy() directly is, which is what
+    // GNOME's extension review tooling actually checks for.
+    this._menuSignals = this.menu as unknown as MenuSignals;
+    this._menuOpenStateId = this._menuSignals.connect("open-state-changed", (_menu, isOpen) => {
+      if (!isOpen && this._page !== "main") {
+        this._page = "main";
+        this.redrawMenu();
+      }
+    });
+
     this._panelIcon = new St.Icon({
       icon_name: GENERIC_PANEL_ICON_NAME,
       style_class: "system-status-icon",
@@ -83,6 +115,10 @@ export class BrowserProfilesIndicator extends Button {
 
   override destroy(): void {
     this._alive = false;
+    if (this._menuOpenStateId !== null) {
+      this._menuSignals.disconnect(this._menuOpenStateId);
+      this._menuOpenStateId = null;
+    }
     super.destroy();
   }
 
@@ -126,6 +162,19 @@ export class BrowserProfilesIndicator extends Button {
       errors: this._lastErrors,
       notify: Main.notify,
       onSettings: this._onSettings,
+      page: this._page,
+      onOpenDefaultBrowserPage: () => {
+        this._page = "default-browser";
+        this.redrawMenu();
+      },
+      onOpenDonutPage: () => {
+        this._page = "donut";
+        this.redrawMenu();
+      },
+      onBack: () => {
+        this._page = "main";
+        this.redrawMenu();
+      },
       onRefresh: () => {
         // Manual refresh is the user's explicit way to pick up a browser
         // installed/removed since the last scan — bust the caches first.

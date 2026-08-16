@@ -42,23 +42,33 @@ function samePkg(a: ResolvedBrowserPkg, b: ResolvedBrowserPkg): boolean {
 }
 
 /**
- * Picks which installed browser a Donut (disposable, anti-fingerprint)
- * session should launch: the current default if it qualifies, else the
- * first `DONUT_PRIORITY` match, else whatever eligible browser comes first.
- * Snap-packaged browsers are excluded — able to grant a Flatpak sandbox
- * ad-hoc access to the profile directory (see buildDonutCommand), but snap's
- * confinement model has no equivalent CLI-level override to verify against.
+ * Browsers eligible for a Donut session, from the "Browsers" row's own
+ * items. Snap-packaged browsers are excluded — able to grant a Flatpak
+ * sandbox ad-hoc access to the profile directory (see buildDonutCommand),
+ * but snap's confinement model has no equivalent CLI-level override to
+ * verify against.
  */
-export function findDonutBrowser(
+export function filterDonutEligible(
   browsers: readonly ResolvedBrowserItem[],
-  defaultBrowser: DefaultBrowserInfo | null,
-): (ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) | null {
-  const eligible = browsers.filter(
+): (ResolvedBrowserItem & { pkg: ResolvedBrowserPkg })[] {
+  return browsers.filter(
     (b): b is ResolvedBrowserItem & { pkg: ResolvedBrowserPkg } =>
       b.pkg !== undefined &&
       b.pkg.manager !== PackageManager.Snap &&
       DONUT_ELIGIBLE.has(baseLabel(b.label)),
   );
+}
+
+/**
+ * Picks which installed browser a Donut (disposable, anti-fingerprint)
+ * session should launch: the current default if it qualifies, else the
+ * first `DONUT_PRIORITY` match, else whatever eligible browser comes first.
+ */
+export function findDonutBrowser(
+  browsers: readonly ResolvedBrowserItem[],
+  defaultBrowser: DefaultBrowserInfo | null,
+): (ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) | null {
+  const eligible = filterDonutEligible(browsers);
   if (eligible.length === 0) return null;
 
   if (defaultBrowser) {

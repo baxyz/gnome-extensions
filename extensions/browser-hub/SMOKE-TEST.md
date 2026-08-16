@@ -56,13 +56,31 @@ real sessions after any change in this area, not just trusting green tests.
 
 ## Toolbar
 
-- [ ] Donut button: spinner while the profile is created, then launches;
-      hidden if no eligible browser is installed.
 - [ ] Refresh button re-scans and updates the menu.
 - [ ] Settings button opens the preferences window.
-- [ ] Default-browser row: shows the current default; expanding it lists
-      every browser; picking one sets it as default with no error, and the
-      panel/menu reflect the change immediately.
+
+## Default browser & Donut rows
+
+- [ ] "Launch default browser" row: the icon matches the actual default
+      browser (hover shows its name in the tooltip); clicking anywhere on
+      the row (not the trailing button) launches it and closes the menu.
+- [ ] Its trailing chevron button opens a page showing every pickable
+      browser, with a back button and title at the top — not an inline
+      list pushing the rest of the menu down.
+- [ ] Picking a browser on that page sets it as default (no error),
+      returns to the main menu, and the row's icon/tooltip update to match.
+- [ ] "Launch temporary session" row: clicking the row launches Donut with
+      the auto-picked browser (spinner while the profile is being
+      created), same as the trailing chevron's page does for a manually
+      picked one. Hidden entirely if no eligible browser is installed.
+- [ ] Its trailing chevron opens a page listing every Donut-eligible
+      browser; picking one returns to the main menu and launches Donut
+      with _that_ browser, not the auto-pick.
+- [ ] With enough installed browsers to exceed the picker page's list
+      height (see `.browser-hub-picker-scroll`'s CSS `max-height`), the
+      list scrolls instead of growing the popup off-screen.
+- [ ] Open a picker page, close the popup (don't click back), reopen it:
+      you land on the main menu, not still on the picker page.
 
 ## Settings — each toggle, on and off
 

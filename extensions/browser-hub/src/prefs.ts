@@ -44,13 +44,13 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     toolbarGroup.add(
       switchRow(
         "Show toolbar",
-        "The top row: default browser, Donut browser, Refresh, and Settings",
+        "The top section: default browser, Donut browser, Refresh, and Settings",
         "show-toolbar",
       ),
     );
     const editBtnRow = switchRow(
       "Show default browser picker",
-      "A caret next to the default browser name that expands a list to set a new default",
+      "A button next to the default browser row that opens a page to pick a new default",
       "show-default-browser-edit",
     );
     bindToParent("show-default-browser-edit", editBtnRow);

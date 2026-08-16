@@ -3,7 +3,7 @@ import type { PopupDummyMenu, PopupMenu } from "resource:///org/gnome/shell/ui/p
 import { PopupMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import type { ResolvedBrowserEntry, ResolvedBrowserItem, ResolvedBrowserPkg } from "../taxonomy";
 import type { DefaultBrowserInfo } from "../default-browser";
-import { findDonutBrowser } from "../donut-browser";
+import { findDonutBrowser, filterDonutEligible } from "../donut-browser";
 import { isEmpty } from "@helpers4/array";
 import { noop } from "@helpers4/function";
 import { delay } from "@helpers4/promise";
@@ -11,10 +11,21 @@ import {
   buildCategorySeparator,
   buildErrorRow,
   buildLoadingRow,
+  buildPickerRow,
+  buildScrollablePickerList,
+  buildSubPageHeader,
   buildTruncatedRow,
 } from "./shared";
-import { buildDefaultBrowserItem, buildToolbar } from "./toolbar";
+import {
+  buildDefaultBrowserItem,
+  buildDonutItem,
+  buildToolbar,
+  filterDefaultBrowserPickable,
+} from "./toolbar";
 import { buildProfileMenuItem, buildSimpleBrowserRow } from "./browser-rows";
+
+/** Which content fillMenu() renders — see menu/shared.ts's sub-page builders for why. */
+export type MenuPage = "main" | "default-browser" | "donut";
 
 // Same batch size/delay as the Browsers row (buildSimpleBrowserRow) — pacing
 // profile-item icon construction the same way, since a browser family with
@@ -78,6 +89,10 @@ export async function fillMenu({
   donutLaunching = false,
   onLaunchDonut = noop,
   isLive = () => true,
+  page = "main",
+  onOpenDefaultBrowserPage = noop,
+  onOpenDonutPage = noop,
+  onBack = noop,
 }: {
   title: string;
   menu: PopupMenu | PopupDummyMenu;
@@ -102,6 +117,11 @@ export async function fillMenu({
    * cleared and rebuilt `menu`, so this one must stop touching it.
    */
   isLive?: () => boolean;
+  /** "main" is today's whole menu; the other two are a picker sub-page (see menu/shared.ts). */
+  page?: MenuPage;
+  onOpenDefaultBrowserPage?: () => void;
+  onOpenDonutPage?: () => void;
+  onBack?: () => void;
 }): Promise<void> {
   if ("removeAll" in menu) {
     menu.removeAll();
@@ -119,38 +139,68 @@ export async function fillMenu({
   const browsers = entries?.find((e) => e.group === "simple")?.items ?? [];
   const donutBrowser = showDonutBrowser ? findDonutBrowser(browsers, defaultBrowser ?? null) : null;
 
+  // Sub-pages replace the whole menu content instead of expanding a
+  // PopupSubMenuMenuItem inline: the outer PopupMenu has no scroll of its
+  // own, so an inline-expanded list can push everything below it — the rest
+  // of the family list, the Browsers row — off-screen with no ceiling. A
+  // full swap has nothing below it to push. Reuses the already-resolved,
+  // already-icon-cached `browsers` list above — no new filesystem/icon work.
+  if (page === "default-browser") {
+    menu.addMenuItem(buildSubPageHeader("Change default browser", onBack));
+    const items = filterDefaultBrowserPickable(browsers).slice(0, MAX_ICONS_PER_PASS);
+    const rows = items.map((item) =>
+      buildPickerRow(item, (picked) => {
+        onBack();
+        onSetDefaultBrowser(picked.pkg);
+      }),
+    );
+    menu.addMenuItem(buildScrollablePickerList(rows));
+    return;
+  }
+  if (page === "donut") {
+    menu.addMenuItem(buildSubPageHeader("Choose a browser for the temporary session", onBack));
+    const items = filterDonutEligible(browsers).slice(0, MAX_ICONS_PER_PASS);
+    const rows = items.map((item) =>
+      buildPickerRow(item, (picked) => {
+        onBack();
+        onLaunchDonut(picked);
+      }),
+    );
+    menu.addMenuItem(buildScrollablePickerList(rows));
+    return;
+  }
+
   // Off, this hides the whole row — including Refresh and Settings, so
   // there's no in-menu way back into preferences (the GNOME Extensions app
   // still works). A deliberate tradeoff, not an oversight.
   if (showToolbar) {
-    menu.addMenuItem(
-      buildToolbar({
-        showDonutButton: donutBrowser !== null,
-        donutLaunching,
-        onLaunchDonut: () => onLaunchDonut(donutBrowser!),
-        onRefresh,
-        onSettings,
-      }),
-    );
+    menu.addMenuItem(buildToolbar({ onRefresh, onSettings }));
     if (!isEmpty(errors)) {
       menu.addMenuItem(buildErrorRow(errors));
     }
-    // After the toolbar, not before: as a real PopupSubMenuMenuItem it reads
-    // as its own section rather than a compact toolbar control, closer to a
-    // preferences category than a quick-action row.
+    // After the toolbar, not before: each reads as its own row rather than a
+    // compact toolbar control, closer to a preferences category than a
+    // quick-action button.
     if (defaultBrowser) {
       menu.addMenuItem(
         buildDefaultBrowserItem({
           title,
           defaultBrowser,
           showDefaultBrowserEdit,
-          browsers,
-          onSetDefaultBrowser,
+          onOpenDefaultBrowserPage,
           notify,
           closeMenu,
         }),
       );
     }
+    const donutItem = buildDonutItem({
+      donutBrowser,
+      donutLaunching,
+      onLaunchDonut,
+      onOpenDonutPage,
+      closeMenu,
+    });
+    if (donutItem) menu.addMenuItem(donutItem);
   }
 
   // No separator above either row below — nothing here to separate it from,
