@@ -23,22 +23,6 @@
   color: #f57900;
 }
 
-/* Default browser button, shown when showDefaultBrowserEdit is off (see
-   toolbar.ts's buildDefaultBrowserRow) — same padding as
-   .browser-hub-browser-btn (the "Browsers" row's square buttons) so both
-   read as the same kind of control instead of one looking like a smaller,
-   text-only afterthought next to the other. showDefaultBrowserEdit on uses
-   a real PopupSubMenuMenuItem instead, styled entirely by GNOME's own theme. */
-.browser-hub-default-browser-btn {
-  padding: 8px;
-  border-radius: 6px;
-}
-
-/* Icon + label inside the default browser button (see menu.ts) */
-.browser-hub-default-browser-btn-content {
-  spacing: 6px;
-}
-
 /* Profile color indicator dot (e.g. Chromium profile background color) */
 .browser-hub-profile-dot {
   width: 10px;
@@ -106,4 +90,20 @@
 .browser-hub-space-dot-btn--last {
   border-radius: 0 6px 6px 0;
   margin-left: 1px;
+}
+
+/* Back button + title row at the top of a picker sub-page (see
+   menu/shared.ts's buildSubPageHeader()) */
+.browser-hub-subpage-header {
+  spacing: 8px;
+  padding: 4px 6px;
+}
+
+/* Height-capped scrollable region for a picker sub-page's browser list (see
+   menu/shared.ts's buildScrollablePickerList()) — same idea as Clipboard
+   Indicator's own scrollable history list: without a cap, a long list would
+   grow the popup with no ceiling, since the outer PopupMenu has no scroll
+   of its own. ~10 rows before scrolling kicks in. */
+.browser-hub-picker-scroll {
+  max-height: 320px;
 }

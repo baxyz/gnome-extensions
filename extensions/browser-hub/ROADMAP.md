@@ -31,8 +31,8 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 
 - [x] Change the system default browser from the indicator.
       `Gio.AppInfo.set_as_default_for_type()` for http/https/text-html (default-browser.ts's `setDefaultBrowser()`) — matches [totoshko88/browser-switcher](https://github.com/totoshko88/browser-switcher)'s approach, no `xdg-settings` subprocess needed.
-- [x] One-click way to switch the default browser directly from the toolbar.
-      Took the edit-pencil button's slot instead of Settings': it's now a caret that expands a list of detected browsers (icon + name, sourced from the same data as the "Browsers" row) right below the toolbar. Picking one calls `setDefaultBrowser()` and collapses the list. Settings itself is untouched.
+- [x] One-click way to switch the default browser directly from the indicator.
+      "Launch default browser" is its own row (icon + label, same shape as a profile row) — clicking it launches, closing the menu. `showDefaultBrowserEdit` adds a trailing chevron that opens a dedicated picker page (back button + a height-capped, scrollable list of detected browsers, sourced from the same data as the "Browsers" row) instead of expanding a `PopupSubMenuMenuItem` inline: that inline-expand approach had no ceiling — with enough installed browsers, it could push the rest of the menu off-screen, since the outer `PopupMenu` has no scroll of its own. Picking one calls `setDefaultBrowser()` and returns to the main page.
 
 ### Panel icon: generic vs default browser
 
@@ -52,7 +52,7 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
   - Directory under `$XDG_RUNTIME_DIR/browser-hub/donut/<uuid>` → launch with `--profile <dir> -no-remote`.
   - Cleanup: none in-menu — `$XDG_RUNTIME_DIR` is removed by the system on logout/reboot (tmpfs-backed), which is also why the dir lives there instead of e.g. `~/.cache`. `--profile` never touches `profiles.ini` either (confirmed against MozillaZine's docs), so there's no registry entry left behind even before that.
   - Firefox-family only (see below) — priority order (default browser first, then Firefox > Zen > Floorp > LibreWolf > Mullvad Browser > Waterfox > Firedragon, then whatever else qualifies) in `donut-browser.ts`'s `findDonutBrowser()`. Snap-packaged browsers are excluded: granting a Flatpak sandbox ad-hoc access to the profile dir works via `flatpak run --filesystem=`, snap's confinement model has no equivalent verified here.
-  - Toolbar button (`view-conceal-symbolic`, a real Adwaita icon — "mask"/"spy" don't exist as icons) shows a spinner while the profile directory is being created, and is hidden entirely when no eligible browser is installed. New `show-donut-browser` setting (sub-setting of `show-toolbar`).
+  - "Launch temporary session" row (`view-conceal-symbolic`, a real Adwaita icon — "mask"/"spy" don't exist as icons; same row shape as the default-browser one above, not a bare toolbar icon) shows a spinner while the profile directory is being created, and is hidden entirely when no eligible browser is installed. New `show-donut-browser` setting (sub-setting of `show-toolbar`).
 
 ### Anti-detect / anti-fingerprint (Donut browser)
 
@@ -63,7 +63,8 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
 ### Donut browser follow-ups (not started)
 
 - [ ] Chrome family support — `--user-data-dir` gives an isolated profile easily enough, but there's no `resistFingerprinting` equivalent; would need a force-installed extension (`ExtensionInstallForcelist` policy) for real anti-fingerprinting, not just an isolated profile.
-- [ ] Manual browser selection for Donut, in addition to the automatic pick — let the user override `findDonutBrowser()`'s choice from the toolbar.
+- [x] Manual browser selection for Donut, in addition to the automatic pick.
+      The "Launch temporary session" row's trailing chevron opens the same kind of picker page as the default-browser one (`filterDonutEligible()`, extracted from `findDonutBrowser()`'s own filter) — picking a browser there launches Donut with that browser instead of the auto-pick. A one-off override for that launch, not a persisted preference — `findDonutBrowser()`'s own logic is unchanged.
 
 ### Icon-loading crash hardening (GNOME Shell native bug)
 

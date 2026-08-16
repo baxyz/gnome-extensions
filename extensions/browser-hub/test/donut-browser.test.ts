@@ -92,7 +92,7 @@ vi.mock("gi://GioUnix", () => ({
   default: { DesktopAppInfo: { new: () => null } },
 }));
 
-const { findDonutBrowser, createDonutProfile, launchDonutBrowser } =
+const { filterDonutEligible, findDonutBrowser, createDonutProfile, launchDonutBrowser } =
   await import("../src/donut-browser");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 
@@ -106,6 +106,28 @@ beforeEach(() => {
 const FIREFOX_NATIVE = { manager: PackageManager.Native, binary: "firefox" } as const;
 const ZEN_FLATPAK = { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" } as const;
 const FIREFOX_SNAP = { manager: PackageManager.Snap, name: "firefox" } as const;
+
+describe("filterDonutEligible", () => {
+  it("keeps only DONUT_ELIGIBLE browsers with a resolved pkg, excluding Snap", () => {
+    const browsers = [
+      { label: "Firefox", command: ["firefox"], pkg: FIREFOX_NATIVE },
+      { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
+      { label: "Tor Browser", command: ["tor"], pkg: FIREFOX_NATIVE },
+      { label: "Chromium", command: ["chromium"] }, // no pkg
+    ];
+
+    expect(filterDonutEligible(browsers).map((b) => b.label)).toEqual(["Firefox"]);
+  });
+
+  it("is what findDonutBrowser's own eligibility narrows down from — used by the Donut picker page", () => {
+    const browsers = [
+      { label: "Waterfox", command: ["waterfox"], pkg: FIREFOX_NATIVE },
+      { label: "Zen", command: ["zen"], pkg: ZEN_FLATPAK },
+    ];
+
+    expect(filterDonutEligible(browsers)).toHaveLength(2);
+  });
+});
 
 describe("findDonutBrowser", () => {
   it("picks the current default browser when it's itself eligible", () => {

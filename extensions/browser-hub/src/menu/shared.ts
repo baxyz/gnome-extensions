@@ -3,10 +3,15 @@ import Clutter from "gi://Clutter";
 import GLib from "gi://GLib";
 import type Gio from "gi://Gio";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
-import { PopupMenuItem, PopupSeparatorMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
+import {
+  PopupMenuItem,
+  PopupMenuSection,
+  PopupSeparatorMenuItem,
+} from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { Spinner } from "resource:///org/gnome/shell/ui/animation.js";
 import { isCssColor } from "@helpers4/guard";
 import { PackageManager } from "../taxonomy";
+import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "../taxonomy";
 
 // Delay before a hovered button's tooltip appears — long enough that
 // sweeping the cursor across several icon buttons in the "Browsers" row
@@ -191,4 +196,72 @@ export function buildCategorySeparator(
     separator.insert_child_below(iconWidget, separator.label);
   }
   return separator;
+}
+
+// -- Sub-pages (default-browser/Donut pickers) -------------------------------
+//
+// fillMenu()'s `page` param swaps the whole menu content for one of these
+// instead of expanding a PopupSubMenuMenuItem inline: the outer PopupMenu
+// has no scroll capability of its own (PopupMenuBase.box is a plain
+// St.BoxLayout), so an inline-expanded list can still push everything below
+// it off-screen even though GNOME's own PopupSubMenu.actor is itself an
+// St.ScrollView. A full swap has nothing below it to push.
+
+/** Back-chevron + title row — the only content above a sub-page's picker list. */
+export function buildSubPageHeader(title: string, onBack: () => void): PopupMenuItem {
+  const row = makeIconRow();
+  const content = new St.BoxLayout({ style_class: "browser-hub-subpage-header" });
+  const backBtn = new St.Button({
+    can_focus: true,
+    accessible_name: "Back",
+    style_class: "button browser-hub-toolbar-btn",
+  });
+  backBtn.set_child(new St.Icon({ icon_name: "go-previous-symbolic", icon_size: 16 }));
+  tooltip(backBtn, "Back");
+  backBtn.connect("clicked", onBack);
+  content.add_child(backBtn);
+  content.add_child(new St.Label({ text: title }));
+  row.add_child(content);
+  return row;
+}
+
+const PICKER_ROW_ICON_SIZE = 16;
+
+/**
+ * One row per pickable browser — icon + label, activating `onPick` with the
+ * whole item (not just its pkg): the default-browser page only needs
+ * item.pkg, but Donut's onLaunchDonut needs the whole item, so this shape
+ * serves both.
+ */
+export function buildPickerRow(
+  item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg },
+  onPick: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) => void,
+): PopupMenuItem {
+  const row = new PopupMenuItem(item.label);
+  if (item.icon) {
+    const iconWidget = new St.Icon({ ...iconProps(item.icon), icon_size: PICKER_ROW_ICON_SIZE });
+    row.insert_child_below(iconWidget, row.label);
+  }
+  row.connect("activate", () => onPick(item));
+  return row;
+}
+
+/**
+ * Wraps `rows` in a height-capped, scrollable section instead of letting
+ * them grow the menu without bound — same idea as Clipboard Indicator's own
+ * scrollable history list: St.ScrollView (overlay_scrollbars so the
+ * scrollbar doesn't eat layout width) around a PopupMenuSection, with the
+ * actual height cap set in stylesheet.css.
+ */
+export function buildScrollablePickerList(rows: PopupMenuItem[]): PopupMenuItem {
+  const row = makeIconRow();
+  const section = new PopupMenuSection();
+  for (const pickerRow of rows) section.addMenuItem(pickerRow);
+  const scrollView = new St.ScrollView({
+    style_class: "browser-hub-picker-scroll",
+    overlay_scrollbars: true,
+  });
+  scrollView.add_child(section.actor);
+  row.add_child(scrollView);
+  return row;
 }

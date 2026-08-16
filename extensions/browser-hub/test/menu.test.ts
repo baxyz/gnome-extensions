@@ -76,13 +76,14 @@ class FakeWidget {
   }
 }
 class FakeIcon extends FakeWidget {}
-// Real St.Button defaults reactive to true; makeDonutButton's click handler
+// Real St.Button defaults reactive to true; the Donut row's click handler
 // (menu.ts) reads it back to guard against double-clicks while busy.
 class FakeButton extends FakeWidget {
   reactive = true;
 }
 class FakeBoxLayout extends FakeWidget {}
 class FakeBin extends FakeWidget {}
+class FakeScrollView extends FakeWidget {}
 
 vi.mock("gi://St", () => ({
   default: {
@@ -91,6 +92,7 @@ vi.mock("gi://St", () => ({
     Button: FakeButton,
     BoxLayout: FakeBoxLayout,
     Bin: FakeBin,
+    ScrollView: FakeScrollView,
     // Real St.Label takes a GObject-style props object; FakeLabel (below,
     // also reused directly by FakePopupMenuItem) takes a plain string.
     Label: class extends FakeLabel {
@@ -147,28 +149,20 @@ class FakePopupSeparatorMenuItem extends FakeWidget {
     this.children.unshift(child);
   }
 }
-class FakePopupSubMenu {
-  items: FakeWidget[] = [];
+// PopupMenuSection is "transparent" in the real API — addMenuItem() just
+// adds the item as a child of its own .actor, which is what
+// buildScrollablePickerList() wraps in an St.ScrollView.
+class FakePopupMenuSection {
+  actor = new FakeBoxLayout();
   addMenuItem(item: FakeWidget): void {
-    this.items.push(item);
-  }
-}
-class FakePopupSubMenuMenuItem extends FakeWidget {
-  label: FakeLabel;
-  icon?: FakeIcon;
-  menu: FakePopupSubMenu;
-  constructor(text: string, wantIcon?: boolean) {
-    super();
-    this.label = new FakeLabel(text);
-    if (wantIcon) this.icon = new FakeIcon();
-    this.menu = new FakePopupSubMenu();
+    this.actor.add_child(item);
   }
 }
 
 vi.mock("resource:///org/gnome/shell/ui/popupMenu.js", () => ({
   PopupMenuItem: FakePopupMenuItem,
+  PopupMenuSection: FakePopupMenuSection,
   PopupSeparatorMenuItem: FakePopupSeparatorMenuItem,
-  PopupSubMenuMenuItem: FakePopupSubMenuMenuItem,
 }));
 
 class FakeSpinner extends FakeWidget {
@@ -745,31 +739,34 @@ describe("fillMenu", () => {
     expect(subprocessNew).toHaveBeenCalledWith(["firefox", "-P", "default"], 0);
   });
 
-  it("uses a real PopupSubMenuMenuItem for the default browser when showDefaultBrowserEdit is true", async () => {
-    const menuWithEdit = makeFakeMenu();
+  it("shows a trailing Edit button on the default-browser row when showDefaultBrowserEdit is true", async () => {
+    const onOpenDefaultBrowserPage = vi.fn();
+    const menu = makeFakeMenu();
     await fillMenu({
       title: "t",
-      menu: menuWithEdit,
+      menu,
       entries: [],
       notify,
       onSettings: noop,
       onRefresh: noop,
       defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
       showDefaultBrowserEdit: true,
+      onOpenDefaultBrowserPage,
     });
-    const item = menuWithEdit.items[1] as FakePopupSubMenuMenuItem; // [0] toolbar, [1] this row
-    expect(item).toBeInstanceOf(FakePopupSubMenuMenuItem);
-    expect(item.label.text).toBe("Firefox");
-    expect(item.icon).toBeInstanceOf(FakeIcon);
-    // No other installed browsers (entries is []) — just the Launch action.
-    expect(item.menu.items).toHaveLength(1);
-    const launchItem = item.menu.items[0] as FakePopupMenuItem;
-    expect(launchItem.label.text).toBe("Launch Firefox");
-    launchItem.emit("activate");
+    const row = menu.items[1] as FakePopupMenuItem; // [0] toolbar, [1] this row
+    expect(row.label.text).toBe("Launch default browser");
+    expect(row.children[0]).toBeInstanceOf(FakeIcon);
+
+    const editBtn = row.children.at(-1) as FakeButton;
+    editBtn.emit("clicked");
+    expect(onOpenDefaultBrowserPage).toHaveBeenCalled();
+
+    // The row itself still launches when clicked, same as edit-off.
+    row.emit("activate");
     expect(subprocessNew).toHaveBeenCalledWith(["firefox"], 0);
   });
 
-  it("falls back to a plain, non-expandable button when showDefaultBrowserEdit is false", async () => {
+  it("omits the trailing Edit button when showDefaultBrowserEdit is false, but the row still launches", async () => {
     const menu = makeFakeMenu();
     await fillMenu({
       title: "t",
@@ -781,15 +778,13 @@ describe("fillMenu", () => {
       defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
       showDefaultBrowserEdit: false,
     });
-    const row = menu.items[1] as FakePopupMenuItem; // [0] toolbar, [1] this row
-    expect(row).not.toBeInstanceOf(FakePopupSubMenuMenuItem);
-    const btnGroup = row.children[0] as FakeButton;
-    expect(btnGroup).toBeInstanceOf(FakeButton);
-    btnGroup.emit("clicked");
+    const row = menu.items[1] as FakePopupMenuItem;
+    expect(row.children).toHaveLength(1); // just the icon — no spacer, no button
+    row.emit("activate");
     expect(subprocessNew).toHaveBeenCalledWith(["firefox"], 0);
   });
 
-  it("puts a 'Launch' action plus every other installed browser inside the default-browser submenu", async () => {
+  it("default-browser page lists every pickable browser; picking one sets it as default and returns to main", async () => {
     const browsersEntry = {
       label: "Browsers",
       group: "simple" as const,
@@ -798,8 +793,8 @@ describe("fillMenu", () => {
         { label: "Chromium", command: ["chromium"] }, // no pkg — must be skipped
       ],
     };
-
     const onSetDefaultBrowser = vi.fn();
+    const onBack = vi.fn();
     const menu = makeFakeMenu();
     await fillMenu({
       title: "t",
@@ -808,27 +803,38 @@ describe("fillMenu", () => {
       notify,
       onSettings: noop,
       onRefresh: noop,
-      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
-      showDefaultBrowserEdit: true,
+      page: "default-browser",
       onSetDefaultBrowser,
+      onBack,
     });
-    // [0] the donut/refresh/settings toolbar, [1] the default-browser
-    // submenu item, [2] the "Browsers" row itself — no separator, it's the
-    // menu's only entry.
-    expect(menu.items).toHaveLength(3);
 
-    const item = menu.items[1] as FakePopupSubMenuMenuItem;
-    // Launch, separator, Firefox (Chromium skipped — no pkg).
-    expect(item.menu.items).toHaveLength(3);
-    expect((item.menu.items[0] as FakePopupMenuItem).label.text).toBe("Launch Firefox");
-    expect(item.menu.items[1]).toBeInstanceOf(FakePopupSeparatorMenuItem);
-    const pickerItem = item.menu.items[2] as FakePopupMenuItem;
+    // [0] back header, [1] the scrollable picker list — no toolbar, no
+    // default-browser/Donut rows on a sub-page.
+    expect(menu.items).toHaveLength(2);
+
+    const header = menu.items[0] as FakePopupMenuItem;
+    const headerContent = header.children[0] as FakeBoxLayout;
+    const backBtn = headerContent.children[0] as FakeButton;
+    const titleLabel = headerContent.children[1] as FakeLabel;
+    expect(titleLabel.text).toBe("Change default browser");
+    backBtn.emit("clicked");
+    expect(onBack).toHaveBeenCalledTimes(1);
+
+    const listRow = menu.items[1] as FakePopupMenuItem;
+    const scrollView = listRow.children[0] as FakeScrollView;
+    const sectionBox = scrollView.children[0] as FakeBoxLayout;
+    // Chromium skipped — no pkg.
+    expect(sectionBox.children).toHaveLength(1);
+    const pickerItem = sectionBox.children[0] as FakePopupMenuItem;
     expect(pickerItem.label.text).toBe("Firefox");
+
     pickerItem.emit("activate");
+    // onBack fires again (once from the header click above, once from picking).
+    expect(onBack).toHaveBeenCalledTimes(2);
     expect(onSetDefaultBrowser).toHaveBeenCalledWith(FAKE_DEFAULT_BROWSER_PKG);
   });
 
-  it("shows the Donut button only when showDonutBrowser is on and an eligible browser is installed", async () => {
+  it("shows the Donut row only when showDonutBrowser is on and an eligible browser is installed", async () => {
     const eligibleEntries = [
       {
         label: "Browsers",
@@ -836,6 +842,10 @@ describe("fillMenu", () => {
         items: [{ label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG }],
       },
     ];
+    const hasDonutRow = (menu: FakeMenu) =>
+      menu.items.some(
+        (item) => (item as FakePopupMenuItem).label?.text === "Launch temporary session",
+      );
 
     const off = makeFakeMenu();
     await fillMenu({
@@ -847,11 +857,9 @@ describe("fillMenu", () => {
       onRefresh: noop,
       showDonutBrowser: false,
     });
-    const toolbarOff = off.items[0] as FakePopupMenuItem;
-    // [spacer] only — no Donut button, no default-browser group (none passed).
-    expect(toolbarOff.children).toHaveLength(3); // spacer, Refresh, Settings
+    expect(hasDonutRow(off)).toBe(false);
 
-    // No eligible browser in `entries` — button stays hidden even though the setting is on.
+    // No eligible browser in `entries` — row stays hidden even though the setting is on.
     const noBrowsers = makeFakeMenu();
     await fillMenu({
       title: "t",
@@ -862,8 +870,7 @@ describe("fillMenu", () => {
       onRefresh: noop,
       showDonutBrowser: true,
     });
-    const toolbarNoBrowsers = noBrowsers.items[0] as FakePopupMenuItem;
-    expect(toolbarNoBrowsers.children).toHaveLength(3);
+    expect(hasDonutRow(noBrowsers)).toBe(false);
 
     const eligible = makeFakeMenu();
     await fillMenu({
@@ -875,11 +882,10 @@ describe("fillMenu", () => {
       onRefresh: noop,
       showDonutBrowser: true,
     });
-    const toolbarEligible = eligible.items[0] as FakePopupMenuItem;
-    expect(toolbarEligible.children).toHaveLength(4); // + the Donut button
+    expect(hasDonutRow(eligible)).toBe(true);
   });
 
-  it("calls onLaunchDonut with the eligible item when the Donut button is clicked", async () => {
+  it("calls onLaunchDonut with the eligible item when the Donut row is clicked", async () => {
     const entries = [
       {
         label: "Browsers",
@@ -900,10 +906,11 @@ describe("fillMenu", () => {
       showDonutBrowser: true,
       onLaunchDonut,
     });
-    const toolbar = menu.items[0] as FakePopupMenuItem;
-    const donutBtn = toolbar.children[1] as FakeButton; // spacer, Donut, Refresh, Settings
+    const donutRow = menu.items.find(
+      (item) => (item as FakePopupMenuItem).label?.text === "Launch temporary session",
+    ) as FakePopupMenuItem;
 
-    donutBtn.emit("clicked");
+    donutRow.emit("activate");
     expect(onLaunchDonut).toHaveBeenCalledWith({
       label: "Firefox",
       command: ["firefox"],
@@ -911,7 +918,7 @@ describe("fillMenu", () => {
     });
   });
 
-  it("shows a spinner and an inert button when donutLaunching is true", async () => {
+  it("shows a spinner and makes the row inert when donutLaunching is true", async () => {
     const entries = [
       {
         label: "Browsers",
@@ -931,11 +938,59 @@ describe("fillMenu", () => {
       showDonutBrowser: true,
       donutLaunching: true,
     });
-    const toolbar = menu.items[0] as FakePopupMenuItem;
-    const donutBtn = toolbar.children[1] as FakeButton;
+    const donutRow = menu.items.find(
+      (item) => (item as FakePopupMenuItem).label?.text === "Launch temporary session",
+    ) as FakePopupMenuItem & { reactive: boolean };
 
-    expect(donutBtn.children[0]).toBeInstanceOf(FakeSpinner);
-    expect(donutBtn.reactive).toBe(false);
+    expect(donutRow.children[0]).toBeInstanceOf(FakeSpinner);
+    expect(donutRow.reactive).toBe(false);
+  });
+
+  it("opening the Donut page and picking a browser returns to main before launching", async () => {
+    const entries = [
+      {
+        label: "Browsers",
+        group: "simple" as const,
+        items: [
+          { label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+          {
+            label: "Zen (flatpak)",
+            command: ["flatpak", "run", "app.zen_browser.zen"],
+            pkg: { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" },
+          },
+        ],
+      },
+    ];
+    const onLaunchDonut = vi.fn();
+    const onBack = vi.fn();
+    const menu = makeFakeMenu();
+    await fillMenu({
+      title: "t",
+      menu,
+      entries,
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      page: "donut",
+      onLaunchDonut,
+      onBack,
+    });
+
+    const header = menu.items[0] as FakePopupMenuItem;
+    const headerContent = header.children[0] as FakeBoxLayout;
+    const titleLabel = headerContent.children[1] as FakeLabel;
+    expect(titleLabel.text).toBe("Choose a browser for the temporary session");
+
+    const listRow = menu.items[1] as FakePopupMenuItem;
+    const scrollView = listRow.children[0] as FakeScrollView;
+    const sectionBox = scrollView.children[0] as FakeBoxLayout;
+    // Firefox (Native) and Zen (Flatpak) both eligible — neither is Snap.
+    expect(sectionBox.children).toHaveLength(2);
+
+    const zenRow = sectionBox.children[1] as FakePopupMenuItem;
+    zenRow.emit("activate");
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(onLaunchDonut).toHaveBeenCalledWith(entries[0].items[1]);
   });
 
   it("omits the whole toolbar row when showToolbar is false", async () => {
