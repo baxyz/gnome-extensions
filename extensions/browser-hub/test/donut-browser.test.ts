@@ -195,6 +195,11 @@ describe("createDonutProfile", () => {
     const text = new TextDecoder().decode(contents);
     expect(text).toContain('user_pref("privacy.resistFingerprinting", true);');
     expect(text).toContain('user_pref("browser.privatebrowsing.autostart", true);');
+    // First-run wizard/onboarding suppression — see DONUT_USER_JS's comment
+    // for why a fresh profile needs these to open ready-to-use.
+    expect(text).toContain('user_pref("browser.aboutwelcome.enabled", false);');
+    expect(text).toContain('user_pref("browser.migration.version", 9999);');
+    expect(text).toContain('user_pref("browser.shell.checkDefaultBrowser", false);');
   });
 
   it("uses a fresh directory on every call", async () => {
