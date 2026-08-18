@@ -192,12 +192,17 @@ vi.mock("gi://Gio", () => ({
 
 // menu.ts's buildToolbar resolves the default browser's own icon via
 // resolveDesktopIcon() — no app matches in this test environment, which
-// exercises the same "no icon found" tolerance as a real missing .desktop file.
+// exercises the same "no icon found" tolerance as a real missing .desktop
+// file. Also drives filterDefaultBrowserPickable's Snap-guess verification
+// below (see desktopAppInfoNew) — default "no app resolves" is the common
+// case for every test that doesn't care about that specific behavior.
+const desktopAppInfoNew = vi.fn((_id: string): unknown => null);
 vi.mock("gi://GioUnix", () => ({
-  default: { DesktopAppInfo: { new: () => null } },
+  default: { DesktopAppInfo: { new: (id: string) => desktopAppInfoNew(id) } },
 }));
 
 const { fillMenu } = await import("../src/menu");
+const { filterDefaultBrowserPickable } = await import("../src/menu/toolbar");
 
 type FakeMenu = {
   items: FakeWidget[];
@@ -222,6 +227,8 @@ const notify = vi.fn();
 beforeEach(() => {
   subprocessNew.mockClear();
   notify.mockClear();
+  desktopAppInfoNew.mockClear();
+  desktopAppInfoNew.mockReturnValue(null);
 });
 
 describe("fillMenu", () => {
@@ -1009,5 +1016,35 @@ describe("fillMenu", () => {
     // With no toolbar, the first item is straight into the entries: the
     // category separator, not a toolbar row.
     expect(menu.items[0]).toBeInstanceOf(FakePopupSeparatorMenuItem);
+  });
+});
+
+describe("filterDefaultBrowserPickable", () => {
+  const SNAP_PKG = { manager: PackageManager.Snap, name: "opera" } as const;
+
+  it("includes a Snap browser once its guessed desktop ID actually resolves", () => {
+    desktopAppInfoNew.mockReturnValue({});
+
+    const result = filterDefaultBrowserPickable([{ label: "Opera", command: [], pkg: SNAP_PKG }]);
+
+    expect(result).toHaveLength(1);
+    expect(desktopAppInfoNew).toHaveBeenCalledWith("opera_opera.desktop");
+  });
+
+  it("excludes a Snap browser whose guessed desktop ID doesn't resolve to anything", () => {
+    desktopAppInfoNew.mockReturnValue(null);
+
+    const result = filterDefaultBrowserPickable([{ label: "Opera", command: [], pkg: SNAP_PKG }]);
+
+    expect(result).toHaveLength(0);
+  });
+
+  it("never bothers checking a non-Snap package's desktop ID", () => {
+    const result = filterDefaultBrowserPickable([
+      { label: "Firefox", command: [], pkg: FAKE_DEFAULT_BROWSER_PKG },
+    ]);
+
+    expect(result).toHaveLength(1);
+    expect(desktopAppInfoNew).not.toHaveBeenCalled();
   });
 });

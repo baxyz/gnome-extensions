@@ -5,23 +5,28 @@ import { Spinner } from "resource:///org/gnome/shell/ui/animation.js";
 import { PackageManager } from "../taxonomy";
 import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "../taxonomy";
 import type { DefaultBrowserInfo } from "../default-browser";
-import { launchBrowser, resolveDesktopIcon } from "../internal";
+import { desktopIdFor, getDesktopAppInfo, launchBrowser, resolveDesktopIcon } from "../internal";
 import { iconProps, makeIconButton, makeIconRow, tooltip } from "./shared";
 
 const CHEVRON_ICON_SIZE = 16;
 
 /**
  * Browsers pickable as a new default, from the "Browsers" row's own items.
- * Snap excluded: desktopIdFor()'s "<name>_<name>.desktop" guess for Snap is
- * only verified against a couple of browsers, and a wrong guess here feeds
- * straight into setDefaultBrowser() failing silently.
+ * For Snap, desktopIdFor()'s "<name>_<name>.desktop" is a guess (confirmed
+ * against only a couple of browsers) — a wrong guess would feed a
+ * nonexistent desktop ID straight into setDefaultBrowser(), which fails
+ * (returns false, no default changed). Rather than excluding every Snap
+ * browser to avoid that, verify the guess actually resolves to a real
+ * Gio.DesktopAppInfo first: setDefaultBrowser() does the exact same lookup,
+ * so a resolvable guess here is confirmed to work there too.
  */
 export function filterDefaultBrowserPickable(
   browsers: ResolvedBrowserItem[],
 ): (ResolvedBrowserItem & { pkg: ResolvedBrowserPkg })[] {
   return browsers.filter(
     (b): b is ResolvedBrowserItem & { pkg: ResolvedBrowserPkg } =>
-      b.pkg !== undefined && b.pkg.manager !== PackageManager.Snap,
+      b.pkg !== undefined &&
+      (b.pkg.manager !== PackageManager.Snap || getDesktopAppInfo(desktopIdFor(b.pkg)) !== null),
   );
 }
 
