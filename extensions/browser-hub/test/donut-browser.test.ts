@@ -108,7 +108,7 @@ const ZEN_FLATPAK = { manager: PackageManager.Flatpak, appId: "app.zen_browser.z
 const FIREFOX_SNAP = { manager: PackageManager.Snap, name: "firefox" } as const;
 
 describe("filterDonutEligible", () => {
-  it("keeps only DONUT_ELIGIBLE browsers with a resolved pkg, excluding Snap", () => {
+  it("keeps DONUT_ELIGIBLE browsers with a resolved pkg, Snap included", () => {
     const browsers = [
       { label: "Firefox", command: ["firefox"], pkg: FIREFOX_NATIVE },
       { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
@@ -116,7 +116,10 @@ describe("filterDonutEligible", () => {
       { label: "Chromium", command: ["chromium"] }, // no pkg
     ];
 
-    expect(filterDonutEligible(browsers).map((b) => b.label)).toEqual(["Firefox"]);
+    expect(filterDonutEligible(browsers).map((b) => b.label)).toEqual([
+      "Firefox",
+      "Firefox (snap)",
+    ]);
   });
 
   it("is what findDonutBrowser's own eligibility narrows down from — used by the Donut picker page", () => {
@@ -161,9 +164,9 @@ describe("findDonutBrowser", () => {
     expect(findDonutBrowser(browsers, null)?.label).toBe("Firefox (flatpak)");
   });
 
-  it("excludes snap-packaged browsers even when otherwise eligible", () => {
+  it("includes snap-packaged browsers when otherwise eligible", () => {
     const browsers = [{ label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP }];
-    expect(findDonutBrowser(browsers, null)).toBeNull();
+    expect(findDonutBrowser(browsers, null)?.label).toBe("Firefox (snap)");
   });
 
   it("excludes browsers not on the eligible list at all (e.g. Tor Browser, Basilisk)", () => {
@@ -186,7 +189,7 @@ describe("findDonutBrowser", () => {
 
 describe("createDonutProfile", () => {
   it("creates a fresh directory under $XDG_RUNTIME_DIR and writes a minimal RFP user.js into it", async () => {
-    const dir = await createDonutProfile();
+    const dir = await createDonutProfile(FIREFOX_NATIVE);
 
     expect(dir).toBe(`/run/user/1000/browser-hub/donut/uuid-1`);
     expect(dirs.get(dir)).toEqual({ made: true });
@@ -200,12 +203,20 @@ describe("createDonutProfile", () => {
     expect(text).toContain('user_pref("browser.aboutwelcome.enabled", false);');
     expect(text).toContain('user_pref("browser.migration.version", 9999);');
     expect(text).toContain('user_pref("browser.shell.checkDefaultBrowser", false);');
+    // Zen's own first-run screen, separate from Firefox's about:welcome —
+    // harmless no-op on every other Donut-eligible browser.
+    expect(text).toContain('user_pref("zen.welcome-screen.seen", true);');
   });
 
   it("uses a fresh directory on every call", async () => {
-    const first = await createDonutProfile();
-    const second = await createDonutProfile();
+    const first = await createDonutProfile(FIREFOX_NATIVE);
+    const second = await createDonutProfile(FIREFOX_NATIVE);
     expect(first).not.toBe(second);
+  });
+
+  it("puts a Snap package's profile under its own ~/snap/<name>/common instead of $XDG_RUNTIME_DIR", async () => {
+    const dir = await createDonutProfile(FIREFOX_SNAP);
+    expect(dir).toBe("/home/user/snap/firefox/common/browser-hub-donut/uuid-1");
   });
 });
 
@@ -243,5 +254,52 @@ describe("launchDonutBrowser", () => {
       ],
       0,
     );
+  });
+
+  it("launches a Snap browser under its own confinement, with no ad-hoc grant needed", async () => {
+    subprocessNew.mockReturnValueOnce({ wait_async: vi.fn() });
+
+    await launchDonutBrowser(
+      { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
+      "Browser Hub",
+      vi.fn(),
+    );
+
+    const profileDir = "/home/user/snap/firefox/common/browser-hub-donut/uuid-1";
+    expect(subprocessNew).toHaveBeenCalledWith(
+      ["snap", "run", "firefox", "--profile", profileDir, "-no-remote"],
+      0,
+    );
+  });
+
+  it("deletes a Snap browser's profile dir once the process exits, since it isn't tmpfs-backed", async () => {
+    let onExit: (() => void) | undefined;
+    subprocessNew.mockReturnValueOnce({
+      wait_async: (_cancellable: null, cb: () => void) => {
+        onExit = cb;
+      },
+    });
+
+    await launchDonutBrowser(
+      { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
+      "Browser Hub",
+      vi.fn(),
+    );
+    expect(subprocessNew).toHaveBeenCalledTimes(1);
+
+    onExit?.();
+
+    const profileDir = "/home/user/snap/firefox/common/browser-hub-donut/uuid-1";
+    expect(subprocessNew).toHaveBeenCalledTimes(2);
+    expect(subprocessNew).toHaveBeenLastCalledWith(["rm", "-rf", profileDir], 0);
+  });
+
+  it("never waits for or cleans up a Native/Flatpak browser's tmpfs-backed profile", async () => {
+    await launchDonutBrowser(
+      { label: "Firefox", command: ["firefox"], pkg: FIREFOX_NATIVE },
+      "Browser Hub",
+      vi.fn(),
+    );
+    expect(subprocessNew).toHaveBeenCalledTimes(1);
   });
 });
