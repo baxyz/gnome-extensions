@@ -68,7 +68,11 @@ export function tooltip(actor: St.Widget, text: string): void {
     });
   });
   actor.connect("leave-event", hide);
-  actor.connect("clicked", hide);
+  // Not "clicked": this runs on both St.Button rows and PopupMenuItem rows
+  // (see toolbar.ts), and PopupMenuItem has no "clicked" signal at all — only
+  // "activate", which St.Button doesn't have either. "button-press-event" is
+  // the one low-level Clutter event both reactive actors emit.
+  actor.connect("button-press-event", hide);
   actor.connect("destroy", hide);
 }
 
