@@ -59,6 +59,13 @@ export function tooltip(actor: St.Widget, text: string): void {
     clearTimer();
     timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, TOOLTIP_HOVER_DELAY_MS, () => {
       timeoutId = 0;
+      // Guards against the row closing/being destroyed during the delay
+      // (e.g. clicking it fires closeMenu() before this timer runs) — an
+      // unmapped actor's transformed position/size both read as (0, 0),
+      // which used to plant the tooltip in the top-left corner with nothing
+      // left alive to ever hide it (leave-event never fires for an actor
+      // the pointer isn't over anymore).
+      if (!actor.mapped) return GLib.SOURCE_REMOVE;
       label = new St.Label({ style_class: "dash-label", text });
       Main.layoutManager.uiGroup.add_child(label);
       const [x, y] = actor.get_transformed_position();
@@ -74,6 +81,13 @@ export function tooltip(actor: St.Widget, text: string): void {
   // the one low-level Clutter event both reactive actors emit.
   actor.connect("button-press-event", hide);
   actor.connect("destroy", hide);
+  // Belt-and-suspenders alongside the mapped-check above: catches the row
+  // becoming unmapped *after* the label is already showing (e.g. the menu
+  // closes while a tooltip is up) — leave-event doesn't fire for an actor
+  // that's no longer part of the visible scene, so nothing else would.
+  actor.connect("notify::mapped", () => {
+    if (!actor.mapped) hide();
+  });
 }
 
 // Firefox profile theme colors come straight from a SQLite column (see
