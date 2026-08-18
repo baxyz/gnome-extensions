@@ -4,6 +4,7 @@ import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { PackageManager } from "./taxonomy";
 import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "./taxonomy";
 import type { DefaultBrowserInfo } from "./default-browser";
+import { snapCommonDir } from "./constants/paths.constant";
 import { launchBrowser, pkgKey, writeTextFileAsync } from "./internal";
 
 // Ordered by preference when the current default browser isn't itself
@@ -43,19 +44,22 @@ function samePkg(a: ResolvedBrowserPkg, b: ResolvedBrowserPkg): boolean {
 
 /**
  * Browsers eligible for a Donut session, from the "Browsers" row's own
- * items. Snap-packaged browsers are excluded — able to grant a Flatpak
- * sandbox ad-hoc access to the profile directory (see buildDonutCommand),
- * but snap's confinement model has no equivalent CLI-level override to
- * verify against.
+ * items. Snap-packaged browsers are included: strict confinement blocks a
+ * Snap browser from opening a profile directory outside $HOME entirely
+ * (confirmed — a snap can't see anything under $XDG_RUNTIME_DIR the way
+ * every other Donut profile lives), so createDonutProfile() gives Snap
+ * packages a profile dir under their own ~/snap/<name>/common instead —
+ * always writable regardless of which interfaces are connected, since it's
+ * the snap's own private data dir, not part of the confined "home" grant.
+ * That dir isn't tmpfs-backed like the others, so launchDonutBrowser()
+ * explicitly deletes it once the browser process exits.
  */
 export function filterDonutEligible(
   browsers: readonly ResolvedBrowserItem[],
 ): (ResolvedBrowserItem & { pkg: ResolvedBrowserPkg })[] {
   return browsers.filter(
     (b): b is ResolvedBrowserItem & { pkg: ResolvedBrowserPkg } =>
-      b.pkg !== undefined &&
-      b.pkg.manager !== PackageManager.Snap &&
-      DONUT_ELIGIBLE.has(baseLabel(b.label)),
+      b.pkg !== undefined && DONUT_ELIGIBLE.has(baseLabel(b.label)),
   );
 }
 
@@ -121,9 +125,23 @@ user_pref("browser.migration.version", 9999);
 user_pref("browser.shell.checkDefaultBrowser", false);
 user_pref("browser.uitour.enabled", false);
 user_pref("trailhead.firstrun.didSeeAboutWelcome", true);
+// Zen Browser (a Donut-eligible fork) has its own separate first-run
+// screen on top of Firefox's about:welcome, gated by this Zen-specific
+// pref — confirmed against zen-browser/desktop's own prefs/zen/welcome.yaml
+// and test fixtures, which set exactly this to suppress it in their CI.
+// No-op on every other Donut-eligible browser, same as the rest of this file.
+user_pref("zen.welcome-screen.seen", true);
 `;
 
-function donutProfilesRoot(): string {
+function donutProfilesRoot(pkg: ResolvedBrowserPkg): string {
+  // Snap: nothing under XDG_RUNTIME_DIR is visible inside strict confinement
+  // at all (confirmed — it's remapped to a private per-snap location), but
+  // the snap's own ~/snap/<name>/common always is, regardless of which
+  // interfaces are connected. Not tmpfs-backed, so this one *is* cleaned up
+  // explicitly — see launchDonutBrowser.
+  if (pkg.manager === PackageManager.Snap) {
+    return GLib.build_filenamev([snapCommonDir(pkg.name), "browser-hub-donut"]);
+  }
   // Falls back to the system tmp dir on the (very unlikely) chance
   // XDG_RUNTIME_DIR is unset or empty — still cleaned up eventually, just not
   // guaranteed to be gone by the next login the way /run/user/<uid> is.
@@ -134,8 +152,8 @@ function donutProfilesRoot(): string {
 }
 
 /** Creates a fresh, empty profile directory with a minimal RFP user.js, and returns its path. */
-export async function createDonutProfile(): Promise<string> {
-  const dir = GLib.build_filenamev([donutProfilesRoot(), GLib.uuid_string_random()]);
+export async function createDonutProfile(pkg: ResolvedBrowserPkg): Promise<string> {
+  const dir = GLib.build_filenamev([donutProfilesRoot(pkg), GLib.uuid_string_random()]);
   Gio.File.new_for_path(dir).make_directory_with_parents(null);
   await writeTextFileAsync(GLib.build_filenamev([dir, "user.js"]), DONUT_USER_JS);
   return dir;
@@ -154,8 +172,21 @@ function buildDonutCommand(pkg: ResolvedBrowserPkg, profileDir: string): string[
       // only, no change to the browser's own installed manifest.
       return ["flatpak", "run", `--filesystem=${profileDir}`, pkg.appId, ...profileArgs];
     case PackageManager.Snap:
-      // Unreachable — findDonutBrowser() filters snap-packaged items out.
-      throw new Error("Snap-packaged browsers are not supported for Donut profiles");
+      // profileDir is under this snap's own ~/snap/<name>/common (see
+      // donutProfilesRoot), already inside its confinement — no ad-hoc
+      // grant needed, unlike Flatpak above.
+      return ["snap", "run", pkg.name, ...profileArgs];
+  }
+}
+
+// Best-effort — a leftover directory under ~/snap/<name>/common/browser-hub-donut
+// is orphaned junk, not a privacy leak (still gets a fresh uuid next launch),
+// so a failure here is logged, not surfaced to the user.
+function cleanupSnapDonutProfile(profileDir: string): void {
+  try {
+    Gio.Subprocess.new(["rm", "-rf", profileDir], Gio.SubprocessFlags.NONE);
+  } catch (e: unknown) {
+    logError(e as object, `[browser-hub] failed to clean up Donut profile ${profileDir}`);
   }
 }
 
@@ -165,6 +196,15 @@ export async function launchDonutBrowser(
   title: string,
   notify: typeof Main.notify,
 ): Promise<void> {
-  const profileDir = await createDonutProfile();
-  launchBrowser({ command: buildDonutCommand(item.pkg, profileDir), title, notify });
+  const profileDir = await createDonutProfile(item.pkg);
+  const subprocess = launchBrowser({
+    command: buildDonutCommand(item.pkg, profileDir),
+    title,
+    notify,
+  });
+  // Only Snap's profile dir lives outside tmpfs (see donutProfilesRoot) and
+  // so is the only one that needs an explicit delete once the browser exits.
+  if (item.pkg.manager === PackageManager.Snap && subprocess) {
+    subprocess.wait_async(null, () => cleanupSnapDonutProfile(profileDir));
+  }
 }
