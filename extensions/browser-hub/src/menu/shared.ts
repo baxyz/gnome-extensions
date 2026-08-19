@@ -233,12 +233,15 @@ export function buildSubPageHeader(title: string, onBack: () => void): PopupMenu
     can_focus: true,
     accessible_name: "Back",
     style_class: "button browser-hub-toolbar-btn",
+    // The button's own padding makes it taller than the label next to it —
+    // St.BoxLayout only centers a child when the child asks for it itself.
+    y_align: Clutter.ActorAlign.CENTER,
   });
   backBtn.set_child(new St.Icon({ icon_name: "go-previous-symbolic", icon_size: 16 }));
   tooltip(backBtn, "Back");
   backBtn.connect("clicked", onBack);
   content.add_child(backBtn);
-  content.add_child(new St.Label({ text: title }));
+  content.add_child(new St.Label({ text: title, y_align: Clutter.ActorAlign.CENTER }));
   row.add_child(content);
   return row;
 }
