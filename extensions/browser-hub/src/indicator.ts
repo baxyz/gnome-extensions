@@ -202,7 +202,7 @@ export class BrowserProfilesIndicator extends Button {
         launchDonutBrowser(item, this._title, Main.notify)
           .catch((e: unknown) => {
             logError(e as object, "[browser-hub] failed to launch Donut browser");
-            Main.notify(this._title, "Failed to launch the Donut browser");
+            Main.notify(this._title, "Failed to launch the disposable browser");
           })
           .finally(() => {
             this._donutLaunching = false;

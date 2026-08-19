@@ -53,7 +53,7 @@
     <key name="show-toolbar" type="b">
       <default>true</default>
       <summary>Show toolbar</summary>
-      <description>Show the top row: the default browser quick-launch button, its picker caret, the Donut browser button, Refresh, and Settings. Turning this off hides all five — Settings will then need to be reached another way (e.g. the GNOME Extensions app).</description>
+      <description>Show the top row: the default browser quick-launch button, its picker caret, the disposable browser button, Refresh, and Settings. Turning this off hides all five — Settings will then need to be reached another way (e.g. the GNOME Extensions app).</description>
     </key>
 
     <key name="show-default-browser-edit" type="b">
@@ -70,8 +70,8 @@
 
     <key name="show-donut-browser" type="b">
       <default>true</default>
-      <summary>Show the Donut browser button</summary>
-      <description>Sub-setting of "show-toolbar" (has no effect when that is off). Display a toolbar button that launches a fresh, disposable browser profile with fingerprint resistance enabled (Firefox-family only). Hidden automatically when no eligible browser is installed. The profile lives under $XDG_RUNTIME_DIR and is removed by the system on logout — there is no in-menu cleanup.</description>
+      <summary>Show the disposable browser button</summary>
+      <description>Sub-setting of "show-toolbar" (has no effect when that is off). Display a toolbar button that launches a fresh, disposable browser profile with fingerprint resistance enabled (Firefox-family only). Hidden automatically when no eligible browser is installed. The profile is removed once the browser exits (Snap) or by the system on logout ($XDG_RUNTIME_DIR, everything else) — there is no in-menu cleanup.</description>
     </key>
 
   </schema>
