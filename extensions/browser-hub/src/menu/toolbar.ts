@@ -88,8 +88,11 @@ const DONUT_ICON_SIZE = 24;
 const DONUT_TOOLTIP = "Launch a disposable, anti-fingerprint browser session";
 
 /**
- * "Launch temporary session" row — same shape as buildDefaultBrowserItem
- * above. Returns null when there's no Donut-eligible browser at all (see
+ * "Launch disposable session" row — same shape as buildDefaultBrowserItem
+ * above. "Disposable", not "Donut" (this feature's internal code name,
+ * meaningless to anyone reading the menu) or "temporary" (says nothing
+ * about the actual point — anti-fingerprinting, thrown away after use).
+ * Returns null when there's no Donut-eligible browser at all (see
  * findDonutBrowser) — no point offering a row that can't do anything, same
  * tolerance the old toolbar button had.
  */
@@ -108,7 +111,7 @@ export function buildDonutItem({
 }): PopupMenuItem | null {
   if (!donutBrowser) return null;
 
-  const menuItem = new PopupMenuItem("Launch temporary session");
+  const menuItem = new PopupMenuItem("Launch disposable session");
   tooltip(menuItem, DONUT_TOOLTIP);
 
   if (donutLaunching) {
@@ -131,7 +134,7 @@ export function buildDonutItem({
   menuItem.add_child(new St.Widget({ x_expand: true }));
   const moreBtn = new St.Button({
     can_focus: true,
-    accessible_name: "Choose a different browser for the temporary session",
+    accessible_name: "Choose a different browser for the disposable session",
     style_class: "button browser-hub-toolbar-btn",
     reactive: !donutLaunching,
   });
