@@ -17,12 +17,13 @@ function isFileIcon(icon: Gio.Icon): icon is Gio.FileIcon {
   return "file" in icon;
 }
 
-// The two real icon_size values this extension ever renders a .desktop icon
-// at (menu/shared.ts's makeIconButton call sites: 24 for the Browsers row,
-// 16 for the default-browser picker rows). Package-manager badges are no
-// longer Gio.Icon compositing (see menu/shared.ts) — nothing else needs
-// probing at a size this module doesn't already know is real.
-export const ICON_DECODE_PROBE_SIZES = [16, 24] as const;
+// Every real icon_size this extension ever renders a .desktop icon at: 24
+// for the Browsers row (menu/browser-rows.ts), 20 for the default-browser
+// and burner-session rows (menu/toolbar.ts), 16 for a picker page's rows
+// (menu/shared.ts's buildPickerRow). Package-manager badges are no longer
+// Gio.Icon compositing (see menu/shared.ts) — nothing else needs probing at
+// a size this module doesn't already know is real.
+export const ICON_DECODE_PROBE_SIZES = [16, 20, 24] as const;
 
 // Cached per path — a bad file is decoded at most once per session (across
 // every probed size), same as every other lookup in this module.
