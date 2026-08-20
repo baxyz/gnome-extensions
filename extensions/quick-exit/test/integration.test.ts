@@ -29,7 +29,25 @@ describe("Quick Exit Extension Integration", () => {
           skipLibCheck: true,
           paths: {
             ...tsconfig.compilerOptions.paths,
+            // A bare-specifier entry alone doesn't match this extension's
+            // actual imports (src/ambient.d.ts pulls "@girs/gnome-shell/ambient"
+            // and "@girs/gnome-shell/extensions/global"), so those fall through
+            // to plain node_modules resolution and silently type-check against
+            // the default v50 package on every iteration, regardless of
+            // `version`. A wildcard ("@girs/gnome-shell/*") doesn't fix this
+            // either — @girs/gnome-shell's package.json remaps each subpath
+            // through "exports" (e.g. "./ambient" -> "./dist/index-ambient.d.ts"),
+            // which `paths` substitution doesn't follow; verified via
+            // `tsc --traceResolution` that a wildcard still lands on v50's
+            // dist file. The two subpaths actually used have to be mapped to
+            // their real dist targets explicitly instead.
             "@girs/gnome-shell": [`./node_modules/@girs/gnome-shell-${version}`],
+            "@girs/gnome-shell/ambient": [
+              `./node_modules/@girs/gnome-shell-${version}/dist/index-ambient.d.ts`,
+            ],
+            "@girs/gnome-shell/extensions/global": [
+              `./node_modules/@girs/gnome-shell-${version}/dist/extensions/global.d.ts`,
+            ],
           },
         },
       };
