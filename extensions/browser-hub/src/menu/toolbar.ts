@@ -12,13 +12,19 @@ const CHEVRON_ICON_SIZE = 16;
 
 /**
  * Browsers pickable as a new default, from the "Browsers" row's own items.
- * For Snap, desktopIdFor()'s "<name>_<name>.desktop" is a guess (confirmed
- * against only a couple of browsers) — a wrong guess would feed a
- * nonexistent desktop ID straight into setDefaultBrowser(), which fails
- * (returns false, no default changed). Rather than excluding every Snap
- * browser to avoid that, verify the guess actually resolves to a real
- * Gio.DesktopAppInfo first: setDefaultBrowser() does the exact same lookup,
- * so a resolvable guess here is confirmed to work there too.
+ * setDefaultBrowser() needs a real Gio.DesktopAppInfo for the package's
+ * desktop ID — resolvePkgUncached() only checks that the binary is on the
+ * PATH, so a package can be "installed" here yet have no .desktop file at
+ * all. Two ways that happens in practice: Snap's desktopIdFor()
+ * "<name>_<name>.desktop" is a guess (confirmed against only a couple of
+ * browsers), and for Native, a binary can exist without the app being
+ * properly installed — e.g. Fedora's epiphany-runtime package (pulled in as
+ * a dependency for other apps' "web app" support) puts /usr/bin/epiphany on
+ * the PATH but ships no org.gnome.Epiphany.desktop at all. Flatpak is the
+ * only manager whose desktop ID is guaranteed to exist by the packaging
+ * spec, so it's the only one skipped here. Verify the desktop ID actually
+ * resolves before offering the row: setDefaultBrowser() does the exact same
+ * lookup, so a resolvable ID here is confirmed to work there too.
  */
 export function filterDefaultBrowserPickable(
   browsers: ResolvedBrowserItem[],
@@ -26,7 +32,7 @@ export function filterDefaultBrowserPickable(
   return browsers.filter(
     (b): b is ResolvedBrowserItem & { pkg: ResolvedBrowserPkg } =>
       b.pkg !== undefined &&
-      (b.pkg.manager !== PackageManager.Snap || getDesktopAppInfo(desktopIdFor(b.pkg)) !== null),
+      (b.pkg.manager === PackageManager.Flatpak || getDesktopAppInfo(desktopIdFor(b.pkg)) !== null),
   );
 }
 
