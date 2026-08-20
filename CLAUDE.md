@@ -7,7 +7,7 @@ See [.github/agents.md](.github/agents.md) for full conventions. Key points:
 - **Rebase only — no merge commits.** Sync branches with `git rebase origin/main`, not `git merge`.
 - Force-push after rebase: `git push --force-with-lease`.
 - Conventional commits: `type(scope): <emoji> message`
-- Scopes: `workspace`, `tooling`, `ci`, `docs`, `agents`, `deps`, `browser-hub`, `firefox-profiles`
+- Scopes: `workspace`, `tooling`, `ci`, `docs`, `agents`, `deps`, `browser-hub`, `firefox-profiles`, `quick-exit`
 
 ## Monorepo
 
