@@ -83,13 +83,14 @@ export function buildDefaultBrowserItem({
 }
 
 const DONUT_ICON_SIZE = 24;
-const DONUT_TOOLTIP = "Launch a disposable, anti-fingerprint browser session";
+const DONUT_TOOLTIP = "Launch a burner, anti-fingerprint browser session";
 
 /**
- * "Launch disposable session" row — same shape as buildDefaultBrowserItem
- * above. "Disposable", not "Donut" (this feature's internal code name,
- * meaningless to anyone reading the menu) or "temporary" (says nothing
- * about the actual point — anti-fingerprinting, thrown away after use).
+ * "Launch burner session" row — same shape as buildDefaultBrowserItem
+ * above. "Burner" (as in "burner phone"), not "Donut" (this feature's
+ * internal code name, meaningless to anyone reading the menu), "temporary"
+ * (says nothing about the actual point), or "disposable" (accurate but
+ * flatter — "burner" reads instantly as throwaway *and* anonymous).
  * Returns null when there's no Donut-eligible browser at all (see
  * findDonutBrowser) — no point offering a row that can't do anything, same
  * tolerance the old toolbar button had.
@@ -109,7 +110,7 @@ export function buildDonutItem({
 }): PopupMenuItem | null {
   if (!donutBrowser) return null;
 
-  const menuItem = new PopupMenuItem("Launch disposable session");
+  const menuItem = new PopupMenuItem("Launch burner session");
   tooltip(menuItem, DONUT_TOOLTIP);
 
   if (donutLaunching) {
@@ -118,8 +119,11 @@ export function buildDonutItem({
     menuItem.insert_child_below(spinner, menuItem.label);
     menuItem.reactive = false;
   } else {
+    // A masquerade mask, not an eye/eye-slash: this isn't "hide from the
+    // browser" (that's what private/incognito mode already is), it's "be
+    // someone the browser can't fingerprint" — anonymity, not concealment.
     const iconWidget = new St.Icon({
-      icon_name: "view-conceal-symbolic",
+      icon_name: "view-private-symbolic",
       icon_size: DONUT_ICON_SIZE,
     });
     menuItem.insert_child_below(iconWidget, menuItem.label);
@@ -132,7 +136,7 @@ export function buildDonutItem({
   menuItem.add_child(new St.Widget({ x_expand: true }));
   const moreBtn = new St.Button({
     can_focus: true,
-    accessible_name: "Choose a different browser for the disposable session",
+    accessible_name: "Choose a different browser for the burner session",
     style_class: "button browser-hub-toolbar-btn",
     reactive: !donutLaunching,
   });

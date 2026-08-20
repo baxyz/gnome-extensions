@@ -855,7 +855,7 @@ describe("fillMenu", () => {
     ];
     const hasDonutRow = (menu: FakeMenu) =>
       menu.items.some(
-        (item) => (item as FakePopupMenuItem).label?.text === "Launch disposable session",
+        (item) => (item as FakePopupMenuItem).label?.text === "Launch burner session",
       );
 
     const off = makeFakeMenu();
@@ -918,7 +918,7 @@ describe("fillMenu", () => {
       onLaunchDonut,
     });
     const donutRow = menu.items.find(
-      (item) => (item as FakePopupMenuItem).label?.text === "Launch disposable session",
+      (item) => (item as FakePopupMenuItem).label?.text === "Launch burner session",
     ) as FakePopupMenuItem;
 
     donutRow.emit("activate");
@@ -950,7 +950,7 @@ describe("fillMenu", () => {
       donutLaunching: true,
     });
     const donutRow = menu.items.find(
-      (item) => (item as FakePopupMenuItem).label?.text === "Launch disposable session",
+      (item) => (item as FakePopupMenuItem).label?.text === "Launch burner session",
     ) as FakePopupMenuItem & { reactive: boolean };
 
     expect(donutRow.children[0]).toBeInstanceOf(FakeSpinner);
@@ -990,7 +990,7 @@ describe("fillMenu", () => {
     const header = menu.items[0] as FakePopupMenuItem;
     const headerContent = header.children[0] as FakeBoxLayout;
     const titleLabel = headerContent.children[1] as FakeLabel;
-    expect(titleLabel.text).toBe("Choose a browser for the disposable session");
+    expect(titleLabel.text).toBe("Choose a browser for the burner session");
 
     const listRow = menu.items[1] as FakePopupMenuItem;
     const scrollView = listRow.children[0] as FakeScrollView;
