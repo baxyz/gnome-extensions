@@ -62,6 +62,9 @@ class FakeWidget {
   set_child(child: FakeWidget): void {
     this.children = [child];
   }
+  set_child_above_sibling(child: FakeWidget, _sibling: FakeWidget | null): void {
+    this.children = [...this.children.filter((c) => c !== child), child];
+  }
   set_style(s: string): void {
     this.style = s;
   }
