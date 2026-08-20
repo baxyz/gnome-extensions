@@ -3,10 +3,11 @@
   font-weight: bold;
 }
 
-/* Fixed-size icon slot (an St.Bin, see menu.ts) left of profile label — keeps
-   labels aligned across entries. Matches PROFILE_ICON_SIZE (menu.ts) exactly
-   in px: an em-based size is font-size-dependent and doesn't reliably equal
-   the icon's actual rendered size. */
+/* Fixed-size icon slot (an St.Bin, see menu/browser-rows.ts's
+   buildProfileMenuItem) left of profile label — keeps labels aligned across
+   entries. Matches PROFILE_ICON_SIZE exactly in px: an em-based size is
+   font-size-dependent and doesn't reliably equal the icon's actual
+   rendered size. */
 .browser-hub-profile-icon {
   width: 16px;
   height: 16px;

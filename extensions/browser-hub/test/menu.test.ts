@@ -5,10 +5,10 @@ import { PackageManager } from "../src/taxonomy";
 
 const FAKE_DEFAULT_BROWSER_PKG = { manager: PackageManager.Native, binary: "firefox" } as const;
 
-// menu.ts imports { launchBrowser } from "./internal", which loads the
-// whole internal/index.ts barrel — including pkg.ts, which imports "gi://GLib"
-// at module scope even though nothing in these tests exercises GLib-using
-// functions. Needs a stub so the import itself resolves under Node.
+// menu/index.ts imports { launchBrowser } from "./internal", which loads
+// the whole internal/index.ts barrel — including pkg.ts, which imports
+// "gi://GLib" at module scope even though nothing in these tests exercises
+// GLib-using functions. Needs a stub so the import itself resolves under Node.
 vi.mock("gi://GLib", () => ({
   default: {
     get_home_dir: () => "/home/user",
@@ -41,11 +41,9 @@ vi.mock("gi://GdkPixbuf", () => ({
   },
 }));
 
-// Safety-net tests for the CURRENT rendering behavior of menu.ts,
-// written before the Phase 2 color/icon type rework (see the approved plan).
-// Only fillMenu is exported — everything else is driven through it and
-// asserted on the resulting fake widget tree, which is what these tests
-// treat as "observable behavior".
+// Only fillMenu (menu/index.ts) is exported — everything else in menu/ is
+// driven through it and asserted on the resulting fake widget tree, which
+// is what these tests treat as "observable behavior".
 
 class FakeWidget {
   children: FakeWidget[] = [];
@@ -79,8 +77,9 @@ class FakeWidget {
   }
 }
 class FakeIcon extends FakeWidget {}
-// Real St.Button defaults reactive to true; the Donut row's click handler
-// (menu.ts) reads it back to guard against double-clicks while busy.
+// Real St.Button defaults reactive to true; the burner-session row's click
+// handler (menu/toolbar.ts's buildDonutItem) reads it back to guard against
+// double-clicks while busy.
 class FakeButton extends FakeWidget {
   reactive = true;
 }
@@ -178,10 +177,11 @@ vi.mock("resource:///org/gnome/shell/ui/animation.js", () => ({
 }));
 
 const subprocessNew = vi.fn();
-// menu.ts imports launchBrowser/resolveDesktopIcon from "./internal", the
-// barrel that includes gio.ts — its Gio._promisify(Gio.File.prototype, ...)
-// call at module scope needs an actual prototype to patch even though
-// nothing here exercises the promisified methods themselves.
+// menu/toolbar.ts imports launchBrowser/resolveDesktopIcon from
+// "./internal", the barrel that includes gio.ts — its
+// Gio._promisify(Gio.File.prototype, ...) call at module scope needs an
+// actual prototype to patch even though nothing here exercises the
+// promisified methods themselves.
 class FakeGioFile {}
 
 vi.mock("gi://Gio", () => ({
@@ -193,8 +193,8 @@ vi.mock("gi://Gio", () => ({
   },
 }));
 
-// menu.ts's buildToolbar resolves the default browser's own icon via
-// resolveDesktopIcon() — no app matches in this test environment, which
+// menu/toolbar.ts's buildDefaultBrowserItem resolves the default browser's
+// own icon via resolveDesktopIcon() — no app matches in this test environment, which
 // exercises the same "no icon found" tolerance as a real missing .desktop
 // file. Also drives filterDefaultBrowserPickable's Snap-guess verification
 // below (see desktopAppInfoNew) — default "no app resolves" is the common
