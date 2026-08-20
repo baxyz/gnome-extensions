@@ -32,23 +32,23 @@ export function filterDefaultBrowserPickable(
 
 /**
  * "Launch default browser" row — clicking it launches, closing the menu.
- * The trailing chevron (only when showDefaultBrowserEdit is on) opens the
- * default-browser picker page instead of expanding a PopupSubMenuMenuItem
- * inline (see menu/shared.ts's sub-page builders for why that changed).
+ * The trailing chevron opens the default-browser picker page instead of
+ * expanding a PopupSubMenuMenuItem inline (see menu/shared.ts's sub-page
+ * builders for why that changed). Whether this whole row shows at all is
+ * decided by the caller (see menu/index.ts) — "show-default-browser-edit"
+ * gates the row, not just this chevron.
  */
 const DEFAULT_BROWSER_ICON_SIZE = 24;
 
 export function buildDefaultBrowserItem({
   title,
   defaultBrowser,
-  showDefaultBrowserEdit,
   onOpenDefaultBrowserPage,
   notify,
   closeMenu,
 }: {
   title: string;
   defaultBrowser: DefaultBrowserInfo;
-  showDefaultBrowserEdit: boolean;
   onOpenDefaultBrowserPage: () => void;
   notify: typeof Main.notify;
   closeMenu: () => void;
@@ -68,18 +68,16 @@ export function buildDefaultBrowserItem({
     closeMenu();
   });
 
-  if (showDefaultBrowserEdit) {
-    menuItem.add_child(new St.Widget({ x_expand: true }));
-    const editBtn = new St.Button({
-      can_focus: true,
-      accessible_name: "Change default browser",
-      style_class: "button browser-hub-toolbar-btn",
-    });
-    editBtn.set_child(new St.Icon({ icon_name: "go-next-symbolic", icon_size: CHEVRON_ICON_SIZE }));
-    tooltip(editBtn, "Change default browser");
-    editBtn.connect("clicked", onOpenDefaultBrowserPage);
-    menuItem.add_child(editBtn);
-  }
+  menuItem.add_child(new St.Widget({ x_expand: true }));
+  const editBtn = new St.Button({
+    can_focus: true,
+    accessible_name: "Change default browser",
+    style_class: "button browser-hub-toolbar-btn",
+  });
+  editBtn.set_child(new St.Icon({ icon_name: "go-next-symbolic", icon_size: CHEVRON_ICON_SIZE }));
+  tooltip(editBtn, "Change default browser");
+  editBtn.connect("clicked", onOpenDefaultBrowserPage);
+  menuItem.add_child(editBtn);
 
   return menuItem;
 }

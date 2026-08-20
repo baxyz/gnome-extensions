@@ -181,12 +181,11 @@ export async function fillMenu({
     // After the toolbar, not before: each reads as its own row rather than a
     // compact toolbar control, closer to a preferences category than a
     // quick-action button.
-    if (defaultBrowser) {
+    if (defaultBrowser && showDefaultBrowserEdit) {
       menu.addMenuItem(
         buildDefaultBrowserItem({
           title,
           defaultBrowser,
-          showDefaultBrowserEdit,
           onOpenDefaultBrowserPage,
           notify,
           closeMenu,
