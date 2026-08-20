@@ -1,3 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="16" height="16">
 <!--
   Flathub logomark (circle, square, triangle, plus), extracted from the
   official horizontal lockup at
@@ -7,7 +8,6 @@
   their individual transforms are otherwise unmodified, just re-parented
   under one combined ancestor transform and cropped to their own bounds.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="16" height="16">
   <g fill="#3584e4" transform="matrix(1.569926 0 0 1.569926 -247.445344 -135.949776)">
     <circle cx="166.69" cy="95.647" r="9.0478"/>
     <rect x="158.75" y="108.33" width="15.875" height="15.875" rx="4.2333" ry="4.2333"/>
