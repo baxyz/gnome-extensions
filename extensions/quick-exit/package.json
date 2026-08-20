@@ -1,0 +1,50 @@
+{
+  "name": "@baxyz/quick-exit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shortens GNOME's Log Out / Power Off / Restart confirmation countdown.",
+  "homepage": "https://github.com/baxyz/gnome-extensions#readme",
+  "bugs": {
+    "url": "https://github.com/baxyz/gnome-extensions/issues"
+  },
+  "license": "AGPL-3.0-only",
+  "author": "baxyz <berenger@arnaud.work>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baxyz/gnome-extensions.git",
+    "directory": "extensions/quick-exit"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "install:local": "../../tooling/scripts/install-local.sh",
+    "pack:extension": "../../tooling/scripts/pack.sh",
+    "shexli": "../../tooling/scripts/shexli.sh"
+  },
+  "devDependencies": {
+    "@girs/gjs": "catalog:",
+    "@girs/gnome-shell": "catalog:",
+    "@girs/gnome-shell-46": "catalog:",
+    "@girs/gnome-shell-47": "catalog:",
+    "@girs/gnome-shell-48": "catalog:",
+    "@girs/gnome-shell-49": "catalog:",
+    "@girs/gnome-shell-50": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/ui": "catalog:",
+    "esbuild": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "packageManager": "pnpm@11.8.0"
+}
