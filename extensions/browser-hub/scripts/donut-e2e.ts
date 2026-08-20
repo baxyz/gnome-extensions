@@ -39,6 +39,13 @@ import * as fs from "fs";
 import assert from "node:assert/strict";
 import { firefox, type Page } from "playwright";
 import { createDonutProfile } from "../src/donut-browser";
+import { PackageManager } from "../src/taxonomy";
+
+// createDonutProfile()'s pkg arg only ever affects where the profile
+// directory lives (see donutProfilesRoot) — Playwright always launches its
+// own bundled Firefox build directly via launchPersistentContext() below,
+// never pkg.binary, so any Native pkg is a faithful stand-in here.
+const FAKE_PKG = { manager: PackageManager.Native, binary: "firefox" } as const;
 
 // Deliberately not a multiple of the 200x100 letterboxing grid, so a
 // rounded-down result below can only come from letterboxing actually
@@ -62,7 +69,7 @@ async function canvasFingerprint(page: Page): Promise<string> {
 
 /** Creates a throwaway Donut profile+session, runs `run` against its page, and cleans up after. */
 async function withDonutSession<T>(run: (page: Page) => Promise<T>): Promise<T> {
-  const profileDir = await createDonutProfile();
+  const profileDir = await createDonutProfile(FAKE_PKG);
   const context = await firefox.launchPersistentContext(profileDir, {
     headless: true,
     viewport: REQUESTED_VIEWPORT,
@@ -79,7 +86,7 @@ async function withDonutSession<T>(run: (page: Page) => Promise<T>): Promise<T> 
 
 async function main() {
   console.log("Creating a Donut profile...");
-  const profileDir = await createDonutProfile();
+  const profileDir = await createDonutProfile(FAKE_PKG);
   let firstSessionFingerprint: string;
 
   try {

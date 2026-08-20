@@ -9,7 +9,11 @@ if (defaultBrowser) {
   console.log("Default browser: (none detected)");
 }
 
-const entries = await getBrowserEntries();
+const { entries, errors } = await getBrowserEntries();
+
+if (errors.length > 0) {
+  console.log(`\n(errors: ${errors.join("; ")})`);
+}
 
 if (entries.length === 0) {
   console.log("\n(no browsers found)");
