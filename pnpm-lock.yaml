@@ -223,28 +223,28 @@ importers:
         version: '@girs/gnome-shell@50.0.4'
       '@types/node':
         specifier: 'catalog:'
-        version: 26.1.2
+        version: 26.2.0
       '@vitest/ui':
         specifier: 'catalog:'
         version: 4.1.10(vitest@4.1.10)
       esbuild:
         specifier: 'catalog:'
-        version: 0.28.1
+        version: 0.28.2
       oxfmt:
         specifier: 'catalog:'
-        version: 0.62.0
+        version: 0.63.0
       oxlint:
         specifier: 'catalog:'
-        version: 1.77.0
+        version: 1.78.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: 'catalog:'
-        version: 8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(tsx@4.23.8)
+        version: 8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(tsx@4.23.12)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/ui@4.1.10)(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(tsx@4.23.8))
+        version: 4.1.10(@types/node@26.2.0)(@vitest/ui@4.1.10)(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(tsx@4.23.12))
 
   tooling:
     devDependencies:
