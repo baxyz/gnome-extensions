@@ -796,6 +796,7 @@ describe("fillMenu", () => {
   });
 
   it("default-browser page lists every pickable browser; picking one sets it as default and returns to main", async () => {
+    desktopAppInfoNew.mockReturnValue({});
     const browsersEntry = {
       label: "Browsers",
       group: "simple" as const,
@@ -1025,6 +1026,7 @@ describe("fillMenu", () => {
 
 describe("filterDefaultBrowserPickable", () => {
   const SNAP_PKG = { manager: PackageManager.Snap, name: "opera" } as const;
+  const FLATPAK_PKG = { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" } as const;
 
   it("includes a Snap browser once its guessed desktop ID actually resolves", () => {
     desktopAppInfoNew.mockReturnValue({});
@@ -1043,10 +1045,33 @@ describe("filterDefaultBrowserPickable", () => {
     expect(result).toHaveLength(0);
   });
 
-  it("never bothers checking a non-Snap package's desktop ID", () => {
+  it("includes a Native browser whose desktop ID resolves", () => {
+    desktopAppInfoNew.mockReturnValue({});
+
     const result = filterDefaultBrowserPickable([
       { label: "Firefox", command: [], pkg: FAKE_DEFAULT_BROWSER_PKG },
     ]);
+
+    expect(result).toHaveLength(1);
+    expect(desktopAppInfoNew).toHaveBeenCalledWith("firefox.desktop");
+  });
+
+  it("excludes a Native browser whose binary is on PATH but has no .desktop file (e.g. Fedora's epiphany-runtime)", () => {
+    desktopAppInfoNew.mockReturnValue(null);
+
+    const result = filterDefaultBrowserPickable([
+      {
+        label: "Epiphany",
+        command: [],
+        pkg: { manager: PackageManager.Native, binary: "epiphany" },
+      },
+    ]);
+
+    expect(result).toHaveLength(0);
+  });
+
+  it("never bothers checking a Flatpak's desktop ID — the spec guarantees it exists", () => {
+    const result = filterDefaultBrowserPickable([{ label: "Zen", command: [], pkg: FLATPAK_PKG }]);
 
     expect(result).toHaveLength(1);
     expect(desktopAppInfoNew).not.toHaveBeenCalled();
