@@ -131,13 +131,16 @@ function withBadge(iconWidget: St.Icon, manager: PackageManager | undefined): St
 
   const container = new St.Widget({ layout_manager: new Clutter.BinLayout() });
   container.add_child(iconWidget);
-  container.add_child(
-    new St.Widget({
-      style_class: `browser-hub-badge ${badgeClass}`,
-      x_align: Clutter.ActorAlign.END,
-      y_align: Clutter.ActorAlign.END,
-    }),
-  );
+  const badge = new St.Widget({
+    style_class: `browser-hub-badge ${badgeClass}`,
+    x_align: Clutter.ActorAlign.END,
+    y_align: Clutter.ActorAlign.START,
+  });
+  container.add_child(badge);
+  // Explicit, not just "added last": BinLayout paints children in add order
+  // regardless, but this is the one line that actually says "always on top
+  // of the icon" instead of relying on that being an incidental side effect.
+  container.set_child_above_sibling(badge, iconWidget);
   return container;
 }
 
