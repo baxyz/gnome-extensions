@@ -4,6 +4,7 @@ const SHIMS = new Map([
   // DesktopAppInfo lives on GioUnix, not Gio — see internal/gio.ts. Reuses
   // the same shim module: its DesktopAppInfo implementation is already there.
   ["gi://GioUnix", new URL("./gio.ts", import.meta.url).href],
+  ["gi://GdkPixbuf", new URL("./gdkpixbuf.ts", import.meta.url).href],
   ["gi://GObject", new URL("./gnome-shell.ts", import.meta.url).href],
   ["gi://St", new URL("./gnome-shell.ts", import.meta.url).href],
   ["gi://Clutter", new URL("./gnome-shell.ts", import.meta.url).href],
