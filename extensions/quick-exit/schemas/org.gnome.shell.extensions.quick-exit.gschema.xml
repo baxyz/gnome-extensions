@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.quick-exit"
+    path="/org/gnome/shell/extensions/quick-exit/">
+
+    <key name="timeout-seconds" type="i">
+      <range min="1" max="60"/>
+      <default>5</default>
+      <summary>Countdown duration, in seconds</summary>
+      <description>How long the Log Out / Power Off / Restart confirmation dialog waits before acting on its own. Never lengthens GNOME's own countdown, only shortens it — if GNOME ever requests a shorter wait than this, that shorter wait is kept.</description>
+    </key>
+
+  </schema>
+</schemalist>
