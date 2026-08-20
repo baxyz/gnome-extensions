@@ -124,12 +124,25 @@ const BADGE_CSS_CLASSES: Partial<Record<PackageManager, string>> = {
   [PackageManager.Snap]: "browser-hub-badge-snap",
 };
 
-/** Overlays a small package-manager badge in the bottom-right corner of `iconWidget`, when one applies. */
-function withBadge(iconWidget: St.Icon, manager: PackageManager | undefined): St.Widget {
+/** Overlays a small package-manager badge in the top-right corner of `iconWidget`, when one applies. */
+function withBadge(
+  iconWidget: St.Icon,
+  iconSize: number,
+  manager: PackageManager | undefined,
+): St.Widget {
   const badgeClass = manager && BADGE_CSS_CLASSES[manager];
   if (!badgeClass) return iconWidget;
 
-  const container = new St.Widget({ layout_manager: new Clutter.BinLayout() });
+  // Fixed to iconSize explicitly: left to layout negotiation, this
+  // container can end up allocated wider than the icon itself (e.g. the
+  // surrounding row stretching it), and END/START alignment then places the
+  // badge relative to that larger box instead of the icon's own corner —
+  // visually landing much closer to center than the corner.
+  const container = new St.Widget({
+    layout_manager: new Clutter.BinLayout(),
+    width: iconSize,
+    height: iconSize,
+  });
   container.add_child(iconWidget);
   const badge = new St.Widget({
     style_class: `browser-hub-badge ${badgeClass}`,
@@ -164,7 +177,7 @@ export function makeIconButton(
     ...iconProps(icon ?? GENERIC_BROWSER_ICON_NAME),
     icon_size: iconSize,
   });
-  btn.set_child(withBadge(iconWidget, badgeManager));
+  btn.set_child(withBadge(iconWidget, iconSize, badgeManager));
   tooltip(btn, label);
   btn.connect("clicked", onClick);
   return btn;
