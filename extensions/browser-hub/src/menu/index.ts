@@ -158,7 +158,7 @@ export async function fillMenu({
     return;
   }
   if (page === "donut") {
-    menu.addMenuItem(buildSubPageHeader("Choose a browser for the disposable session", onBack));
+    menu.addMenuItem(buildSubPageHeader("Choose a browser for the burner session", onBack));
     const items = filterDonutEligible(browsers).slice(0, MAX_ICONS_PER_PASS);
     const rows = items.map((item) =>
       buildPickerRow(item, (picked) => {
