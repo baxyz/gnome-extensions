@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { writeFileSync, unlinkSync } from "fs";
 import { resolve } from "path";
 import metadata from "../metadata.json";
@@ -37,7 +37,7 @@ describe("Quick Exit Extension Integration", () => {
       const tscBin = resolve(cwd, "node_modules/.bin/tsc");
       try {
         writeFileSync(tempConfigPath, JSON.stringify(tempConfig, null, 2));
-        execSync(`"${tscBin}" --project ${tempConfigPath}`, {
+        execFileSync(tscBin, ["--project", tempConfigPath], {
           cwd,
           encoding: "utf-8",
         });
