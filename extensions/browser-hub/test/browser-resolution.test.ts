@@ -1,11 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fakeGioPromisify } from "./helpers/fake-gio-promisify";
 
-// Safety-net tests for the CURRENT behavior of the browser resolvers, written
-// before the Phase 2-6 rework (see the approved plan) so the refactor has a
-// regression baseline. These assert on OBSERVABLE output (what ends up in
-// ResolvedBrowserEntry[]), not internal shape, so they should keep meaning
-// (only construction may need updating) once the color/icon type is reworked.
+// Assert on the browser resolvers' OBSERVABLE output (what ends up in
+// ResolvedBrowserEntry[]) rather than internal shape, so a resolver's own
+// implementation can change without these needing to follow along.
 
 type FsEntry = { type: "file"; content: Uint8Array } | { type: "dir"; names: string[] };
 const fs = new Map<string, FsEntry>();

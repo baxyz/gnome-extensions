@@ -7,8 +7,9 @@ import type { ResolvedBrowserPkg } from "./browser-package.types";
  */
 // fgColor tints the icon glyph itself; bgColor (if known) adds a colored pill
 // behind it. bgColor alone (no fgColor) would tint an icon-shaped hole in the
-// pill using the pill's own color — illegible — so menu.ts always renders
-// fgColor as the tint and bgColor only as the pill.
+// pill using the pill's own color — illegible — so buildProfileMenuItem
+// (menu/browser-rows.ts) always renders fgColor as the tint and bgColor
+// only as the pill.
 export type ColorPresentation =
   | { mode: "badge"; fgColor?: string; bgColor?: string } // Firefox Profile Groups
   | { mode: "dot"; bgColor: string }; // rendered as a separate dot after the label (Chromium)
