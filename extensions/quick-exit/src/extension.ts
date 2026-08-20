@@ -9,12 +9,10 @@ export default class QuickExitExtension extends Extension {
     const settings = this.getSettings();
     this._injectionManager = new InjectionManager();
 
-    // GNOME's own EndSessionDialog._startTimer() already reads
-    // _totalSecondsToStayOpen and ticks _secondsLeft down every second,
-    // updating the dialog's own countdown text as it goes — clamping that
-    // value down before letting the original method run is enough to shorten
-    // the wait, with none of the UI/wording duplicated (and so nothing here
-    // to fall out of sync with it across GNOME Shell versions).
+    // _startTimer() ticks _secondsLeft down from _totalSecondsToStayOpen once
+    // per second and redraws the dialog's countdown text from it. Shrinking
+    // _totalSecondsToStayOpen here, before the original method runs, is what
+    // shortens the wait.
     this._injectionManager.overrideMethod(
       EndSessionDialog.prototype,
       "_startTimer",
