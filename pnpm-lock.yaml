@@ -198,6 +198,54 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@types/node@26.2.0)(@vitest/ui@4.1.10)(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(tsx@4.23.12))
 
+  extensions/quick-exit:
+    devDependencies:
+      '@girs/gjs':
+        specifier: 'catalog:'
+        version: 4.1.0
+      '@girs/gnome-shell':
+        specifier: 'catalog:'
+        version: 50.0.4
+      '@girs/gnome-shell-46':
+        specifier: 'catalog:'
+        version: '@girs/gnome-shell@46.0.2'
+      '@girs/gnome-shell-47':
+        specifier: 'catalog:'
+        version: '@girs/gnome-shell@47.0.2'
+      '@girs/gnome-shell-48':
+        specifier: 'catalog:'
+        version: '@girs/gnome-shell@48.0.4'
+      '@girs/gnome-shell-49':
+        specifier: 'catalog:'
+        version: '@girs/gnome-shell@49.1.0'
+      '@girs/gnome-shell-50':
+        specifier: 'catalog:'
+        version: '@girs/gnome-shell@50.0.4'
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.1.2
+      '@vitest/ui':
+        specifier: 'catalog:'
+        version: 4.1.10(vitest@4.1.10)
+      esbuild:
+        specifier: 'catalog:'
+        version: 0.28.1
+      oxfmt:
+        specifier: 'catalog:'
+        version: 0.62.0
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.77.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(tsx@4.23.8)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@26.1.2)(@vitest/ui@4.1.10)(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(tsx@4.23.8))
+
   tooling:
     devDependencies:
       vite:

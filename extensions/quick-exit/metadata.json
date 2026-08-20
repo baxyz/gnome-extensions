@@ -1,0 +1,8 @@
+{
+  "name": "Quick Exit",
+  "description": "Shortens the 60-second countdown GNOME shows before Log Out, Power Off, or Restart actually happens — configurable down to 1 second.",
+  "uuid": "quick-exit@baxyz.dev",
+  "url": "https://github.com/baxyz/gnome-extensions",
+  "shell-version": ["46", "47", "48", "49", "50"],
+  "settings-schema": "org.gnome.shell.extensions.quick-exit"
+}
