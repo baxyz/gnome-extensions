@@ -749,7 +749,7 @@ describe("fillMenu", () => {
     expect(subprocessNew).toHaveBeenCalledWith(["firefox", "-P", "default"], 0);
   });
 
-  it("shows a trailing Edit button on the default-browser row when showDefaultBrowserEdit is true", async () => {
+  it("shows the default-browser row, with its trailing Edit button, when showDefaultBrowserEdit is true", async () => {
     const onOpenDefaultBrowserPage = vi.fn();
     const menu = makeFakeMenu();
     await fillMenu({
@@ -771,12 +771,12 @@ describe("fillMenu", () => {
     editBtn.emit("clicked");
     expect(onOpenDefaultBrowserPage).toHaveBeenCalled();
 
-    // The row itself still launches when clicked, same as edit-off.
+    // The row itself still launches when clicked.
     row.emit("activate");
     expect(subprocessNew).toHaveBeenCalledWith(["firefox"], 0);
   });
 
-  it("omits the trailing Edit button when showDefaultBrowserEdit is false, but the row still launches", async () => {
+  it("omits the whole default-browser row — not just its Edit button — when showDefaultBrowserEdit is false", async () => {
     const menu = makeFakeMenu();
     await fillMenu({
       title: "t",
@@ -788,10 +788,11 @@ describe("fillMenu", () => {
       defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
       showDefaultBrowserEdit: false,
     });
-    const row = menu.items[1] as FakePopupMenuItem;
-    expect(row.children).toHaveLength(1); // just the icon — no spacer, no button
-    row.emit("activate");
-    expect(subprocessNew).toHaveBeenCalledWith(["firefox"], 0);
+    expect(
+      menu.items.some(
+        (item) => (item as FakePopupMenuItem).label?.text === "Launch default browser",
+      ),
+    ).toBe(false);
   });
 
   it("default-browser page lists every pickable browser; picking one sets it as default and returns to main", async () => {
