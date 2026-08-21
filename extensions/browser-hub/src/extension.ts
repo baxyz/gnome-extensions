@@ -5,6 +5,7 @@ import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { BrowserSettings, ProfileGroupsMode } from "./browser";
 import { clearDesktopIconCache, clearPathPresenceCache, clearPkgResolutionCache } from "./internal";
 import { clearDefaultBrowserCache } from "./default-browser";
+import { clearIconThemeCache } from "./icons";
 import { SpaceType } from "./taxonomy/space-type.enum";
 import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
 import { BrowserProfilesIndicator } from "./indicator";
@@ -103,5 +104,9 @@ export default class BrowserProfilesExtension extends Extension {
     clearPathPresenceCache();
     clearDesktopIconCache();
     clearDefaultBrowserCache();
+    // Same reasoning as the caches above: icons/resolve-icon.ts lazily
+    // constructs its own St.IconTheme instance and holds it at module scope
+    // — drop it too, instead of keeping a live GObject around after disable.
+    clearIconThemeCache();
   }
 }

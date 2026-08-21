@@ -18,6 +18,11 @@ function theme(): St.IconTheme {
   return iconTheme;
 }
 
+/** Drops the cached St.IconTheme instance. Called on extension disable. */
+export function clearIconThemeCache(): void {
+  iconTheme = undefined;
+}
+
 /** True if the current icon theme actually provides this icon name. */
 export function iconExists(name: string): boolean {
   return theme().has_icon(name);

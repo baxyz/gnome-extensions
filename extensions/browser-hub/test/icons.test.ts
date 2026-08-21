@@ -7,10 +7,16 @@ import { FIREFOX_AVATAR_ICONS, ZEN_WORKSPACE_ICONS } from "../src/icons/icon-cat
 // the GNOME Shell API for that. Default every name to "present" so existing
 // coverage doesn't depend on this mock; individual tests opt specific names
 // out via unavailableIcons to exercise the "theme doesn't have it" path.
+// instanceCount lets clearIconThemeCache()'s own test below confirm a fresh
+// St.IconTheme actually gets constructed, not just that lookups keep working.
 const unavailableIcons = new Set<string>();
+let instanceCount = 0;
 vi.mock("gi://St", () => ({
   default: {
     IconTheme: class {
+      constructor() {
+        instanceCount++;
+      }
       has_icon(name: string) {
         return !unavailableIcons.has(name);
       }
@@ -26,7 +32,8 @@ vi.mock("gi://GLib", () => ({
   },
 }));
 
-const { SPACE_FALLBACK_ICON, resolveFirefoxIcon, resolveZenIcon } = await import("../src/icons");
+const { SPACE_FALLBACK_ICON, clearIconThemeCache, iconExists, resolveFirefoxIcon, resolveZenIcon } =
+  await import("../src/icons");
 
 // Firefox's 28 standard avatars, from browser/components/profiles/SelectableProfile.sys.mjs
 // (STANDARD_AVATARS) as of mozilla-firefox/firefox@main, checked 2026-07-09.
@@ -231,5 +238,17 @@ describe("resolveZenIcon", () => {
 
   it("falls back to the neutral dot for a missing id", () => {
     expect(resolveZenIcon(undefined)).toBe(SPACE_FALLBACK_ICON);
+  });
+});
+
+describe("clearIconThemeCache", () => {
+  it("drops the cached St.IconTheme instance, so the next lookup constructs a fresh one", () => {
+    iconExists("anything"); // constructs and caches the first instance
+    const before = instanceCount;
+
+    clearIconThemeCache();
+    iconExists("anything");
+
+    expect(instanceCount).toBe(before + 1);
   });
 });
