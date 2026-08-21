@@ -137,6 +137,23 @@ const DESKTOP_SEARCH_DIRS = [
   "/usr/local/share/applications",
 ];
 
+/** Every `.desktop` basename across DESKTOP_SEARCH_DIRS — for Gio.AppInfo.get_all()'s shim below. */
+function listDesktopIds(): string[] {
+  const ids = new Set<string>();
+  for (const dir of DESKTOP_SEARCH_DIRS) {
+    let entries: string[] = [];
+    try {
+      entries = fs.readdirSync(dir);
+    } catch {
+      continue;
+    }
+    for (const name of entries) {
+      if (name.endsWith(".desktop")) ids.add(name);
+    }
+  }
+  return [...ids];
+}
+
 function parseDesktopFile(desktopId: string): Record<string, string> | null {
   for (const dir of DESKTOP_SEARCH_DIRS) {
     try {
@@ -207,5 +224,15 @@ export default {
         return null;
       }
     },
+    // findDesktopIdByExecutable()'s (internal/gio.ts) fallback for a Native
+    // package whose guessed "<binary>.desktop" doesn't resolve — mirrors the
+    // real Gio.AppInfo.get_all() by scanning every DESKTOP_SEARCH_DIRS entry.
+    get_all: (): { get_id(): string; get_executable(): string | null }[] =>
+      listDesktopIds().flatMap((desktopId) => {
+        const fields = parseDesktopFile(desktopId);
+        if (!fields) return [];
+        const executable = (fields["Exec"] ?? "").split(/\s+/)[0] || null;
+        return [{ get_id: () => desktopId, get_executable: () => executable }];
+      }),
   },
 };

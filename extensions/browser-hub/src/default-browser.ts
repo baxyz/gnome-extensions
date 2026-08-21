@@ -2,7 +2,12 @@ import Gio from "gi://Gio";
 import { guard } from "@helpers4/promise";
 import { PackageManager } from "./taxonomy";
 import type { ResolvedBrowserPkg } from "./taxonomy";
-import { buildBaseCommand, desktopIdFor, getDesktopAppInfo, type DesktopAppInfo } from "./internal";
+import {
+  buildBaseCommand,
+  getDesktopAppInfo,
+  resolveDesktopId,
+  type DesktopAppInfo,
+} from "./internal";
 
 export type DefaultBrowserInfo = {
   name: string;
@@ -68,7 +73,7 @@ const BROWSER_CONTENT_TYPES = ["x-scheme-handler/http", "x-scheme-handler/https"
  * can't be resolved or GIO refuses one of the content-type associations.
  */
 export function setDefaultBrowser(pkg: ResolvedBrowserPkg): boolean {
-  const info = getDesktopAppInfo(desktopIdFor(pkg));
+  const info = getDesktopAppInfo(resolveDesktopId(pkg));
   if (!info) return false;
   let ok = true;
   try {

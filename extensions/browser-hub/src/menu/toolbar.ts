@@ -5,7 +5,12 @@ import { Spinner } from "resource:///org/gnome/shell/ui/animation.js";
 import { PackageManager } from "../taxonomy";
 import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "../taxonomy";
 import type { DefaultBrowserInfo } from "../default-browser";
-import { desktopIdFor, getDesktopAppInfo, launchBrowser, resolveDesktopIcon } from "../internal";
+import {
+  getDesktopAppInfo,
+  launchBrowser,
+  resolveDesktopIcon,
+  resolveDesktopId,
+} from "../internal";
 import { iconProps, makeIconButton, makeIconRow, tooltip } from "./shared";
 
 const CHEVRON_ICON_SIZE = 16;
@@ -15,16 +20,20 @@ const CHEVRON_ICON_SIZE = 16;
  * setDefaultBrowser() needs a real Gio.DesktopAppInfo for the package's
  * desktop ID — resolvePkgUncached() only checks that the binary is on the
  * PATH, so a package can be "installed" here yet have no .desktop file at
- * all. Two ways that happens in practice: Snap's desktopIdFor()
+ * all. Several ways that happens in practice: Snap's desktopIdFor()
  * "<name>_<name>.desktop" is a guess (confirmed against only a couple of
- * browsers), and for Native, a binary can exist without the app being
- * properly installed — e.g. Fedora's epiphany-runtime package (pulled in as
- * a dependency for other apps' "web app" support) puts /usr/bin/epiphany on
- * the PATH but ships no org.gnome.Epiphany.desktop at all. Flatpak is the
- * only manager whose desktop ID is guaranteed to exist by the packaging
- * spec, so it's the only one skipped here. Verify the desktop ID actually
- * resolves before offering the row: setDefaultBrowser() does the exact same
- * lookup, so a resolvable ID here is confirmed to work there too.
+ * browsers); for Native, a binary can exist without the app being properly
+ * installed — e.g. Fedora's epiphany-runtime package (pulled in as a
+ * dependency for other apps' "web app" support) puts /usr/bin/epiphany on
+ * the PATH but ships no org.gnome.Epiphany.desktop at all; and even a
+ * properly installed Native app's desktop ID can just not match
+ * "<binary>.desktop" (e.g. Fedora's Firefox RPM ships
+ * org.mozilla.firefox.desktop) — resolveDesktopId() falls back to a
+ * by-executable search for that case, same as setDefaultBrowser() does.
+ * Flatpak is the only manager whose desktop ID is guaranteed to exist by the
+ * packaging spec, so it's the only one skipped here. Verify the desktop ID
+ * actually resolves before offering the row: setDefaultBrowser() does the
+ * exact same lookup, so a resolvable ID here is confirmed to work there too.
  */
 export function filterDefaultBrowserPickable(
   browsers: ResolvedBrowserItem[],
@@ -32,7 +41,8 @@ export function filterDefaultBrowserPickable(
   return browsers.filter(
     (b): b is ResolvedBrowserItem & { pkg: ResolvedBrowserPkg } =>
       b.pkg !== undefined &&
-      (b.pkg.manager === PackageManager.Flatpak || getDesktopAppInfo(desktopIdFor(b.pkg)) !== null),
+      (b.pkg.manager === PackageManager.Flatpak ||
+        getDesktopAppInfo(resolveDesktopId(b.pkg)) !== null),
   );
 }
 

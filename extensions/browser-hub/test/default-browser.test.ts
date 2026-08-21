@@ -42,7 +42,13 @@ vi.mock("gi://Gio", () => ({
   default: {
     File: Object.assign(FakeGioFile, { new_for_path: () => new FakeGioFile() }),
     _promisify: fakeGioPromisify,
-    AppInfo: { get_default_for_uri_scheme: getDefaultForUriScheme },
+    AppInfo: {
+      get_default_for_uri_scheme: getDefaultForUriScheme,
+      // findDesktopIdByExecutable()'s fallback source (internal/gio.ts) —
+      // no installed app in this file's fixtures, so resolveDesktopId()'s
+      // fallback always comes up empty, same as the plain guess it follows.
+      get_all: () => [],
+    },
   },
 }));
 
@@ -56,6 +62,7 @@ vi.mock("gi://GLib", () => ({
     find_program_in_path: () => null,
     get_home_dir: () => "/home/user",
     getenv: () => null,
+    path_get_basename: (p: string) => p.split("/").filter(Boolean).pop() ?? "",
   },
 }));
 
