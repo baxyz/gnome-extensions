@@ -1,6 +1,5 @@
 import { Extension, InjectionManager } from "resource:///org/gnome/shell/extensions/extension.js";
 import { EndSessionDialog } from "resource:///org/gnome/shell/ui/endSessionDialog.js";
-import { clampTimeout } from "./clamp-timeout";
 
 export default class QuickExitExtension extends Extension {
   private _injectionManager: InjectionManager | null = null;
@@ -18,10 +17,16 @@ export default class QuickExitExtension extends Extension {
       "_startTimer",
       (originalStartTimer) =>
         function (this: EndSessionDialog) {
-          this._totalSecondsToStayOpen = clampTimeout(
+
+          // Clamp the timeout.
+          // Never lets the dialog wait longer than GNOME itself requested — only
+          // shorter. If a future GNOME version ever asks for a shorter wait than
+          // the configured timeout, that shorter wait wins.
+          this._totalSecondsToStayOpen = Math.min(
             this._totalSecondsToStayOpen,
             settings.get_int("timeout-seconds"),
           );
+          
           return originalStartTimer.call(this);
         },
     );
