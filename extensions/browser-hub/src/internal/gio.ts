@@ -103,22 +103,66 @@ export function getDesktopAppInfo(desktopId: string): DesktopAppInfo | null {
   return GioUnix.DesktopAppInfo.new(desktopId) as unknown as DesktopAppInfo | null;
 }
 
+// Scanning + parsing every installed .desktop file (below) isn't free —
+// cached for the extension's lifetime, same rationale as pkg.ts's
+// resolution cache. Cleared by clearAppInfoListCache() (called from
+// desktop-icon.ts's clearDesktopIconCache(), itself called on manual
+// refresh) so a newly-installed app is still picked up. Without this, every
+// distinct binary/name that needs findDesktopIdByExecutable's fallback below
+// would trigger its own full re-scan, even though they'd all see the exact
+// same installed-app list.
+let cachedAppInfoList: Gio.AppInfo[] | null = null;
+
+function getAllAppInfos(): Gio.AppInfo[] {
+  if (cachedAppInfoList === null) cachedAppInfoList = Gio.AppInfo.get_all() as Gio.AppInfo[];
+  return cachedAppInfoList;
+}
+
+/** Clears the installed-app list cache. Called on extension disable and manual refresh. */
+export function clearAppInfoListCache(): void {
+  cachedAppInfoList = null;
+}
+
+// A leading "VAR=value" environment assignment (e.g. Exec="env
+// MOZ_ENABLE_WAYLAND=1 firefox %u") — skipped when scanning an app's full
+// commandline for its real binary token, below.
+const ENV_ASSIGNMENT_RE = /^[A-Za-z_][A-Za-z0-9_]*=/;
+
 /**
- * Finds the real desktop ID for a Native package by scanning every installed
- * app for one whose Exec= basename matches `binary` — a fallback for when
- * `${binary}.desktop` (desktop-icon.ts's desktopIdFor guess) is wrong.
- * Confirmed necessary on Fedora: its Firefox RPM ships
- * org.mozilla.firefox.desktop, not firefox.desktop like Debian/Ubuntu's
- * package, so the plain guess resolves to nothing there. Same signal
- * default-browser.ts's getDefaultBrowser() already trusts to identify the
- * OS default browser's real desktop file, just applied to every installed
- * app instead of only the current default.
+ * Every plausible "this is the real binary" token from `info`'s commandline,
+ * for the cases where get_executable() alone doesn't cut it — an
+ * Exec="env FOO=1 firefox %u" line (seen on some distros' wrapper scripts)
+ * makes get_executable() return "env", not "firefox". get_commandline()
+ * gives the fuller picture; flags and env-assignment tokens are filtered out
+ * so a basename match against them can't produce a false positive.
+ */
+function commandBinaryCandidates(info: Gio.AppInfo): string[] {
+  const commandline = info.get_commandline();
+  if (!commandline) return [];
+  return commandline
+    .split(/\s+/)
+    .filter((token) => token !== "" && token !== "env" && !ENV_ASSIGNMENT_RE.test(token))
+    .filter((token) => !token.startsWith("-"));
+}
+
+/**
+ * Finds the real desktop ID for a Native package (or, keyed by `name`
+ * instead, a Snap package — see desktop-icon.ts's fallbackSearchTerm) by
+ * scanning every installed app for one whose real binary matches — a
+ * fallback for when `${binary}.desktop`/`${name}_${name}.desktop`
+ * (desktop-icon.ts's desktopIdFor guesses) are wrong. Confirmed necessary on
+ * Fedora: its Firefox RPM ships org.mozilla.firefox.desktop, not
+ * firefox.desktop like Debian/Ubuntu's package, so the plain guess resolves
+ * to nothing there. Same signal default-browser.ts's getDefaultBrowser()
+ * already trusts to identify the OS default browser's real desktop file,
+ * just applied to every installed app instead of only the current default.
  */
 export function findDesktopIdByExecutable(binary: string): string | null {
   const target = GLib.path_get_basename(binary);
-  const match = (Gio.AppInfo.get_all() as Gio.AppInfo[]).find((info) => {
+  const match = getAllAppInfos().find((info) => {
     const exe = info.get_executable();
-    return exe !== null && GLib.path_get_basename(exe) === target;
+    if (exe !== null && GLib.path_get_basename(exe) === target) return true;
+    return commandBinaryCandidates(info).some((token) => GLib.path_get_basename(token) === target);
   });
   return match?.get_id() ?? null;
 }

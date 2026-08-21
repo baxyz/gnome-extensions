@@ -63,6 +63,19 @@ class FakeGioFile {
   }
 }
 
+// Fake installed-app list for findDesktopIdByExecutable() — each entry's
+// commandline is independent of its "executable" so tests can exercise the
+// env-wrapper fallback path (get_executable() alone wouldn't find it).
+type FakeAppInfo = { id: string; executable: string | null; commandline: string | null };
+let installedApps: FakeAppInfo[] = [];
+const appInfoGetAll = vi.fn(() =>
+  installedApps.map((a) => ({
+    get_id: () => a.id,
+    get_executable: () => a.executable,
+    get_commandline: () => a.commandline,
+  })),
+);
+
 vi.mock("gi://Gio", () => ({
   default: {
     FileQueryInfoFlags: { NONE: 0 },
@@ -70,16 +83,28 @@ vi.mock("gi://Gio", () => ({
     File: Object.assign(FakeGioFile, { new_for_path: (path: string) => new FakeGioFile(path) }),
     _promisify: fakeGioPromisify,
     FileCreateFlags: { NONE: 0 },
+    AppInfo: { get_all: () => appInfoGetAll() },
   },
 }));
 
-// internal/gio.ts imports GLib and GioUnix too (unused by anything exercised
-// here) — the imports themselves must still resolve under Node.
-vi.mock("gi://GLib", () => ({ default: { PRIORITY_DEFAULT: 0 } }));
+// internal/gio.ts imports GLib and GioUnix too — GLib's path_get_basename is
+// exercised by findDesktopIdByExecutable() below.
+vi.mock("gi://GLib", () => ({
+  default: {
+    PRIORITY_DEFAULT: 0,
+    path_get_basename: (p: string) => p.split("/").filter(Boolean).pop() ?? "",
+  },
+}));
 vi.mock("gi://GioUnix", () => ({ default: { DesktopAppInfo: { new: () => null } } }));
 
-const { logIfUnexpected, readFileAsync, tagError, writeTextFileAsync } =
-  await import("../src/internal/gio");
+const {
+  clearAppInfoListCache,
+  findDesktopIdByExecutable,
+  logIfUnexpected,
+  readFileAsync,
+  tagError,
+  writeTextFileAsync,
+} = await import("../src/internal/gio");
 
 describe("logIfUnexpected", () => {
   it("stays silent for a NOT_FOUND error", () => {
@@ -169,5 +194,75 @@ describe("writeTextFileAsync", () => {
     writeShouldFail = true;
     await expect(writeTextFileAsync("/out/user.js", "x")).rejects.toThrow("disk full");
     writeShouldFail = false;
+  });
+});
+
+describe("findDesktopIdByExecutable", () => {
+  beforeEach(() => {
+    installedApps = [];
+    appInfoGetAll.mockClear();
+    clearAppInfoListCache();
+  });
+
+  it("matches by get_executable()'s basename", () => {
+    installedApps = [
+      {
+        id: "org.mozilla.firefox.desktop",
+        executable: "/usr/lib/firefox/firefox",
+        commandline: null,
+      },
+    ];
+
+    expect(findDesktopIdByExecutable("firefox")).toBe("org.mozilla.firefox.desktop");
+  });
+
+  it("returns null when no installed app's executable matches", () => {
+    installedApps = [{ id: "unrelated.desktop", executable: "unrelated", commandline: null }];
+
+    expect(findDesktopIdByExecutable("firefox")).toBeNull();
+  });
+
+  it('falls back to the commandline when get_executable() is a wrapper (e.g. Exec="env FOO=1 firefox %u")', () => {
+    installedApps = [
+      {
+        id: "org.mozilla.firefox.desktop",
+        executable: "env",
+        commandline: "env MOZ_ENABLE_WAYLAND=1 firefox %u",
+      },
+    ];
+
+    expect(findDesktopIdByExecutable("firefox")).toBe("org.mozilla.firefox.desktop");
+  });
+
+  it("doesn't mistake a flag or an env-assignment token in the commandline for the binary", () => {
+    installedApps = [
+      {
+        id: "decoy.desktop",
+        executable: "launcher",
+        commandline: "launcher --profile=firefox FIREFOX_PROFILE=firefox -x",
+      },
+    ];
+
+    expect(findDesktopIdByExecutable("firefox")).toBeNull();
+  });
+
+  it("scans the installed-app list once, sharing it across multiple distinct lookups", () => {
+    installedApps = [{ id: "a.desktop", executable: "a", commandline: null }];
+
+    findDesktopIdByExecutable("a");
+    findDesktopIdByExecutable("b");
+    findDesktopIdByExecutable("c");
+
+    expect(appInfoGetAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("clearAppInfoListCache() forces a fresh scan", () => {
+    installedApps = [{ id: "a.desktop", executable: "a", commandline: null }];
+
+    findDesktopIdByExecutable("a");
+    clearAppInfoListCache();
+    findDesktopIdByExecutable("a");
+
+    expect(appInfoGetAll).toHaveBeenCalledTimes(2);
   });
 });

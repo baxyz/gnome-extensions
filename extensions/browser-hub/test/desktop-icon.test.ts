@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Maps desktop id -> fake Gio.Icon (or absent = "no app installed under that id").
-const installedApps = new Map<string, object>();
+// Maps desktop id -> fake Gio.Icon, or `null` for "the app is installed but
+// has no icon" — distinct from the key being absent entirely ("no app
+// installed under that id"), so tests can exercise both.
+const installedApps = new Map<string, object | null>();
 const desktopAppInfoNew = vi.fn((id: string) => {
-  const icon = installedApps.get(id);
-  return icon ? { get_icon: () => icon, get_string: () => null } : null;
+  if (!installedApps.has(id)) return null;
+  const icon = installedApps.get(id) ?? null;
+  return { get_icon: () => icon, get_string: () => null };
 });
 
 // internal/gio.ts (imported transitively via ./gio) calls
@@ -24,6 +27,7 @@ const appInfoGetAll = vi.fn(() =>
   [...appsByExecutable.entries()].map(([executable, id]) => ({
     get_id: () => id,
     get_executable: () => executable,
+    get_commandline: () => executable,
   })),
 );
 
@@ -172,10 +176,33 @@ describe("resolveDesktopIcon", () => {
     expect(desktopAppInfoNew).toHaveBeenCalledWith("org.mozilla.firefox.desktop");
   });
 
-  it("does not fall back to a by-executable search for Flatpak/Snap packages", () => {
+  it("also falls back to a by-executable search for a Snap package whose guess doesn't match", () => {
+    const icon = {};
+    appsByExecutable.set("opera-icon-test", "com.opera.Opera.desktop");
+    installedApps.set("com.opera.Opera.desktop", icon);
+    const pkg = { manager: PackageManager.Snap, name: "opera-icon-test" } as const;
+
+    expect(resolveDesktopIcon(pkg)).toBe(icon);
+  });
+
+  it("does not fall back to a by-executable search for Flatpak packages", () => {
     appsByExecutable.set("flatpak-only-firefox", "org.mozilla.firefox.desktop");
     installedApps.set("org.mozilla.firefox.desktop", {});
     const pkg = { manager: PackageManager.Flatpak, appId: "flatpak-only-firefox" } as const;
+
+    expect(resolveDesktopIcon(pkg)).toBeUndefined();
+    expect(appInfoGetAll).not.toHaveBeenCalled();
+  });
+
+  it("does not fall back to a by-executable search when the guess resolves to a real app that simply has no icon", () => {
+    // "correct-app-no-icon.desktop" exists (desktopAppInfoNew returns a
+    // stub) but its get_icon() returns null — must not be treated the same
+    // as "the guess doesn't resolve at all", or a different installed app
+    // that happens to share the same binary could get picked up instead.
+    installedApps.set("correct-app-no-icon.desktop", null);
+    appsByExecutable.set("correct-app-no-icon", "some-other-unrelated-app.desktop");
+    installedApps.set("some-other-unrelated-app.desktop", { unrelated: true });
+    const pkg = { manager: PackageManager.Native, binary: "correct-app-no-icon" } as const;
 
     expect(resolveDesktopIcon(pkg)).toBeUndefined();
     expect(appInfoGetAll).not.toHaveBeenCalled();
@@ -203,18 +230,21 @@ describe("resolveDesktopId", () => {
     expect(resolveDesktopId(pkg)).toBe("totally-unknown.desktop");
   });
 
-  it("never tries the by-executable fallback for Flatpak or Snap, even when the guess doesn't resolve", () => {
+  it("also falls back to a by-executable search for Snap when the guess doesn't resolve", () => {
+    appsByExecutable.set("opera", "com.opera.Opera.desktop");
+    const pkg = { manager: PackageManager.Snap, name: "opera" } as const;
+
+    expect(resolveDesktopId(pkg)).toBe("com.opera.Opera.desktop");
+  });
+
+  it("never tries the by-executable fallback for Flatpak, even when the guess doesn't resolve", () => {
     // Populated to prove a fallback search would have found something if it
-    // were ever attempted — it must not be, for either manager below.
+    // were ever attempted — it must not be.
     appsByExecutable.set("unmatched-flatpak-app", "unrelated.desktop");
-    appsByExecutable.set("unmatched-snap-app", "unrelated.desktop");
 
     expect(
       resolveDesktopId({ manager: PackageManager.Flatpak, appId: "unmatched-flatpak-app" }),
     ).toBe("unmatched-flatpak-app.desktop");
-    expect(resolveDesktopId({ manager: PackageManager.Snap, name: "unmatched-snap-app" })).toBe(
-      "unmatched-snap-app_unmatched-snap-app.desktop",
-    );
     expect(appInfoGetAll).not.toHaveBeenCalled();
   });
 });

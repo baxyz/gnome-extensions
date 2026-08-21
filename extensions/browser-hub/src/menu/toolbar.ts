@@ -20,20 +20,20 @@ const CHEVRON_ICON_SIZE = 16;
  * setDefaultBrowser() needs a real Gio.DesktopAppInfo for the package's
  * desktop ID — resolvePkgUncached() only checks that the binary is on the
  * PATH, so a package can be "installed" here yet have no .desktop file at
- * all. Several ways that happens in practice: Snap's desktopIdFor()
- * "<name>_<name>.desktop" is a guess (confirmed against only a couple of
- * browsers); for Native, a binary can exist without the app being properly
+ * all. For Native, a binary can exist without the app being properly
  * installed — e.g. Fedora's epiphany-runtime package (pulled in as a
  * dependency for other apps' "web app" support) puts /usr/bin/epiphany on
- * the PATH but ships no org.gnome.Epiphany.desktop at all; and even a
- * properly installed Native app's desktop ID can just not match
- * "<binary>.desktop" (e.g. Fedora's Firefox RPM ships
- * org.mozilla.firefox.desktop) — resolveDesktopId() falls back to a
- * by-executable search for that case, same as setDefaultBrowser() does.
- * Flatpak is the only manager whose desktop ID is guaranteed to exist by the
- * packaging spec, so it's the only one skipped here. Verify the desktop ID
- * actually resolves before offering the row: setDefaultBrowser() does the
- * exact same lookup, so a resolvable ID here is confirmed to work there too.
+ * the PATH but ships no org.gnome.Epiphany.desktop at all. And even a
+ * properly installed Native/Snap app's desktop ID can just not match the
+ * guess (Fedora's Firefox RPM ships org.mozilla.firefox.desktop, not
+ * firefox.desktop; Snap's "<name>_<name>.desktop" is itself only confirmed
+ * against a couple of browsers) — resolveDesktopId() falls back to a
+ * by-executable search for both those cases, same as setDefaultBrowser()
+ * does. Flatpak is the only manager whose desktop ID is guaranteed to exist
+ * by the packaging spec, so it's the only one with no fallback to fall back
+ * to. Verify the desktop ID actually resolves before offering the row:
+ * setDefaultBrowser() does the exact same lookup, so a resolvable ID here is
+ * confirmed to work there too.
  */
 export function filterDefaultBrowserPickable(
   browsers: ResolvedBrowserItem[],
