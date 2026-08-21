@@ -774,6 +774,71 @@ describe("fillMenu", () => {
     expect(subprocessNew).toHaveBeenCalledWith(["firefox", "-P", "default"], 0);
   });
 
+  it("launches a 'Browsers' row item via its resolved .desktop file when the guess resolves, not Gio.Subprocess", async () => {
+    const launch = vi.fn(() => true);
+    desktopAppInfoNew.mockImplementation((id: string) =>
+      id === "firefox.desktop" ? { launch } : null,
+    );
+    const menu = makeFakeMenu();
+    await fillMenu({
+      title: "t",
+      menu,
+      entries: [
+        {
+          label: "Browsers",
+          group: "simple",
+          items: [
+            {
+              label: "Firefox",
+              command: ["firefox"],
+              pkg: { manager: PackageManager.Native, binary: "firefox" },
+            },
+          ],
+        },
+      ],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const row = menu.items[1] as FakePopupMenuItem;
+    const button = row.children[0].children[0].children[0] as FakeButton;
+    button.emit("clicked");
+
+    expect(launch).toHaveBeenCalledWith(null, null);
+    expect(subprocessNew).not.toHaveBeenCalled();
+  });
+
+  it("falls back to Gio.Subprocess for a 'Browsers' row item whose desktop id doesn't resolve (e.g. Fedora's epiphany-runtime)", async () => {
+    const menu = makeFakeMenu();
+    await fillMenu({
+      title: "t",
+      menu,
+      entries: [
+        {
+          label: "Browsers",
+          group: "simple",
+          items: [
+            {
+              label: "Epiphany",
+              command: ["epiphany"],
+              pkg: { manager: PackageManager.Native, binary: "epiphany" },
+            },
+          ],
+        },
+      ],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+    });
+
+    const row = menu.items[1] as FakePopupMenuItem;
+    const button = row.children[0].children[0].children[0] as FakeButton;
+    button.emit("clicked");
+
+    expect(subprocessNew).toHaveBeenCalledWith(["epiphany"], 0);
+  });
+
   it("shows the default-browser row, with its trailing Edit button, when showDefaultBrowserEdit is true", async () => {
     const onOpenDefaultBrowserPage = vi.fn();
     const menu = makeFakeMenu();
@@ -799,6 +864,31 @@ describe("fillMenu", () => {
     // The row itself still launches when clicked.
     row.emit("activate");
     expect(subprocessNew).toHaveBeenCalledWith(["firefox"], 0);
+  });
+
+  it("launches the default-browser row via its resolved .desktop file when the guess resolves, not Gio.Subprocess", async () => {
+    const launch = vi.fn(() => true);
+    desktopAppInfoNew.mockImplementation((id: string) =>
+      id === "firefox.desktop" ? { launch, get_icon: () => null } : null,
+    );
+    const menu = makeFakeMenu();
+    await fillMenu({
+      title: "t",
+      menu,
+      entries: [],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+      showDefaultBrowserEdit: true,
+      onOpenDefaultBrowserPage: noop,
+    });
+    const row = menu.items[1] as FakePopupMenuItem;
+
+    row.emit("activate");
+
+    expect(launch).toHaveBeenCalledWith(null, null);
+    expect(subprocessNew).not.toHaveBeenCalled();
   });
 
   it("omits the whole default-browser row — not just its Edit button — when showDefaultBrowserEdit is false", async () => {

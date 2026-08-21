@@ -71,6 +71,7 @@ export function buildDefaultBrowserItem({
 }): PopupMenuItem {
   const icon = resolveDesktopIcon(defaultBrowser.pkg);
   const cmd = defaultBrowser.command;
+  const pkg = defaultBrowser.pkg;
 
   const menuItem = new PopupMenuItem("Launch default browser");
   tooltip(menuItem, `Launch ${defaultBrowser.name}`);
@@ -80,7 +81,7 @@ export function buildDefaultBrowserItem({
   });
   menuItem.insert_child_below(iconWidget, menuItem.label);
   menuItem.connect("activate", () => {
-    launchBrowser({ command: cmd, title, notify });
+    launchBrowser({ command: cmd, title, notify, pkg });
     closeMenu();
   });
 

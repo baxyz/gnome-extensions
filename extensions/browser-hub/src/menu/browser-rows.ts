@@ -110,13 +110,14 @@ export async function buildSimpleBrowserRow(
     const line = new St.BoxLayout({ style_class: "browser-hub-browsers-line" });
     for (const item of lineItems) {
       const cmd = item.command;
+      const pkg = item.pkg;
       line.add_child(
         makeIconButton(
           item.label,
           item.icon,
           24,
           () => {
-            launchBrowser({ command: cmd, title, notify });
+            launchBrowser({ command: cmd, title, notify, pkg });
             closeMenu();
           },
           undefined,
