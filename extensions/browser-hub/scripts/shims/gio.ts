@@ -137,7 +137,7 @@ const DESKTOP_SEARCH_DIRS = [
   "/usr/local/share/applications",
 ];
 
-/** Every `.desktop` basename across DESKTOP_SEARCH_DIRS — for Gio.AppInfo.get_all()'s shim below. */
+/** Every `.desktop` basename across DESKTOP_SEARCH_DIRS — for Gio.AppInfo.get_all_for_type()'s shim below. */
 function listDesktopIds(): string[] {
   const ids = new Set<string>();
   for (const dir of DESKTOP_SEARCH_DIRS) {
@@ -224,19 +224,30 @@ export default {
         return null;
       }
     },
-    // findDesktopIdByExecutable()'s (internal/gio.ts) fallback for a Native
-    // or Snap package whose guessed desktop id doesn't resolve — mirrors the
-    // real Gio.AppInfo.get_all() by scanning every DESKTOP_SEARCH_DIRS entry.
-    // get_commandline() carries the full (unsplit) Exec= value, needed for
-    // findDesktopIdByExecutable's "env FOO=1 realbinary %u" fallback path.
-    get_all: (): {
+    // internal/gio.ts's identity-based fallbacks (findDesktopIdByExecutable/
+    // findDesktopIdByDesktopKey), reached when a Native/Snap package's
+    // guessed desktop id doesn't resolve — mirrors the real
+    // Gio.AppInfo.get_all_for_type() by scanning every DESKTOP_SEARCH_DIRS
+    // entry and keeping only those declaring the given MimeType (the same
+    // "registered as a browser" pool GNOME Settings' own default-app picker
+    // draws from, not "every installed app"). get_commandline() carries the
+    // full (unsplit) Exec= value, needed for findDesktopIdByExecutable's
+    // "env FOO=1 realbinary %u" fallback path; get_string() exposes
+    // arbitrary desktop-file keys (e.g. "X-SnapInstanceName") for
+    // findDesktopIdByDesktopKey().
+    get_all_for_type: (
+      contentType: string,
+    ): {
       get_id(): string;
       get_executable(): string | null;
       get_commandline(): string | null;
+      get_string(key: string): string | null;
     }[] =>
       listDesktopIds().flatMap((desktopId) => {
         const fields = parseDesktopFile(desktopId);
         if (!fields) return [];
+        const mimeTypes = (fields["MimeType"] ?? "").split(";").filter(Boolean);
+        if (!mimeTypes.includes(contentType)) return [];
         const exec = fields["Exec"] ?? "";
         const executable = exec.split(/\s+/)[0] || null;
         return [
@@ -244,6 +255,7 @@ export default {
             get_id: () => desktopId,
             get_executable: () => executable,
             get_commandline: () => exec || null,
+            get_string: (key: string): string | null => fields[key] ?? null,
           },
         ];
       }),

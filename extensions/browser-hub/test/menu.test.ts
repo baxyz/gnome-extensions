@@ -188,15 +188,17 @@ const subprocessNew = vi.fn();
 // promisified methods themselves.
 class FakeGioFile {}
 
-// findDesktopIdByExecutable()'s fallback source (internal/gio.ts) — empty by
-// default so the fallback always comes up empty, same as the plain
-// desktopAppInfoNew-based guess it follows; overridden per-test where the
-// fallback itself is what's under test (see filterDefaultBrowserPickable below).
-const appInfoGetAll = vi.fn(
+// findDesktopIdByExecutable()'s/findDesktopIdByDesktopKey()'s fallback
+// source (internal/gio.ts) — empty by default so the fallback always comes
+// up empty, same as the plain desktopAppInfoNew-based guess it follows;
+// overridden per-test where the fallback itself is what's under test (see
+// filterDefaultBrowserPickable below).
+const appInfoGetAllForType = vi.fn(
   (): {
     get_id(): string;
     get_executable(): string | null;
     get_commandline(): string | null;
+    get_string(key: string): string | null;
   }[] => [],
 );
 vi.mock("gi://Gio", () => ({
@@ -205,7 +207,7 @@ vi.mock("gi://Gio", () => ({
     SubprocessFlags: { NONE: 0 },
     File: FakeGioFile,
     _promisify: () => {},
-    AppInfo: { get_all: () => appInfoGetAll() },
+    AppInfo: { get_all_for_type: () => appInfoGetAllForType() },
   },
 }));
 
@@ -249,11 +251,11 @@ beforeEach(() => {
   notify.mockClear();
   desktopAppInfoNew.mockClear();
   desktopAppInfoNew.mockReturnValue(null);
-  appInfoGetAll.mockClear();
-  appInfoGetAll.mockReturnValue([]);
+  appInfoGetAllForType.mockClear();
+  appInfoGetAllForType.mockReturnValue([]);
   // internal/gio.ts caches the Gio.AppInfo.get_all() scan itself (not just
   // the per-binary result) — bust it too, or a later test's different
-  // appInfoGetAll return value would never be seen.
+  // appInfoGetAllForType return value would never be seen.
   clearDesktopIconCache();
 });
 
@@ -1101,11 +1103,12 @@ describe("filterDefaultBrowserPickable", () => {
     desktopAppInfoNew.mockImplementation((id: string) =>
       id === "org.mozilla.firefox.desktop" ? {} : null,
     );
-    appInfoGetAll.mockReturnValue([
+    appInfoGetAllForType.mockReturnValue([
       {
         get_id: () => "org.mozilla.firefox.desktop",
         get_executable: () => "rpm-firefox",
         get_commandline: () => "rpm-firefox %u",
+        get_string: () => null,
       },
     ]);
 

@@ -18,25 +18,36 @@ const desktopAppInfoNew = vi.fn((id: string) => {
 // here never actually match, only need to exist.
 class FakeGioFile {}
 
-// Fake installed-app list for findDesktopIdByExecutable()'s fallback (see
-// resolveDesktopId/resolveDesktopIcon's "guess didn't resolve" path below) —
-// maps executable basename -> desktop id, empty by default so every existing
+// Fake registered-browsers list backing findFallbackDesktopId()'s two
+// lookups (see resolveDesktopId/resolveDesktopIcon's "guess didn't resolve"
+// path below) — maps executable basename -> desktop id for
+// findDesktopIdByExecutable's fallback, empty by default so every existing
 // test (which only cares about the guess resolving or not) sees no match.
+// snapInstanceNames is the equivalent map for findDesktopIdByDesktopKey's
+// "X-SnapInstanceName" search.
 const appsByExecutable = new Map<string, string>();
-const appInfoGetAll = vi.fn(() =>
-  [...appsByExecutable.entries()].map(([executable, id]) => ({
+const snapInstanceNames = new Map<string, string>();
+const appInfoGetAllForType = vi.fn((_contentType: string) => [
+  ...[...appsByExecutable.entries()].map(([executable, id]) => ({
     get_id: () => id,
     get_executable: () => executable,
     get_commandline: () => executable,
+    get_string: () => null,
   })),
-);
+  ...[...snapInstanceNames.entries()].map(([name, id]) => ({
+    get_id: () => id,
+    get_executable: () => null,
+    get_commandline: () => null,
+    get_string: (key: string): string | null => (key === "X-SnapInstanceName" ? name : null),
+  })),
+]);
 
 vi.mock("gi://Gio", () => ({
   default: {
     File: FakeGioFile,
     _promisify: () => {},
     IOErrorEnum: { NOT_FOUND: 1, PERMISSION_DENIED: 2 },
-    AppInfo: { get_all: appInfoGetAll },
+    AppInfo: { get_all_for_type: (contentType: string) => appInfoGetAllForType(contentType) },
   },
 }));
 
@@ -92,7 +103,8 @@ const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 
 beforeEach(() => {
   appsByExecutable.clear();
-  appInfoGetAll.mockClear();
+  snapInstanceNames.clear();
+  appInfoGetAllForType.mockClear();
   clearDesktopIconCache();
 });
 
@@ -176,9 +188,9 @@ describe("resolveDesktopIcon", () => {
     expect(desktopAppInfoNew).toHaveBeenCalledWith("org.mozilla.firefox.desktop");
   });
 
-  it("also falls back to a by-executable search for a Snap package whose guess doesn't match", () => {
+  it("falls back to an X-SnapInstanceName search for a Snap package whose guess doesn't match", () => {
     const icon = {};
-    appsByExecutable.set("opera-icon-test", "com.opera.Opera.desktop");
+    snapInstanceNames.set("opera-icon-test", "com.opera.Opera.desktop");
     installedApps.set("com.opera.Opera.desktop", icon);
     const pkg = { manager: PackageManager.Snap, name: "opera-icon-test" } as const;
 
@@ -191,7 +203,7 @@ describe("resolveDesktopIcon", () => {
     const pkg = { manager: PackageManager.Flatpak, appId: "flatpak-only-firefox" } as const;
 
     expect(resolveDesktopIcon(pkg)).toBeUndefined();
-    expect(appInfoGetAll).not.toHaveBeenCalled();
+    expect(appInfoGetAllForType).not.toHaveBeenCalled();
   });
 
   it("does not fall back to a by-executable search when the guess resolves to a real app that simply has no icon", () => {
@@ -205,7 +217,7 @@ describe("resolveDesktopIcon", () => {
     const pkg = { manager: PackageManager.Native, binary: "correct-app-no-icon" } as const;
 
     expect(resolveDesktopIcon(pkg)).toBeUndefined();
-    expect(appInfoGetAll).not.toHaveBeenCalled();
+    expect(appInfoGetAllForType).not.toHaveBeenCalled();
   });
 });
 
@@ -215,7 +227,7 @@ describe("resolveDesktopId", () => {
     const pkg = { manager: PackageManager.Native, binary: "resolves-directly" } as const;
 
     expect(resolveDesktopId(pkg)).toBe("resolves-directly.desktop");
-    expect(appInfoGetAll).not.toHaveBeenCalled();
+    expect(appInfoGetAllForType).not.toHaveBeenCalled();
   });
 
   it("falls back to a by-executable search for Native when the guess doesn't resolve", () => {
@@ -230,11 +242,26 @@ describe("resolveDesktopId", () => {
     expect(resolveDesktopId(pkg)).toBe("totally-unknown.desktop");
   });
 
-  it("also falls back to a by-executable search for Snap when the guess doesn't resolve", () => {
-    appsByExecutable.set("opera", "com.opera.Opera.desktop");
+  it("falls back to an X-SnapInstanceName search for Snap when the guess doesn't resolve", () => {
+    snapInstanceNames.set("opera", "com.opera.Opera.desktop");
     const pkg = { manager: PackageManager.Snap, name: "opera" } as const;
 
     expect(resolveDesktopId(pkg)).toBe("com.opera.Opera.desktop");
+  });
+
+  it("never mistakes a Native executable match for a Snap's X-SnapInstanceName, or vice versa", () => {
+    // Same literal string "shared-name" registered two different ways —
+    // proves Native and Snap really do search by different signals rather
+    // than sharing one cache keyed only by that string.
+    appsByExecutable.set("shared-name", "native-match.desktop");
+    snapInstanceNames.set("shared-name", "snap-match.desktop");
+
+    expect(resolveDesktopId({ manager: PackageManager.Native, binary: "shared-name" })).toBe(
+      "native-match.desktop",
+    );
+    expect(resolveDesktopId({ manager: PackageManager.Snap, name: "shared-name" })).toBe(
+      "snap-match.desktop",
+    );
   });
 
   it("never tries the by-executable fallback for Flatpak, even when the guess doesn't resolve", () => {
@@ -245,7 +272,7 @@ describe("resolveDesktopId", () => {
     expect(
       resolveDesktopId({ manager: PackageManager.Flatpak, appId: "unmatched-flatpak-app" }),
     ).toBe("unmatched-flatpak-app.desktop");
-    expect(appInfoGetAll).not.toHaveBeenCalled();
+    expect(appInfoGetAllForType).not.toHaveBeenCalled();
   });
 });
 
