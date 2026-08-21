@@ -32,6 +32,22 @@ function staticAssets(): Plugin {
   };
 }
 
+// preserveModules names a chunk after its module's path relative to
+// preserveModulesRoot — for our own src/ files that's already the clean
+// mirrored path we want (e.g. "browser/firefox"), but for a dependency
+// under node_modules it's the full on-disk path including pnpm's nested
+// store layout (e.g. "node_modules/.pnpm/@helpers4_object@3.0.7/node_modules
+// /@helpers4/object/lib/index") — collapse those down to a short, stable
+// "vendor-<package>" name instead of leaking pnpm's store structure into
+// the reviewed output.
+function vendorChunkName(name: string): string | null {
+  const helpers4 = name.match(/@helpers4\/([^/]+)\/lib\/index$/);
+  if (helpers4) return `vendor-helpers4-${helpers4[1]}`;
+  if (name.includes("node_modules/mozlz4/")) return "vendor-mozlz4";
+  if (name.includes("node_modules/sqlite-reader/")) return "vendor-sqlite-reader";
+  return null;
+}
+
 const base = createViteConfig();
 
 export default defineConfig({
@@ -57,96 +73,18 @@ export default defineConfig({
         // resolveZenIcon as r }`) purely to shave bytes off inter-chunk glue,
         // even with minify:false. Keep those names readable for review.
         minifyInternalExports: false,
-        // This build runs on rolldown (Vite 8's default bundler), not classic
-        // Rollup — its native codeSplitting API, not the manualChunks compat
-        // shim (which silently merges small groups back into their sole
-        // importer with no override available).
-        //
-        // Group order is priority order (earlier = higher priority): a
-        // module used by files in two groups is claimed by whichever group
-        // is listed first, so a group whose files are *imported by* another
-        // group's files must be listed above that group — otherwise it gets
-        // swallowed whole into the importing group's chunk instead of
-        // getting its own. Below is the real dependency order (verified via
-        // each file's own imports, `import type` doesn't count — those erase
-        // at compile time and create no runtime edge):
-        //   taxonomy, icons  →  paths  →  constants-<family>  →  internal
-        //     →  browser-<family>  →  browser  →  default-browser
-        //     →  donut-browser  →  (extension itself absorbs menu/indicator)
-        // taxonomy (src/taxonomy/ — its runtime content is just the
-        // BrowserType/PackageManager/SpaceType enums, the rest fully erases
-        // at compile time) must precede everything else: prefs.ts (a
-        // separate, non-Shell GJS process without the St typelib) imports
-        // one of those enums too — swallowed into any chunk that also
-        // imports "gi://St" (e.g. icons), loading prefs.js would crash it.
-        // (build-chunks.test.ts guards against that regression directly.)
-        //
-        // Grouped by review-relevant theme, not just 1:1 with source
-        // directories — this is EGO (extensions.gnome.org) review
-        // territory: reviewers read the built dist/ output, not the
-        // TypeScript source.
-        // - constants/ and browser/ each split further, by browser family:
-        //   "does this extension's Chromium-family code do anything
-        //   untoward with Local State" is a standalone review question, and
-        //   constants-chromium.js/browser-chromium.js answer it without also
-        //   pulling in Firefox/Falkon/Simple definitions. firefox absorbs
-        //   firefox-spaces.ts and zen.ts too — Zen is Firefox-derived and
-        //   both are exclusively consumed by browser/firefox.ts, never by
-        //   resolve-all.ts directly. paths.constant.ts is the one file under
-        //   constants/ that ISN'T family data (just GLib home/XDG/snap-dir
-        //   helpers every family other than Simple calls into) so it gets
-        //   its own tiny shared chunk instead of arbitrarily picking one
-        //   family to bundle it with.
-        // - taxonomy is deliberately NOT split further despite being the
-        //   same shape of ask: its entire runtime content is 3 short enums
-        //   (~20 lines total, see dist/taxonomy.js) — splitting that into
-        //   per-family fragments would be strictly worse to review (more
-        //   files, less content in each) with no isolation benefit, unlike
-        //   constants/browser where each family is hundreds of lines.
-        // - menu/ and indicator.ts get no group of their own anymore: both
-        //   are pure GNOME Shell UI glue (build the popup menu, wire click
-        //   handlers) reachable only from extension.ts, so they fall
-        //   through into extension.js instead of adding two more files for
-        //   what reads as one "this is the panel button and its menu"
-        //   concern — extension.js was already the smallest, simplest
-        //   chunk, so absorbing them keeps it that way rather than
-        //   fragmenting UI wiring across three files.
-        // - default-browser.ts and donut-browser.ts keep their own chunks
-        //   regardless: both are where this extension actually *does*
-        //   something to the system (change the OS default browser, spawn
-        //   a subprocess, write profile files) — the two places a reviewer
-        //   most wants to isolate and read start-to-finish on their own.
-        //
-        // The vendor-* groups stay directly after taxonomy/icons (their
-        // original position) rather than moving down with the first-party
-        // groups below: this same priority rule applies across the
-        // node_modules boundary too, not just between our own src/ groups —
-        // a vendor-helpers4-matching module reachable only from `internal`
-        // would otherwise get pulled *into* internal.js instead of staying
-        // consolidated in the dedicated vendor-helpers4.js chunk.
-        codeSplitting: {
-          minSize: 0,
-          groups: [
-            { name: "taxonomy", test: /\/taxonomy\// },
-            { name: "icons", test: /\/icons\// },
-            { name: "vendor-helpers4", test: /@helpers4/ },
-            { name: "vendor-mozlz4", test: /node_modules\/mozlz4/ },
-            { name: "vendor-sqlite-reader", test: /node_modules\/sqlite-reader/ },
-            { name: "paths", test: /\/constants\/paths\.constant\.ts$/ },
-            { name: "constants-chromium", test: /\/constants\/chromium-browsers\.constant\.ts$/ },
-            { name: "constants-falkon", test: /\/constants\/falkon-browsers\.constant\.ts$/ },
-            { name: "constants-firefox", test: /\/constants\/firefox-browsers\.constant\.ts$/ },
-            { name: "constants-simple", test: /\/constants\/simple-browsers\.constant\.ts$/ },
-            { name: "internal", test: /\/internal\// },
-            { name: "browser-chromium", test: /\/browser\/chromium/ },
-            { name: "browser-falkon", test: /\/browser\/falkon/ },
-            { name: "browser-firefox", test: /\/browser\/(firefox|zen)/ },
-            { name: "browser", test: /\/browser\// },
-            { name: "default-browser", test: /\/default-browser\.ts$/ },
-            { name: "donut-browser", test: /\/donut-browser\.ts$/ },
-          ],
-        },
-        chunkFileNames: "[name].js",
+        // One output file per source module, mirroring src/'s own directory
+        // layout under dist/ exactly (preserveModulesRoot strips the "src/"
+        // prefix so dist/browser/firefox.js, not dist/src/browser/firefox.js).
+        // A prior version of this config hand-grouped modules into ~20
+        // themed chunks via codeSplitting — EGO review feedback on the v1
+        // submission was that reviewers read dist/ file-for-file against the
+        // source and want that mapping literal, not thematically regrouped,
+        // so this is preserveModules doing that mapping structurally instead
+        // of via a hand-maintained (and easily stale) list of regexes.
+        preserveModules: true,
+        preserveModulesRoot: "src",
+        entryFileNames: (chunkInfo) => `${vendorChunkName(chunkInfo.name) ?? chunkInfo.name}.js`,
       },
     },
   },
