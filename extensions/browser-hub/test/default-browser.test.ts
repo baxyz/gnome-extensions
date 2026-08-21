@@ -44,10 +44,11 @@ vi.mock("gi://Gio", () => ({
     _promisify: fakeGioPromisify,
     AppInfo: {
       get_default_for_uri_scheme: getDefaultForUriScheme,
-      // findDesktopIdByExecutable()'s fallback source (internal/gio.ts) —
-      // no installed app in this file's fixtures, so resolveDesktopId()'s
-      // fallback always comes up empty, same as the plain guess it follows.
-      get_all: () => [],
+      // findDesktopIdByExecutable()'s/findDesktopIdByDesktopKey()'s fallback
+      // source (internal/gio.ts) — no registered browser in this file's
+      // fixtures, so resolveDesktopId()'s fallback always comes up empty,
+      // same as the plain guess it follows.
+      get_all_for_type: () => [],
     },
   },
 }));

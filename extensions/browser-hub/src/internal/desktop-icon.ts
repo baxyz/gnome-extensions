@@ -6,6 +6,7 @@ import type { ResolvedBrowserPkg } from "../taxonomy";
 import { iconExists } from "../icons";
 import {
   clearAppInfoListCache,
+  findDesktopIdByDesktopKey,
   findDesktopIdByExecutable,
   getDesktopAppInfo,
   logIfUnexpected,
@@ -67,27 +68,33 @@ export function desktopIdFor(pkg: ResolvedBrowserPkg): string {
 }
 
 // Package/binary presence rarely changes mid-session, same as this module's
-// other caches. Keyed by the search term itself (see fallbackSearchTerm
-// below) rather than the pkg object, same reasoning as desktopIconResolver's
-// own keying below.
+// other caches. Two separate resolvers, not one shared by key string: Native
+// and Snap search by genuinely different signals below (executable vs. a
+// desktop-file key), so nothing here should even be able to conflate a
+// binary name with a snap instance name that happens to look the same.
 const desktopIdByExecutable = createCachedResolver(findDesktopIdByExecutable);
+const desktopIdBySnapInstanceName = createCachedResolver((name: string) =>
+  findDesktopIdByDesktopKey("X-SnapInstanceName", name),
+);
 
 /**
- * The executable name to search for when `pkg`'s guessed desktop ID doesn't
- * resolve — desktopIdFor()'s guess is a plain "<binary>.desktop"/
- * "<name>_<name>.desktop" for Native/Snap, so either's own binary/name is
- * what a real installed .desktop's Exec= line would actually name.
- * Null for Flatpak: its guess is guaranteed correct by the packaging spec
- * (see desktopIdFor), so there's never a wrong guess to recover from.
- * Shared by resolveDesktopId() and resolveDesktopIcon() below so the two
- * can't drift on which managers get a fallback or what they search by.
+ * The real, resolvable desktop ID for `pkg` when desktopIdFor()'s guess
+ * doesn't resolve — Native falls back to a by-executable search (no
+ * freedesktop-standard "which package provides this .desktop" field
+ * exists), Snap to an exact match on the "X-SnapInstanceName" key snapd
+ * itself injects (the same authoritative field default-browser.ts's
+ * detectPkg() already trusts, just in the opposite direction), and Flatpak
+ * never needs this at all — its guess is guaranteed correct by the
+ * packaging spec (see desktopIdFor). Shared by resolveDesktopId() and
+ * resolveDesktopIcon() below so the two can't drift on which managers get a
+ * fallback or what they match by.
  */
-function fallbackSearchTerm(pkg: ResolvedBrowserPkg): string | null {
+function findFallbackDesktopId(pkg: ResolvedBrowserPkg): string | null {
   switch (pkg.manager) {
     case PackageManager.Native:
-      return pkg.binary;
+      return desktopIdByExecutable.resolve(pkg.binary);
     case PackageManager.Snap:
-      return pkg.name;
+      return desktopIdBySnapInstanceName.resolve(pkg.name);
     case PackageManager.Flatpak:
       return null;
   }
@@ -95,19 +102,18 @@ function fallbackSearchTerm(pkg: ResolvedBrowserPkg): string | null {
 
 /**
  * The real, resolvable desktop ID for `pkg` — desktopIdFor()'s guess when it
- * actually resolves, else a fallback search by executable (see
- * fallbackSearchTerm/desktopIdByExecutable above), else the guess anyway:
- * every caller already treats "resolves to nothing" as the expected failure
- * mode. Used by toolbar.ts/default-browser.ts, which only need to know
- * whether some ID resolves, not the Gio.Icon behind it — resolveDesktopIcon()
- * below does its own, differently-shaped fallback instead of calling this,
- * so a successfully-guessed ID is never looked up twice over there.
+ * actually resolves, else findFallbackDesktopId() above, else the guess
+ * anyway: every caller already treats "resolves to nothing" as the expected
+ * failure mode. Used by toolbar.ts/default-browser.ts, which only need to
+ * know whether some ID resolves, not the Gio.Icon behind it —
+ * resolveDesktopIcon() below does its own, differently-shaped fallback
+ * instead of calling this, so a successfully-guessed ID is never looked up
+ * twice over there.
  */
 export function resolveDesktopId(pkg: ResolvedBrowserPkg): string {
   const guess = desktopIdFor(pkg);
   if (getDesktopAppInfo(guess) !== null) return guess;
-  const searchTerm = fallbackSearchTerm(pkg);
-  return (searchTerm !== null ? desktopIdByExecutable.resolve(searchTerm) : null) ?? guess;
+  return findFallbackDesktopId(pkg) ?? guess;
 }
 
 // Package/binary presence rarely changes mid-session, same as pkg.ts's
@@ -138,6 +144,7 @@ export function clearDesktopIconCache(): void {
   desktopIconResolver.clear();
   isDecodableIconFile.clear();
   desktopIdByExecutable.clear();
+  desktopIdBySnapInstanceName.clear();
   clearAppInfoListCache();
 }
 
@@ -177,26 +184,25 @@ function symbolicIconCandidates(pkg: ResolvedBrowserPkg): string[] {
  * Carries no package-manager badge — that's a CSS overlay applied at render
  * time (see menu/shared.ts), not part of the resolved icon itself.
  *
- * Falls back to a by-executable search (fallbackSearchTerm/
- * desktopIdByExecutable) when the guess resolves to nothing, same as
- * resolveDesktopId() above — done directly against desktopIconResolver
- * rather than by calling resolveDesktopId() itself, so the common case (the
- * guess is right, and has an icon) costs exactly the one cached lookup it
- * always has, not a second one to re-verify what desktopIconResolver is
- * about to look up anyway. The fallback only triggers when the guessed ID
- * doesn't resolve to an app at all (a second, explicit getDesktopAppInfo
- * check) rather than whenever desktopIconResolver comes back empty — that
- * also happens when the guess IS the right app but it just has no usable
- * icon (no Icon= key, or one that fails decode validation), and searching
- * further in that case risks picking up a different, unrelated app that
- * happens to share the same binary (e.g. a "Private Browsing" launcher).
+ * Falls back through findFallbackDesktopId() when the guess resolves to
+ * nothing, same as resolveDesktopId() above — done directly against
+ * desktopIconResolver rather than by calling resolveDesktopId() itself, so
+ * the common case (the guess is right, and has an icon) costs exactly the
+ * one cached lookup it always has, not a second one to re-verify what
+ * desktopIconResolver is about to look up anyway. The fallback only
+ * triggers when the guessed ID doesn't resolve to an app at all (a second,
+ * explicit getDesktopAppInfo check) rather than whenever desktopIconResolver
+ * comes back empty — that also happens when the guess IS the right app but
+ * it just has no usable icon (no Icon= key, or one that fails decode
+ * validation), and searching further in that case risks picking up a
+ * different, unrelated app that happens to share the same binary (e.g. a
+ * "Private Browsing" launcher).
  */
 export function resolveDesktopIcon(pkg: ResolvedBrowserPkg): string | Gio.Icon | undefined {
   const guessId = desktopIdFor(pkg);
   let baseIcon = desktopIconResolver.resolve(guessId);
   if (baseIcon === null && getDesktopAppInfo(guessId) === null) {
-    const searchTerm = fallbackSearchTerm(pkg);
-    const foundId = searchTerm !== null ? desktopIdByExecutable.resolve(searchTerm) : null;
+    const foundId = findFallbackDesktopId(pkg);
     if (foundId) baseIcon = desktopIconResolver.resolve(foundId);
   }
   if (baseIcon) return baseIcon;

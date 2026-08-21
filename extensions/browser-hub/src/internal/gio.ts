@@ -103,24 +103,71 @@ export function getDesktopAppInfo(desktopId: string): DesktopAppInfo | null {
   return GioUnix.DesktopAppInfo.new(desktopId) as unknown as DesktopAppInfo | null;
 }
 
+// A GAppInfo shape that on Linux is really always a GDesktopAppInfo under
+// the hood (confirmed by getRegisteredBrowserAppInfos() below only ever
+// sourcing from desktop files) — get_string() isn't part of the generic
+// GAppInfo interface @girs types get_all_for_type() as returning, but the
+// concrete objects support it regardless, same reasoning as
+// getDesktopAppInfo()'s own cast above.
+type RegisteredBrowserAppInfo = {
+  get_id(): string;
+  get_executable(): string | null;
+  get_commandline(): string | null;
+  get_string(key: string): string | null;
+};
+
+// The freedesktop content type every real browser registers as a handler
+// for — GNOME Settings' own "Web" default-app picker is built on exactly
+// this same query (as is this project's own getDefaultBrowser(), via
+// get_default_for_uri_scheme("http")). A far more targeted, GNOME-native
+// pool for the identity-based fallbacks below than "every installed app":
+// something that isn't a registered http handler isn't a browser as far as
+// the desktop itself is concerned, whatever its binary is named. Also
+// naturally excludes non-browser lookalikes for free — e.g. Fedora's
+// epiphany-runtime (a dependency-only package providing /usr/bin/epiphany
+// with no .desktop file at all) was already excluded by never resolving a
+// desktop id in the first place; this pool additionally excludes anything
+// that has a .desktop file but never registered as a browser.
+const BROWSER_CONTENT_TYPE = "x-scheme-handler/http";
+
 // Scanning + parsing every installed .desktop file (below) isn't free —
 // cached for the extension's lifetime, same rationale as pkg.ts's
 // resolution cache. Cleared by clearAppInfoListCache() (called from
 // desktop-icon.ts's clearDesktopIconCache(), itself called on manual
-// refresh) so a newly-installed app is still picked up. Without this, every
-// distinct binary/name that needs findDesktopIdByExecutable's fallback below
-// would trigger its own full re-scan, even though they'd all see the exact
-// same installed-app list.
-let cachedAppInfoList: Gio.AppInfo[] | null = null;
+// refresh) so a newly-installed browser is still picked up. Without this,
+// every distinct pkg needing an identity-based fallback below would trigger
+// its own full re-scan, even though they'd all see the exact same list.
+let cachedRegisteredBrowsers: RegisteredBrowserAppInfo[] | null = null;
 
-function getAllAppInfos(): Gio.AppInfo[] {
-  if (cachedAppInfoList === null) cachedAppInfoList = Gio.AppInfo.get_all() as Gio.AppInfo[];
-  return cachedAppInfoList;
+function getRegisteredBrowserAppInfos(): RegisteredBrowserAppInfo[] {
+  if (cachedRegisteredBrowsers === null) {
+    cachedRegisteredBrowsers = Gio.AppInfo.get_all_for_type(
+      BROWSER_CONTENT_TYPE,
+    ) as unknown as RegisteredBrowserAppInfo[];
+  }
+  return cachedRegisteredBrowsers;
 }
 
-/** Clears the installed-app list cache. Called on extension disable and manual refresh. */
+/** Clears the registered-browsers list cache. Called on extension disable and manual refresh. */
 export function clearAppInfoListCache(): void {
-  cachedAppInfoList = null;
+  cachedRegisteredBrowsers = null;
+}
+
+/**
+ * Finds a registered browser's desktop ID by an exact desktop-file key
+ * match — e.g. "X-SnapInstanceName", the field snapd itself injects to name
+ * the snap instance a .desktop file belongs to. This is the authoritative
+ * identity signal packaging tools use for exactly this purpose (the same
+ * field default-browser.ts's detectPkg() already trusts, just in the
+ * opposite direction: desktop id -> pkg instead of pkg -> desktop id),
+ * rather than a guessed naming convention.
+ */
+export function findDesktopIdByDesktopKey(key: string, value: string): string | null {
+  return (
+    getRegisteredBrowserAppInfos()
+      .find((info) => info.get_string(key) === value)
+      ?.get_id() ?? null
+  );
 }
 
 // A leading "VAR=value" environment assignment (e.g. Exec="env
@@ -136,7 +183,7 @@ const ENV_ASSIGNMENT_RE = /^[A-Za-z_][A-Za-z0-9_]*=/;
  * gives the fuller picture; flags and env-assignment tokens are filtered out
  * so a basename match against them can't produce a false positive.
  */
-function commandBinaryCandidates(info: Gio.AppInfo): string[] {
+function commandBinaryCandidates(info: RegisteredBrowserAppInfo): string[] {
   const commandline = info.get_commandline();
   if (!commandline) return [];
   return commandline
@@ -146,20 +193,18 @@ function commandBinaryCandidates(info: Gio.AppInfo): string[] {
 }
 
 /**
- * Finds the real desktop ID for a Native package (or, keyed by `name`
- * instead, a Snap package — see desktop-icon.ts's fallbackSearchTerm) by
- * scanning every installed app for one whose real binary matches — a
- * fallback for when `${binary}.desktop`/`${name}_${name}.desktop`
- * (desktop-icon.ts's desktopIdFor guesses) are wrong. Confirmed necessary on
- * Fedora: its Firefox RPM ships org.mozilla.firefox.desktop, not
- * firefox.desktop like Debian/Ubuntu's package, so the plain guess resolves
- * to nothing there. Same signal default-browser.ts's getDefaultBrowser()
- * already trusts to identify the OS default browser's real desktop file,
- * just applied to every installed app instead of only the current default.
+ * Finds a registered browser's desktop ID by its real binary — the fallback
+ * for Native packages, which (unlike Flatpak/Snap) have no packaging-tool-
+ * injected identity field to match on instead: freedesktop has no standard
+ * "which distro package provides this .desktop file" key. Used when
+ * `${binary}.desktop` (desktop-icon.ts's desktopIdFor guess) is wrong.
+ * Confirmed necessary on Fedora: its Firefox RPM ships
+ * org.mozilla.firefox.desktop, not firefox.desktop like Debian/Ubuntu's
+ * package, so the plain guess resolves to nothing there.
  */
 export function findDesktopIdByExecutable(binary: string): string | null {
   const target = GLib.path_get_basename(binary);
-  const match = getAllAppInfos().find((info) => {
+  const match = getRegisteredBrowserAppInfos().find((info) => {
     const exe = info.get_executable();
     if (exe !== null && GLib.path_get_basename(exe) === target) return true;
     return commandBinaryCandidates(info).some((token) => GLib.path_get_basename(token) === target);

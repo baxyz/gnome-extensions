@@ -131,10 +131,11 @@ vi.mock("gi://Gio", () => ({
     Subprocess: { new: () => ({}) },
     SubprocessFlags: { NONE: 0 },
     IOErrorEnum: { NOT_FOUND: 1 },
-    // findDesktopIdByExecutable()'s fallback source (internal/gio.ts) — no
-    // installed app in this file's fixtures, so an empty list keeps every
-    // guessed-id-doesn't-resolve case falling through exactly as before.
-    AppInfo: { get_all: () => [] },
+    // findDesktopIdByExecutable()'s/findDesktopIdByDesktopKey()'s fallback
+    // source (internal/gio.ts) — no registered browser in this file's
+    // fixtures, so an empty list keeps every guessed-id-doesn't-resolve
+    // case falling through exactly as before.
+    AppInfo: { get_all_for_type: () => [] },
   },
 }));
 
