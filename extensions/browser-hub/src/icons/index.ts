@@ -1,5 +1,6 @@
 export {
   SPACE_FALLBACK_ICON,
+  clearIconThemeCache,
   iconExists,
   resolveFirefoxIcon,
   resolveZenIcon,
