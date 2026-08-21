@@ -1,16 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { execSync } from "child_process";
 import { readFileSync } from "fs";
-import { resolve } from "path";
+import { resolve, posix } from "path";
 
 // Safety net for a regression hit twice this session: prefs.ts runs in a
-// separate, non-Shell GJS process with no St typelib. Rolldown's chunk
-// splitting shares small leaf modules (e.g. the SpaceType enum) between
-// extension.js and prefs.js, and depending on codeSplitting group order in
-// vite.config.ts, that shared module can get bundled into a chunk that also
-// imports "gi://St" — crashing the prefs window with "Typelib file for
-// namespace 'St' ... not found" as soon as it loads. Catches that
-// automatically instead of relying on manually keeping group order correct.
+// separate, non-Shell GJS process with no St typelib. The build output now
+// mirrors src/'s own directory layout one file per module (preserveModules
+// in vite.config.ts, done for EGO review — dist/ reads file-for-file against
+// the source), and a small leaf module (e.g. the SpaceType enum) can be
+// imported by both extension.js and prefs.js — nothing stops it, or a chunk
+// it itself imports, from also pulling in "gi://St" and crashing the prefs
+// window with "Typelib file for namespace 'St' ... not found" as soon as it
+// loads. Catches that automatically instead of relying on manually auditing
+// every module prefs.js can reach.
 describe("build output chunk isolation", () => {
   it("never lets dist/prefs.js's dependency graph import gi://St", { timeout: 20000 }, () => {
     const cwd = process.cwd();
@@ -26,8 +28,11 @@ describe("build output chunk isolation", () => {
       const name = toVisit.pop();
       if (name === undefined || visited.has(name)) continue;
       visited.add(name);
-      const importedChunks = [...readChunk(name).matchAll(/from\s+"\.\/([\w-]+\.js)"/g)].map(
-        (m) => m[1],
+      // Imports are now relative paths that can cross directories (e.g.
+      // "../taxonomy/space-type.enum.js"), not just flat "./name.js" —
+      // resolve each against the importing chunk's own directory.
+      const importedChunks = [...readChunk(name).matchAll(/from\s+"(\.\.?\/[^"]+\.js)"/g)].map(
+        (m) => posix.normalize(posix.join(posix.dirname(name), m[1])),
       );
       toVisit.push(...importedChunks);
     }
