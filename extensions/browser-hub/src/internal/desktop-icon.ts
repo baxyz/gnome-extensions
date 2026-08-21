@@ -4,7 +4,12 @@ import { createCachedResolver } from "@helpers4/function";
 import { PackageManager } from "../taxonomy";
 import type { ResolvedBrowserPkg } from "../taxonomy";
 import { iconExists } from "../icons";
-import { findDesktopIdByExecutable, getDesktopAppInfo, logIfUnexpected } from "./gio";
+import {
+  clearAppInfoListCache,
+  findDesktopIdByExecutable,
+  getDesktopAppInfo,
+  logIfUnexpected,
+} from "./gio";
 
 // A Gio.FileIcon whose file fails to decode aborts GNOME Shell itself:
 // St:ERROR in st-icon-theme.c, assertion on icon_info_get_pixbuf_ready,
@@ -62,24 +67,47 @@ export function desktopIdFor(pkg: ResolvedBrowserPkg): string {
 }
 
 // Package/binary presence rarely changes mid-session, same as this module's
-// other caches. Keyed by binary name.
+// other caches. Keyed by the search term itself (see fallbackSearchTerm
+// below) rather than the pkg object, same reasoning as desktopIconResolver's
+// own keying below.
 const desktopIdByExecutable = createCachedResolver(findDesktopIdByExecutable);
 
 /**
+ * The executable name to search for when `pkg`'s guessed desktop ID doesn't
+ * resolve — desktopIdFor()'s guess is a plain "<binary>.desktop"/
+ * "<name>_<name>.desktop" for Native/Snap, so either's own binary/name is
+ * what a real installed .desktop's Exec= line would actually name.
+ * Null for Flatpak: its guess is guaranteed correct by the packaging spec
+ * (see desktopIdFor), so there's never a wrong guess to recover from.
+ * Shared by resolveDesktopId() and resolveDesktopIcon() below so the two
+ * can't drift on which managers get a fallback or what they search by.
+ */
+function fallbackSearchTerm(pkg: ResolvedBrowserPkg): string | null {
+  switch (pkg.manager) {
+    case PackageManager.Native:
+      return pkg.binary;
+    case PackageManager.Snap:
+      return pkg.name;
+    case PackageManager.Flatpak:
+      return null;
+  }
+}
+
+/**
  * The real, resolvable desktop ID for `pkg` — desktopIdFor()'s guess when it
- * actually resolves, else (for Native only) a fallback search by executable
- * (see desktopIdByExecutable above), else the guess anyway: every caller
- * already treats "resolves to nothing" as the expected failure mode. Used by
- * toolbar.ts/default-browser.ts, which only need to know whether some ID
- * resolves, not the Gio.Icon behind it — resolveDesktopIcon() below does its
- * own, differently-shaped fallback instead of calling this, so a
- * successfully-guessed ID is never looked up twice over there.
+ * actually resolves, else a fallback search by executable (see
+ * fallbackSearchTerm/desktopIdByExecutable above), else the guess anyway:
+ * every caller already treats "resolves to nothing" as the expected failure
+ * mode. Used by toolbar.ts/default-browser.ts, which only need to know
+ * whether some ID resolves, not the Gio.Icon behind it — resolveDesktopIcon()
+ * below does its own, differently-shaped fallback instead of calling this,
+ * so a successfully-guessed ID is never looked up twice over there.
  */
 export function resolveDesktopId(pkg: ResolvedBrowserPkg): string {
   const guess = desktopIdFor(pkg);
   if (getDesktopAppInfo(guess) !== null) return guess;
-  if (pkg.manager !== PackageManager.Native) return guess;
-  return desktopIdByExecutable.resolve(pkg.binary) ?? guess;
+  const searchTerm = fallbackSearchTerm(pkg);
+  return (searchTerm !== null ? desktopIdByExecutable.resolve(searchTerm) : null) ?? guess;
 }
 
 // Package/binary presence rarely changes mid-session, same as pkg.ts's
@@ -110,6 +138,7 @@ export function clearDesktopIconCache(): void {
   desktopIconResolver.clear();
   isDecodableIconFile.clear();
   desktopIdByExecutable.clear();
+  clearAppInfoListCache();
 }
 
 // Plausible "<name>-symbolic" candidates for a package's own icon set — many
@@ -148,18 +177,26 @@ function symbolicIconCandidates(pkg: ResolvedBrowserPkg): string[] {
  * Carries no package-manager badge — that's a CSS overlay applied at render
  * time (see menu/shared.ts), not part of the resolved icon itself.
  *
- * Falls back to a by-executable search (desktopIdByExecutable) for a Native
- * package when the guess resolves to nothing, same as resolveDesktopId()
- * above — done directly against desktopIconResolver rather than by calling
- * resolveDesktopId() itself, so the common case (the guess is right) costs
- * exactly the one cached lookup it always has, not a second one to re-verify
- * what desktopIconResolver is about to look up anyway.
+ * Falls back to a by-executable search (fallbackSearchTerm/
+ * desktopIdByExecutable) when the guess resolves to nothing, same as
+ * resolveDesktopId() above — done directly against desktopIconResolver
+ * rather than by calling resolveDesktopId() itself, so the common case (the
+ * guess is right, and has an icon) costs exactly the one cached lookup it
+ * always has, not a second one to re-verify what desktopIconResolver is
+ * about to look up anyway. The fallback only triggers when the guessed ID
+ * doesn't resolve to an app at all (a second, explicit getDesktopAppInfo
+ * check) rather than whenever desktopIconResolver comes back empty — that
+ * also happens when the guess IS the right app but it just has no usable
+ * icon (no Icon= key, or one that fails decode validation), and searching
+ * further in that case risks picking up a different, unrelated app that
+ * happens to share the same binary (e.g. a "Private Browsing" launcher).
  */
 export function resolveDesktopIcon(pkg: ResolvedBrowserPkg): string | Gio.Icon | undefined {
   const guessId = desktopIdFor(pkg);
   let baseIcon = desktopIconResolver.resolve(guessId);
-  if (!baseIcon && pkg.manager === PackageManager.Native) {
-    const foundId = desktopIdByExecutable.resolve(pkg.binary);
+  if (baseIcon === null && getDesktopAppInfo(guessId) === null) {
+    const searchTerm = fallbackSearchTerm(pkg);
+    const foundId = searchTerm !== null ? desktopIdByExecutable.resolve(searchTerm) : null;
     if (foundId) baseIcon = desktopIconResolver.resolve(foundId);
   }
   if (baseIcon) return baseIcon;

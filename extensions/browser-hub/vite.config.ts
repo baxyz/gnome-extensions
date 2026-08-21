@@ -36,16 +36,21 @@ function staticAssets(): Plugin {
 // preserveModulesRoot — for our own src/ files that's already the clean
 // mirrored path we want (e.g. "browser/firefox"), but for a dependency
 // under node_modules it's the full on-disk path including pnpm's nested
-// store layout (e.g. "node_modules/.pnpm/@helpers4_object@3.0.7/node_modules
+// store layout (e.g. "node_modules/.pnpm/@helpers4+object@3.0.7/node_modules
 // /@helpers4/object/lib/index") — collapse those down to a short, stable
-// "vendor-<package>" name instead of leaking pnpm's store structure into
-// the reviewed output.
+// "vendor-<package>" name instead of leaking pnpm's store structure into the
+// reviewed output. Derived structurally from the *last* "node_modules/"
+// segment (pnpm's own .pnpm/<encoded>/ nesting always has one more
+// "node_modules/" before the real package) rather than a hand-maintained
+// per-dependency list — the previous version of this function needed a new
+// regex/branch added every time a new runtime dependency showed up, quietly
+// falling back to the raw pnpm-store path (leaking it into dist/) for any
+// dependency someone forgot to add.
 function vendorChunkName(name: string): string | null {
-  const helpers4 = name.match(/@helpers4\/([^/]+)\/lib\/index$/);
-  if (helpers4) return `vendor-helpers4-${helpers4[1]}`;
-  if (name.includes("node_modules/mozlz4/")) return "vendor-mozlz4";
-  if (name.includes("node_modules/sqlite-reader/")) return "vendor-sqlite-reader";
-  return null;
+  const segments = name.split("node_modules/");
+  if (segments.length < 2) return null;
+  const pkg = segments[segments.length - 1].match(/^(@[^/]+\/[^/]+|[^/]+)/)?.[1];
+  return pkg ? `vendor-${pkg.replace(/^@/, "").replace(/\//g, "-")}` : null;
 }
 
 const base = createViteConfig();

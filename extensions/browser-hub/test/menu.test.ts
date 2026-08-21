@@ -192,7 +192,13 @@ class FakeGioFile {}
 // default so the fallback always comes up empty, same as the plain
 // desktopAppInfoNew-based guess it follows; overridden per-test where the
 // fallback itself is what's under test (see filterDefaultBrowserPickable below).
-const appInfoGetAll = vi.fn((): { get_id(): string; get_executable(): string | null }[] => []);
+const appInfoGetAll = vi.fn(
+  (): {
+    get_id(): string;
+    get_executable(): string | null;
+    get_commandline(): string | null;
+  }[] => [],
+);
 vi.mock("gi://Gio", () => ({
   default: {
     Subprocess: { new: subprocessNew },
@@ -216,6 +222,7 @@ vi.mock("gi://GioUnix", () => ({
 
 const { fillMenu } = await import("../src/menu");
 const { filterDefaultBrowserPickable } = await import("../src/menu/toolbar");
+const { clearDesktopIconCache } = await import("../src/internal");
 
 type FakeMenu = {
   items: FakeWidget[];
@@ -244,6 +251,10 @@ beforeEach(() => {
   desktopAppInfoNew.mockReturnValue(null);
   appInfoGetAll.mockClear();
   appInfoGetAll.mockReturnValue([]);
+  // internal/gio.ts caches the Gio.AppInfo.get_all() scan itself (not just
+  // the per-binary result) — bust it too, or a later test's different
+  // appInfoGetAll return value would never be seen.
+  clearDesktopIconCache();
 });
 
 describe("fillMenu", () => {
@@ -1091,7 +1102,11 @@ describe("filterDefaultBrowserPickable", () => {
       id === "org.mozilla.firefox.desktop" ? {} : null,
     );
     appInfoGetAll.mockReturnValue([
-      { get_id: () => "org.mozilla.firefox.desktop", get_executable: () => "rpm-firefox" },
+      {
+        get_id: () => "org.mozilla.firefox.desktop",
+        get_executable: () => "rpm-firefox",
+        get_commandline: () => "rpm-firefox %u",
+      },
     ]);
 
     const result = filterDefaultBrowserPickable([{ label: "Firefox", command: [], pkg }]);
