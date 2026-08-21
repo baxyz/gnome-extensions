@@ -97,6 +97,7 @@ export type DesktopAppInfo = {
   get_string(key: string): string | null;
   get_icon(): Gio.Icon | null;
   set_as_default_for_type(contentType: string): void;
+  launch(files: Gio.File[] | null, context: Gio.AppLaunchContext | null): boolean;
 };
 
 export function getDesktopAppInfo(desktopId: string): DesktopAppInfo | null {
