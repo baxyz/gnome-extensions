@@ -21,6 +21,10 @@ vi.mock("gi://GLib", () => ({
     source_remove: () => {},
     PRIORITY_DEFAULT: 0,
     SOURCE_REMOVE: false,
+    // findDesktopIdByExecutable()'s fallback (internal/gio.ts), reached from
+    // resolveDesktopIcon()/resolveDesktopId() whenever a guessed desktop id
+    // doesn't resolve — see desktopAppInfoNew below.
+    path_get_basename: (p: string) => p.split("/").filter(Boolean).pop() ?? "",
   },
 }));
 
@@ -184,12 +188,18 @@ const subprocessNew = vi.fn();
 // promisified methods themselves.
 class FakeGioFile {}
 
+// findDesktopIdByExecutable()'s fallback source (internal/gio.ts) — empty by
+// default so the fallback always comes up empty, same as the plain
+// desktopAppInfoNew-based guess it follows; overridden per-test where the
+// fallback itself is what's under test (see filterDefaultBrowserPickable below).
+const appInfoGetAll = vi.fn((): { get_id(): string; get_executable(): string | null }[] => []);
 vi.mock("gi://Gio", () => ({
   default: {
     Subprocess: { new: subprocessNew },
     SubprocessFlags: { NONE: 0 },
     File: FakeGioFile,
     _promisify: () => {},
+    AppInfo: { get_all: () => appInfoGetAll() },
   },
 }));
 
@@ -232,6 +242,8 @@ beforeEach(() => {
   notify.mockClear();
   desktopAppInfoNew.mockClear();
   desktopAppInfoNew.mockReturnValue(null);
+  appInfoGetAll.mockClear();
+  appInfoGetAll.mockReturnValue([]);
 });
 
 describe("fillMenu", () => {
@@ -1068,6 +1080,25 @@ describe("filterDefaultBrowserPickable", () => {
     ]);
 
     expect(result).toHaveLength(0);
+  });
+
+  it("includes a Native browser whose guessed desktop ID is wrong but a by-executable search finds the real one (e.g. Fedora's Firefox RPM: org.mozilla.firefox.desktop, not firefox.desktop)", () => {
+    // A binary name not used by any other test in this file — desktop-icon.ts's
+    // by-executable cache is module-scoped and never cleared here, so reusing
+    // "firefox" would risk hitting another test's cached (unrelated) result.
+    const pkg = { manager: PackageManager.Native, binary: "rpm-firefox" } as const;
+    desktopAppInfoNew.mockImplementation((id: string) =>
+      id === "org.mozilla.firefox.desktop" ? {} : null,
+    );
+    appInfoGetAll.mockReturnValue([
+      { get_id: () => "org.mozilla.firefox.desktop", get_executable: () => "rpm-firefox" },
+    ]);
+
+    const result = filterDefaultBrowserPickable([{ label: "Firefox", command: [], pkg }]);
+
+    expect(result).toHaveLength(1);
+    expect(desktopAppInfoNew).toHaveBeenCalledWith("rpm-firefox.desktop");
+    expect(desktopAppInfoNew).toHaveBeenCalledWith("org.mozilla.firefox.desktop");
   });
 
   it("never bothers checking a Flatpak's desktop ID — the spec guarantees it exists", () => {

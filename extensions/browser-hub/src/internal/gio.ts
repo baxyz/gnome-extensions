@@ -103,6 +103,26 @@ export function getDesktopAppInfo(desktopId: string): DesktopAppInfo | null {
   return GioUnix.DesktopAppInfo.new(desktopId) as unknown as DesktopAppInfo | null;
 }
 
+/**
+ * Finds the real desktop ID for a Native package by scanning every installed
+ * app for one whose Exec= basename matches `binary` — a fallback for when
+ * `${binary}.desktop` (desktop-icon.ts's desktopIdFor guess) is wrong.
+ * Confirmed necessary on Fedora: its Firefox RPM ships
+ * org.mozilla.firefox.desktop, not firefox.desktop like Debian/Ubuntu's
+ * package, so the plain guess resolves to nothing there. Same signal
+ * default-browser.ts's getDefaultBrowser() already trusts to identify the
+ * OS default browser's real desktop file, just applied to every installed
+ * app instead of only the current default.
+ */
+export function findDesktopIdByExecutable(binary: string): string | null {
+  const target = GLib.path_get_basename(binary);
+  const match = (Gio.AppInfo.get_all() as Gio.AppInfo[]).find((info) => {
+    const exe = info.get_executable();
+    return exe !== null && GLib.path_get_basename(exe) === target;
+  });
+  return match?.get_id() ?? null;
+}
+
 export type DirEntry = { name: string; type: Gio.FileType };
 
 /**

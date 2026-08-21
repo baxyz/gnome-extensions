@@ -15,11 +15,24 @@ const desktopAppInfoNew = vi.fn((id: string) => {
 // here never actually match, only need to exist.
 class FakeGioFile {}
 
+// Fake installed-app list for findDesktopIdByExecutable()'s fallback (see
+// resolveDesktopId/resolveDesktopIcon's "guess didn't resolve" path below) —
+// maps executable basename -> desktop id, empty by default so every existing
+// test (which only cares about the guess resolving or not) sees no match.
+const appsByExecutable = new Map<string, string>();
+const appInfoGetAll = vi.fn(() =>
+  [...appsByExecutable.entries()].map(([executable, id]) => ({
+    get_id: () => id,
+    get_executable: () => executable,
+  })),
+);
+
 vi.mock("gi://Gio", () => ({
   default: {
     File: FakeGioFile,
     _promisify: () => {},
     IOErrorEnum: { NOT_FOUND: 1, PERMISSION_DENIED: 2 },
+    AppInfo: { get_all: appInfoGetAll },
   },
 }));
 
@@ -29,8 +42,14 @@ vi.mock("gi://GioUnix", () => ({
 }));
 
 // internal/gio.ts also references GLib — unused by anything these tests
-// exercise, but the import itself must resolve.
-vi.mock("gi://GLib", () => ({ default: { PRIORITY_DEFAULT: 0 } }));
+// exercise beyond path_get_basename, needed by findDesktopIdByExecutable's
+// fallback (see resolveDesktopId/resolveDesktopIcon below).
+vi.mock("gi://GLib", () => ({
+  default: {
+    PRIORITY_DEFAULT: 0,
+    path_get_basename: (p: string) => p.split("/").filter(Boolean).pop() ?? "",
+  },
+}));
 
 // Controls the outcome of the decode probe for the "validation" describe
 // block below — defaults to a fake that always throws, so any test that
@@ -63,9 +82,15 @@ function fakeFileIcon(path: string): { file: { get_path(): string } } {
   return { file: { get_path: () => path } };
 }
 
-const { resolveDesktopIcon, clearDesktopIconCache, ICON_DECODE_PROBE_SIZES } =
+const { resolveDesktopIcon, resolveDesktopId, clearDesktopIconCache, ICON_DECODE_PROBE_SIZES } =
   await import("../src/internal/desktop-icon");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
+
+beforeEach(() => {
+  appsByExecutable.clear();
+  appInfoGetAll.mockClear();
+  clearDesktopIconCache();
+});
 
 describe("resolveDesktopIcon", () => {
   it("guesses '<binary>.desktop' for a Native package", () => {
@@ -134,6 +159,63 @@ describe("resolveDesktopIcon", () => {
     clearDesktopIconCache();
     expect(resolveDesktopIcon(pkg)).toBe(icon);
     expect(desktopAppInfoNew).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back to a by-executable search for a Native package whose guess doesn't match (e.g. Fedora's Firefox RPM)", () => {
+    const icon = {};
+    appsByExecutable.set("rpm-firefox", "org.mozilla.firefox.desktop");
+    installedApps.set("org.mozilla.firefox.desktop", icon);
+    const pkg = { manager: PackageManager.Native, binary: "rpm-firefox" } as const;
+
+    expect(resolveDesktopIcon(pkg)).toBe(icon);
+    expect(desktopAppInfoNew).toHaveBeenCalledWith("rpm-firefox.desktop");
+    expect(desktopAppInfoNew).toHaveBeenCalledWith("org.mozilla.firefox.desktop");
+  });
+
+  it("does not fall back to a by-executable search for Flatpak/Snap packages", () => {
+    appsByExecutable.set("flatpak-only-firefox", "org.mozilla.firefox.desktop");
+    installedApps.set("org.mozilla.firefox.desktop", {});
+    const pkg = { manager: PackageManager.Flatpak, appId: "flatpak-only-firefox" } as const;
+
+    expect(resolveDesktopIcon(pkg)).toBeUndefined();
+    expect(appInfoGetAll).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveDesktopId", () => {
+  it("returns the guess when it resolves", () => {
+    installedApps.set("resolves-directly.desktop", {});
+    const pkg = { manager: PackageManager.Native, binary: "resolves-directly" } as const;
+
+    expect(resolveDesktopId(pkg)).toBe("resolves-directly.desktop");
+    expect(appInfoGetAll).not.toHaveBeenCalled();
+  });
+
+  it("falls back to a by-executable search for Native when the guess doesn't resolve", () => {
+    appsByExecutable.set("rpm-firefox-2", "org.mozilla.firefox.desktop");
+    const pkg = { manager: PackageManager.Native, binary: "rpm-firefox-2" } as const;
+
+    expect(resolveDesktopId(pkg)).toBe("org.mozilla.firefox.desktop");
+  });
+
+  it("returns the guess anyway when neither it nor the by-executable fallback resolves", () => {
+    const pkg = { manager: PackageManager.Native, binary: "totally-unknown" } as const;
+    expect(resolveDesktopId(pkg)).toBe("totally-unknown.desktop");
+  });
+
+  it("never tries the by-executable fallback for Flatpak or Snap, even when the guess doesn't resolve", () => {
+    // Populated to prove a fallback search would have found something if it
+    // were ever attempted — it must not be, for either manager below.
+    appsByExecutable.set("unmatched-flatpak-app", "unrelated.desktop");
+    appsByExecutable.set("unmatched-snap-app", "unrelated.desktop");
+
+    expect(
+      resolveDesktopId({ manager: PackageManager.Flatpak, appId: "unmatched-flatpak-app" }),
+    ).toBe("unmatched-flatpak-app.desktop");
+    expect(resolveDesktopId({ manager: PackageManager.Snap, name: "unmatched-snap-app" })).toBe(
+      "unmatched-snap-app_unmatched-snap-app.desktop",
+    );
+    expect(appInfoGetAll).not.toHaveBeenCalled();
   });
 });
 

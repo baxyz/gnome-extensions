@@ -10,7 +10,12 @@ export {
   writeTextFileAsync,
 } from "./gio";
 export type { DesktopAppInfo, DirEntry } from "./gio";
-export { clearDesktopIconCache, desktopIdFor, resolveDesktopIcon } from "./desktop-icon";
+export {
+  clearDesktopIconCache,
+  desktopIdFor,
+  resolveDesktopIcon,
+  resolveDesktopId,
+} from "./desktop-icon";
 export {
   buildBaseCommand,
   clearPathPresenceCache,
