@@ -73,6 +73,7 @@ type FakeAppInfo = {
   executable: string | null;
   commandline: string | null;
   keys?: Record<string, string>;
+  shouldShow?: boolean;
 };
 let registeredBrowsers: FakeAppInfo[] = [];
 const appInfoGetAllForType = vi.fn((_contentType: string) =>
@@ -81,6 +82,7 @@ const appInfoGetAllForType = vi.fn((_contentType: string) =>
     get_executable: () => a.executable,
     get_commandline: () => a.commandline,
     get_string: (key: string): string | null => a.keys?.[key] ?? null,
+    should_show: () => a.shouldShow ?? true,
   })),
 );
 
@@ -281,6 +283,14 @@ describe("findDesktopIdByExecutable", () => {
     findDesktopIdByExecutable("a");
 
     expect(appInfoGetAllForType).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores a registered handler that shouldn't be shown (NoDisplay/Hidden), even if its executable matches", () => {
+    registeredBrowsers = [
+      { id: "decoy-helper.desktop", executable: "firefox", commandline: null, shouldShow: false },
+    ];
+
+    expect(findDesktopIdByExecutable("firefox")).toBeNull();
   });
 });
 

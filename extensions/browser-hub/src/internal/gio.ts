@@ -115,6 +115,7 @@ type RegisteredBrowserAppInfo = {
   get_executable(): string | null;
   get_commandline(): string | null;
   get_string(key: string): string | null;
+  should_show(): boolean;
 };
 
 // The freedesktop content type every real browser registers as a handler
@@ -142,9 +143,15 @@ let cachedRegisteredBrowsers: RegisteredBrowserAppInfo[] | null = null;
 
 function getRegisteredBrowserAppInfos(): RegisteredBrowserAppInfo[] {
   if (cachedRegisteredBrowsers === null) {
-    cachedRegisteredBrowsers = Gio.AppInfo.get_all_for_type(
-      BROWSER_CONTENT_TYPE,
-    ) as unknown as RegisteredBrowserAppInfo[];
+    // get_all_for_type() only excludes Hidden=true entries, not
+    // NoDisplay=true ones — should_show() is the one GAppInfo method that
+    // checks both (plus OnlyShowIn/NotShowIn), the same filter GNOME's own
+    // app-listing UIs apply. Without it, a NoDisplay helper/wrapper .desktop
+    // that happens to also declare this content type could shadow a real
+    // browser's identity match below.
+    cachedRegisteredBrowsers = (
+      Gio.AppInfo.get_all_for_type(BROWSER_CONTENT_TYPE) as unknown as RegisteredBrowserAppInfo[]
+    ).filter((info) => info.should_show());
   }
   return cachedRegisteredBrowsers;
 }
