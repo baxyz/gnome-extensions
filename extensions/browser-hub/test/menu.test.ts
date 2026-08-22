@@ -199,6 +199,7 @@ const appInfoGetAllForType = vi.fn(
     get_executable(): string | null;
     get_commandline(): string | null;
     get_string(key: string): string | null;
+    should_show(): boolean;
   }[] => [],
 );
 vi.mock("gi://Gio", () => ({
@@ -1199,6 +1200,7 @@ describe("filterDefaultBrowserPickable", () => {
         get_executable: () => "rpm-firefox",
         get_commandline: () => "rpm-firefox %u",
         get_string: () => null,
+        should_show: () => true,
       },
     ]);
 

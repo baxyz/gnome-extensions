@@ -33,12 +33,14 @@ const appInfoGetAllForType = vi.fn((_contentType: string) => [
     get_executable: () => executable,
     get_commandline: () => executable,
     get_string: () => null,
+    should_show: () => true,
   })),
   ...[...snapInstanceNames.entries()].map(([name, id]) => ({
     get_id: () => id,
     get_executable: () => null,
     get_commandline: () => null,
     get_string: (key: string): string | null => (key === "X-SnapInstanceName" ? name : null),
+    should_show: () => true,
   })),
 ]);
 

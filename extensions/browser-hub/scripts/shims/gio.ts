@@ -242,6 +242,7 @@ export default {
       get_executable(): string | null;
       get_commandline(): string | null;
       get_string(key: string): string | null;
+      should_show(): boolean;
     }[] =>
       listDesktopIds().flatMap((desktopId) => {
         const fields = parseDesktopFile(desktopId);
@@ -250,12 +251,16 @@ export default {
         if (!mimeTypes.includes(contentType)) return [];
         const exec = fields["Exec"] ?? "";
         const executable = exec.split(/\s+/)[0] || null;
+        // Approximates the real should_show() (NoDisplay/Hidden only — skips
+        // OnlyShowIn/NotShowIn, irrelevant for a GNOME-only dev check tool).
+        const shouldShow = fields["NoDisplay"] !== "true" && fields["Hidden"] !== "true";
         return [
           {
             get_id: () => desktopId,
             get_executable: () => executable,
             get_commandline: () => exec || null,
             get_string: (key: string): string | null => fields[key] ?? null,
+            should_show: () => shouldShow,
           },
         ];
       }),
