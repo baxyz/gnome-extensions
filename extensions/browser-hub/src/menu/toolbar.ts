@@ -54,7 +54,7 @@ export function filterDefaultBrowserPickable(
  * decided by the caller (see menu/index.ts) — "show-default-browser-edit"
  * gates the row, not just this chevron.
  */
-const DEFAULT_BROWSER_ICON_SIZE = 20;
+const DEFAULT_BROWSER_ICON_SIZE = 16;
 
 export function buildDefaultBrowserItem({
   title,
@@ -99,7 +99,7 @@ export function buildDefaultBrowserItem({
   return menuItem;
 }
 
-const DONUT_ICON_SIZE = 20;
+const DONUT_ICON_SIZE = 16;
 const DONUT_TOOLTIP = "Launch a burner, anti-fingerprint browser session";
 
 /**
