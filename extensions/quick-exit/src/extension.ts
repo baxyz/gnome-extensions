@@ -17,7 +17,6 @@ export default class QuickExitExtension extends Extension {
       "_startTimer",
       (originalStartTimer) =>
         function (this: EndSessionDialog) {
-
           // Clamp the timeout.
           // Never lets the dialog wait longer than GNOME itself requested — only
           // shorter. If a future GNOME version ever asks for a shorter wait than
@@ -26,7 +25,7 @@ export default class QuickExitExtension extends Extension {
             this._totalSecondsToStayOpen,
             settings.get_int("timeout-seconds"),
           );
-          
+
           return originalStartTimer.call(this);
         },
     );
