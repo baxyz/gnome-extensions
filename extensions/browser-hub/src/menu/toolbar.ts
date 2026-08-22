@@ -136,11 +136,10 @@ export function buildDonutItem({
     menuItem.insert_child_below(spinner, menuItem.label);
     menuItem.reactive = false;
   } else {
-    // Not view-private-symbolic: that name only resolves under Yaru
-    // (Ubuntu) — Adwaita (Fedora's default icon theme, and every other
-    // distro that doesn't ship Yaru) has no icon under that name at all, so
-    // St falls back to a generic "file" placeholder there. GNOME Settings'
-    // own Privacy panel icon, confirmed present in both Adwaita and Yaru.
+    // GNOME Settings' own Privacy panel icon — chosen because it resolves
+    // under Adwaita as well as Yaru; several similarly-named privacy/
+    // incognito icons only exist in one or the other and silently render as
+    // a generic "file" placeholder wherever they're missing.
     const iconWidget = new St.Icon({
       icon_name: "preferences-system-privacy-symbolic",
       icon_size: DONUT_ICON_SIZE,
