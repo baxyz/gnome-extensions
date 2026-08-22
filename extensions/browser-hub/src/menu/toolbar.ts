@@ -136,11 +136,13 @@ export function buildDonutItem({
     menuItem.insert_child_below(spinner, menuItem.label);
     menuItem.reactive = false;
   } else {
-    // A masquerade mask, not an eye/eye-slash: this isn't "hide from the
-    // browser" (that's what private/incognito mode already is), it's "be
-    // someone the browser can't fingerprint" — anonymity, not concealment.
+    // Not view-private-symbolic: that name only resolves under Yaru
+    // (Ubuntu) — Adwaita (Fedora's default icon theme, and every other
+    // distro that doesn't ship Yaru) has no icon under that name at all, so
+    // St falls back to a generic "file" placeholder there. GNOME Settings'
+    // own Privacy panel icon, confirmed present in both Adwaita and Yaru.
     const iconWidget = new St.Icon({
-      icon_name: "view-private-symbolic",
+      icon_name: "preferences-system-privacy-symbolic",
       icon_size: DONUT_ICON_SIZE,
     });
     menuItem.insert_child_below(iconWidget, menuItem.label);
