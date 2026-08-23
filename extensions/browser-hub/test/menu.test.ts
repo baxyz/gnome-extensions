@@ -114,14 +114,12 @@ vi.mock("gi://St", () => ({
   },
 }));
 
-// menu/shared.ts's withBadge() overlays a package-manager badge using
-// Clutter.BinLayout — FakeWidget already accepts an arbitrary props object
-// (including layout_manager) without validating it, so a minimal stub of
-// the two symbols it references is enough.
+// menu/shared.ts's buildSubPageHeader() references Clutter.ActorAlign —
+// FakeWidget already accepts an arbitrary props object without validating
+// it, so a minimal stub of the one symbol it references is enough.
 vi.mock("gi://Clutter", () => ({
   default: {
-    BinLayout: class {},
-    ActorAlign: { END: "end" },
+    ActorAlign: { CENTER: "center" },
   },
 }));
 
@@ -354,7 +352,7 @@ describe("fillMenu", () => {
     expect(line.children).toHaveLength(2);
   });
 
-  it("overlays a package-manager badge on a Flatpak/Snap browser's icon button, not on a Native one", async () => {
+  it("gives a Flatpak/Snap browser's icon button a package-manager accent border, not a Native one", async () => {
     const menu = makeFakeMenu();
     await fillMenu({
       title: "t",
@@ -386,13 +384,10 @@ describe("fillMenu", () => {
     const line = row.children[0].children[0];
     const [flatpakButton, nativeButton] = line.children as FakeButton[];
 
-    // Flatpak: icon wrapped in a badge container (icon + badge overlay).
-    const badgeContainer = flatpakButton.children[0];
-    expect(badgeContainer.children).toHaveLength(2);
-    expect(badgeContainer.children[0]).toBeInstanceOf(FakeIcon);
-    expect(badgeContainer.children[1].props.style_class).toContain("browser-hub-badge-flatpak");
-
-    // Native: no badge, the button's direct child is the plain icon.
+    expect(flatpakButton.props.style_class).toContain("browser-hub-browser-btn--flatpak");
+    expect(nativeButton.props.style_class).not.toMatch(/browser-hub-browser-btn--/);
+    // No overlay container — the button's direct child is the plain icon.
+    expect(flatpakButton.children[0]).toBeInstanceOf(FakeIcon);
     expect(nativeButton.children[0]).toBeInstanceOf(FakeIcon);
   });
 
