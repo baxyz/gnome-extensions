@@ -37,30 +37,16 @@
   padding: 8px;
 }
 
-/* Package-manager badge overlaid on a "Browsers" row icon (see
-   menu/shared.ts's withBadge()) — a plain CSS background-image, not a
-   composited Gio.Icon, so it never touches St's icon-theme loader. The dark
-   circular backing plate keeps the glyph legible regardless of what color
-   the icon underneath happens to be at that corner; the negative margin
-   nudges it half outside the icon's own bounding box so it reads as a
-   corner overlay instead of competing with the icon's artwork. */
-.browser-hub-badge {
-  width: 11px;
-  height: 11px;
-  margin: -3px -3px 0 0;
-  border-radius: 999px;
-  background-color: rgba(0, 0, 0, 0.75);
-  background-size: 65%;
-  background-position: center;
-  background-repeat: no-repeat;
+/* Package-manager accent border for a "Browsers" row button (see
+   menu/shared.ts's makeIconButton()) — brand colors matching Flathub's blue
+   and Canonical's Snap orange. Plain border-color on the button itself, not
+   an overlay on the icon: no alignment/z-order to get wrong. */
+.browser-hub-browser-btn--flatpak {
+  border-bottom: 2px solid #3584e4;
 }
 
-.browser-hub-badge-flatpak {
-  background-image: url("assets/badges/flatpak-badge.svg");
-}
-
-.browser-hub-badge-snap {
-  background-image: url("assets/badges/snap-badge.svg");
+.browser-hub-browser-btn--snap {
+  border-bottom: 2px solid #e66100;
 }
 
 /* Vertical gap between wrapped lines of the "Browsers" row */
