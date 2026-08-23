@@ -254,9 +254,9 @@ beforeEach(() => {
   desktopAppInfoNew.mockReturnValue(null);
   appInfoGetAllForType.mockClear();
   appInfoGetAllForType.mockReturnValue([]);
-  // internal/gio.ts caches the Gio.AppInfo.get_all() scan itself (not just
-  // the per-binary result) — bust it too, or a later test's different
-  // appInfoGetAllForType return value would never be seen.
+  // internal/gio.ts caches the Gio.AppInfo.get_all_for_type() scan itself
+  // (not just the per-binary result) — bust it too, or a later test's
+  // different appInfoGetAllForType return value would never be seen.
   clearDesktopIconCache();
 });
 
