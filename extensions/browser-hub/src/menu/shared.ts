@@ -109,60 +109,27 @@ export function iconProps(icon: string | Gio.Icon): { icon_name: string } | { gi
 // name the default-browser button and panel icon already use elsewhere.
 const GENERIC_BROWSER_ICON_NAME = "web-browser-symbolic";
 
-// Package-manager badge, keyed to the CSS classes in stylesheet.css. Native
-// has no badge — it's the unmarked default. Deliberately never composited
-// into the Gio.Icon itself (a Gio.EmblemedIcon, as an earlier version of
-// this code did): that emblem is rendered by St's icon-theme loader at
-// whatever fraction of icon_size it internally picks, a size this codebase
-// has no way to know or validate in advance — the exact class of crash the
-// rest of internal/desktop-icon.ts exists to prevent for the base icon.
-// A CSS background-image goes through St's texture cache instead, the same
-// mechanism as every other themed background in this stylesheet, not the
-// icon-theme loader that's the actual source of the crash.
-const BADGE_CSS_CLASSES: Partial<Record<PackageManager, string>> = {
-  [PackageManager.Flatpak]: "browser-hub-badge-flatpak",
-  [PackageManager.Snap]: "browser-hub-badge-snap",
+// Package-manager accent, keyed to the CSS classes in stylesheet.css. Native
+// has no accent — it's the unmarked default. An earlier version of this
+// indicator overlaid a small badge in the icon's corner (first as a
+// composited Gio.EmblemedIcon, later as a CSS background-image on a
+// BinLayout-positioned sibling widget) — both approaches turned out
+// unreliable in practice (invisible, mis-positioned, or hidden behind the
+// icon depending on GNOME version/theme). A border on the button itself
+// needs none of that overlay/alignment machinery, so it can't drift out of
+// position the same way.
+const MANAGER_BTN_CSS_CLASSES: Partial<Record<PackageManager, string>> = {
+  [PackageManager.Flatpak]: "browser-hub-browser-btn--flatpak",
+  [PackageManager.Snap]: "browser-hub-browser-btn--snap",
 };
-
-/** Overlays a small package-manager badge in the top-right corner of `iconWidget`, when one applies. */
-function withBadge(
-  iconWidget: St.Icon,
-  iconSize: number,
-  manager: PackageManager | undefined,
-): St.Widget {
-  const badgeClass = manager && BADGE_CSS_CLASSES[manager];
-  if (!badgeClass) return iconWidget;
-
-  // Fixed to iconSize explicitly: left to layout negotiation, this
-  // container can end up allocated wider than the icon itself (e.g. the
-  // surrounding row stretching it), and END/START alignment then places the
-  // badge relative to that larger box instead of the icon's own corner —
-  // visually landing much closer to center than the corner.
-  const container = new St.Widget({
-    layout_manager: new Clutter.BinLayout(),
-    width: iconSize,
-    height: iconSize,
-  });
-  container.add_child(iconWidget);
-  const badge = new St.Widget({
-    style_class: `browser-hub-badge ${badgeClass}`,
-    x_align: Clutter.ActorAlign.END,
-    y_align: Clutter.ActorAlign.START,
-  });
-  container.add_child(badge);
-  // Explicit, not just "added last": BinLayout paints children in add order
-  // regardless, but this is the one line that actually says "always on top
-  // of the icon" instead of relying on that being an incidental side effect.
-  container.set_child_above_sibling(badge, iconWidget);
-  return container;
-}
 
 /**
  * `badgeManager` is only meaningful for the "Browsers" row: it's the only
  * place an icon is shown with no visible text label next to it (a tooltip
  * only, see `tooltip()` below) — everywhere else that shows a
  * package-manager-specific icon already has a "(flatpak)"/"(snap)" label
- * suffix doing the same disambiguation, so a badge there would be redundant.
+ * suffix doing the same disambiguation, so an accent there would be
+ * redundant.
  */
 export function makeIconButton(
   label: string,
@@ -172,12 +139,17 @@ export function makeIconButton(
   styleClass = "button browser-hub-browser-btn",
   badgeManager?: PackageManager,
 ): St.Button {
-  const btn = new St.Button({ can_focus: true, accessible_name: label, style_class: styleClass });
+  const managerClass = badgeManager && MANAGER_BTN_CSS_CLASSES[badgeManager];
+  const btn = new St.Button({
+    can_focus: true,
+    accessible_name: label,
+    style_class: managerClass ? `${styleClass} ${managerClass}` : styleClass,
+  });
   const iconWidget = new St.Icon({
     ...iconProps(icon ?? GENERIC_BROWSER_ICON_NAME),
     icon_size: iconSize,
   });
-  btn.set_child(withBadge(iconWidget, iconSize, badgeManager));
+  btn.set_child(iconWidget);
   tooltip(btn, label);
   btn.connect("clicked", onClick);
   return btn;

@@ -22,10 +22,10 @@ Features planned for `browser-hub`. Items are roughly ordered by dependency, not
       with matching syntax. Kept as-is: harmless on current Zen versions, and
       will start working on its own once that PR merges and users update.
 
-### Package manager badge
+### Package manager indicator
 
-- [x] Show a small emblem (Flatpak/Snap) on the "Browsers" row's icon buttons — the only place a browser's package manager isn't already spelled out in a visible text label. Native is unmarked (the default).
-      No Flatpak/Snap icon exists in Adwaita — two SVGs (`assets/badges/`, recolored from real official marks, see `assets/badges/NOTICE.md`) ship with the extension instead. Originally composited into the resolved `Gio.Icon` via `Gio.EmblemedIcon` — moved to a plain CSS `background-image` overlay (`menu/shared.ts`'s `withBadge()`, `Clutter.BinLayout`) after that path turned out to be a second, unvalidated source of the icon-loading crash below: the emblem was rendered by St's icon-theme loader at a size this codebase never validated. A CSS background goes through St's texture cache instead, not the icon-theme loader.
+- [x] Show a small package-manager accent (Flatpak/Snap) on the "Browsers" row's icon buttons — the only place a browser's package manager isn't already spelled out in a visible text label. Native is unmarked (the default).
+      Two earlier approaches both turned out unreliable in practice: composited into the resolved `Gio.Icon` via `Gio.EmblemedIcon` first (rendered by St's icon-theme loader at a size this codebase never validated — a second, unvalidated source of the icon-loading crash below), then a plain CSS `background-image` badge overlaid in the icon's corner via `Clutter.BinLayout` positioning (reliably invisible or mis-positioned on at least one real system, depending on GNOME version/theme). Landed on a `border-bottom` accent color on the button itself (`menu/shared.ts`'s `makeIconButton()`) — no overlay, no alignment math, nothing to get wrong.
 
 ### Default browser switcher
 

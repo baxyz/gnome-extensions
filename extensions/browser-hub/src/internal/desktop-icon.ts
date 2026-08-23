@@ -181,8 +181,9 @@ function symbolicIconCandidates(pkg: ResolvedBrowserPkg): string[] {
  * always correct for Flatpak sandboxing), but a wrong guess just means no
  * matching app is found — same graceful degradation as a validation failure.
  *
- * Carries no package-manager badge — that's a CSS overlay applied at render
- * time (see menu/shared.ts), not part of the resolved icon itself.
+ * Carries no package-manager indicator — that's a border class applied to
+ * the button at render time (see menu/shared.ts), not part of the resolved
+ * icon itself.
  *
  * Falls back through findFallbackDesktopId() when the guess resolves to
  * nothing, same as resolveDesktopId() above — done directly against
