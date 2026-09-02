@@ -6,29 +6,29 @@ allowBuilds:
   esbuild: true
 
 catalog:
-  '@girs/gdkpixbuf-2.0': 4.1.0
-  '@girs/gjs': 4.1.0
+  '@girs/gdkpixbuf-2.0': 4.3.0
+  '@girs/gjs': 4.3.0
   '@girs/gnome-shell': '^50.0.4'
   '@girs/gnome-shell-46': 'npm:@girs/gnome-shell@^46.0.2'
   '@girs/gnome-shell-47': 'npm:@girs/gnome-shell@^47.0.2'
   '@girs/gnome-shell-48': 'npm:@girs/gnome-shell@^48.0.4'
   '@girs/gnome-shell-49': 'npm:@girs/gnome-shell@^49.1.0'
   '@girs/gnome-shell-50': 'npm:@girs/gnome-shell@^50.0.4'
-  '@types/node': '^26.2.0'
-  '@vitest/ui': '^4.1.10'
+  '@types/node': '^26.4.0'
+  '@vitest/ui': '^4.1.11'
   esbuild: '^0.28.2'
-  oxfmt: '^0.63.0'
-  oxlint: '^1.78.0'
+  oxfmt: '^0.65.0'
+  oxlint: '^1.80.0'
   typescript: '7.0.2'
-  vite: '^8.2.1'
-  vitest: '^4.1.10'
-  '@helpers4/array': '^3.0.7'
-  '@helpers4/color': '^3.0.7'
-  '@helpers4/function': '^3.0.7'
-  '@helpers4/guard': '^3.0.7'
-  '@helpers4/object': '^3.0.7'
-  '@helpers4/promise': '^3.0.7'
-  tsx: '^4.23.12'
+  vite: '^8.2.2'
+  vitest: '^4.1.11'
+  '@helpers4/array': '^3.0.9'
+  '@helpers4/color': '^3.0.9'
+  '@helpers4/function': '^3.0.9'
+  '@helpers4/guard': '^3.0.9'
+  '@helpers4/object': '^3.0.9'
+  '@helpers4/promise': '^3.0.9'
+  tsx: '^4.23.13'
 
 minimumReleaseAgeExclude:
   - mozlz4@0.2.4
