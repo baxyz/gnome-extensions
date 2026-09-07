@@ -8,11 +8,7 @@
     "agents",
     "deps",
     "browser-hub",
-    "browser-hub/extension",
-    "browser-hub/menu",
-    "browser-hub/constants",
-    "browser-hub/build",
-    "browser-hub/tests",
-    "firefox-profiles"
+    "firefox-profiles",
+    "quick-exit"
   ]
 }
