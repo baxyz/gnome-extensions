@@ -1,13 +1,14 @@
 # Claude Code — Project Context
 
-See [.github/agents.md](.github/agents.md) for full conventions. Key points:
+Full canonical rules (commit format, restrictions, license) live in the workspace's
+[AGENTS.md](https://github.com/baxyz/.dev/blob/main/AGENTS.md); project-specific deltas are in
+[AGENTS.md](AGENTS.md) at this repo's root. Key points:
 
 ## Git
 
 - **Rebase only — no merge commits.** Sync branches with `git rebase origin/main`, not `git merge`.
 - Force-push after rebase: `git push --force-with-lease`.
-- Conventional commits: `type(scope): <emoji> message`
-- Scopes: `workspace`, `tooling`, `ci`, `docs`, `agents`, `deps`, `browser-hub`, `firefox-profiles`, `quick-exit`
+- Scopes: see `scopes.json`.
 
 ## Monorepo
 
@@ -22,4 +23,5 @@ See [.github/agents.md](.github/agents.md) for full conventions. Key points:
 
 ## EGO AI Policy
 
-Extensions submitted to EGO must not be AI-generated. Every line of submitted code must be understood and owned by the author. See agents.md for details.
+Extensions submitted to EGO must not be AI-generated. Every line of submitted code must be
+understood and owned by the author. See [AGENTS.md](AGENTS.md) for details.
