@@ -14,14 +14,14 @@ split described in the canonical AGENTS.md, since EGO extensions are GPL-family 
 ## Commit Scopes
 
 Defined in `scopes.json`. Root-level: `workspace`, `tooling`, `ci`, `docs`, `agents`, `deps`.
-Per-extension scopes use the extension name as prefix, optionally narrowed with a slash:
-`browser-hub`, `browser-hub/extension`, `browser-hub/menu`, `browser-hub/constants`,
-`browser-hub/build`, `browser-hub/tests` — same pattern for `firefox-profiles`.
+Per-extension: `browser-hub`, `firefox-profiles`, `quick-exit` — one scope per extension under
+`extensions/*`, no sub-scoping (a prior `browser-hub/<sub-area>` convention never caught on in
+practice and was dropped).
 
 Examples:
 
 - `feat(browser-hub): ✨ support Chromium profiles`
-- `fix(browser-hub/runner): 🐛 handle flatpak path edge-case`
+- `fix(quick-exit): 🐛 handle a missing systemd session bus`
 - `build(workspace): 🔧 add pnpm workspace filter script`
 
 ## Git Workflow — Rebase Only
@@ -74,6 +74,7 @@ gnome-extensions/
   extensions/
     firefox-profiles/   ← GNOME indicator for Firefox profile switching (legacy)
     browser-hub/   ← GNOME indicator for any browser profile switching
+    quick-exit/   ← shortens GNOME's Log Out / Power Off / Restart confirmation countdown
   tooling/
     tsconfig.base.json  ← shared TypeScript base config
   .github/

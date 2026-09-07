@@ -1,9 +1,11 @@
 [
+  "workspace",
   "tooling",
   "ci",
   "docs",
+  "agents",
   "deps",
-  "firefox-profiles",
   "browser-hub",
+  "firefox-profiles",
   "quick-exit"
 ]
