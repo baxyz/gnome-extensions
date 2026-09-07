@@ -1,0 +1,9 @@
+[
+  "tooling",
+  "ci",
+  "docs",
+  "deps",
+  "firefox-profiles",
+  "browser-hub",
+  "quick-exit"
+]

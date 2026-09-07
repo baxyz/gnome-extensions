@@ -34,4 +34,4 @@ pnpm --filter @baxyz/firefox-profiles install:local
 gnome-extensions enable firefox-profiles@arnaud.work
 ```
 
-See the root [agents.md](../../.github/agents.md) for full development workflow.
+See the root [AGENTS.md](../../AGENTS.md) for full development workflow.

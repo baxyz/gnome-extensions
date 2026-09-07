@@ -1,0 +1,18 @@
+{
+  "conventionalCommits.gitmoji": true,
+  "conventionalCommits.scopes": [
+    "workspace",
+    "tooling",
+    "ci",
+    "docs",
+    "agents",
+    "deps",
+    "browser-hub",
+    "browser-hub/extension",
+    "browser-hub/menu",
+    "browser-hub/constants",
+    "browser-hub/build",
+    "browser-hub/tests",
+    "firefox-profiles"
+  ]
+}

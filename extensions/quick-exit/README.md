@@ -30,4 +30,4 @@ pnpm --filter @baxyz/quick-exit install:local
 gnome-extensions enable quick-exit@baxyz.dev
 ```
 
-See the root [agents.md](../../.github/agents.md) for full development workflow.
+See the root [AGENTS.md](../../AGENTS.md) for full development workflow.

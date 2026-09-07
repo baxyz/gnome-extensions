@@ -28,4 +28,4 @@ pnpm --filter @baxyz/browser-hub install:local
 gnome-extensions enable browser-hub@baxyz.dev
 ```
 
-See the root [agents.md](../../.github/agents.md) for full development workflow.
+See the root [AGENTS.md](../../AGENTS.md) for full development workflow.
