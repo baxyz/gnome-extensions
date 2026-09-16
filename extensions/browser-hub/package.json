@@ -51,7 +51,7 @@
     "esbuild": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "playwright": "^1.62.1",
+    "playwright": "^1.63.0",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
