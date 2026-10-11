@@ -1,5 +1,6 @@
 export {
   decoder,
+  deleteDirectoryAsync,
   errorMessage,
   getDesktopAppInfo,
   listDirEntries,

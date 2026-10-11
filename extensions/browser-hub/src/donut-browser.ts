@@ -5,7 +5,7 @@ import { PackageManager } from "./taxonomy";
 import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "./taxonomy";
 import type { DefaultBrowserInfo } from "./default-browser";
 import { snapCommonDir } from "./constants/paths.constant";
-import { launchBrowser, pkgKey, writeTextFileAsync } from "./internal";
+import { deleteDirectoryAsync, launchBrowser, pkgKey, writeTextFileAsync } from "./internal";
 
 // Ordered by preference when the current default browser isn't itself
 // eligible (see findDonutBrowser). Real Mozilla Gecko builds only — deliberately
@@ -182,9 +182,9 @@ function buildDonutCommand(pkg: ResolvedBrowserPkg, profileDir: string): string[
 // Best-effort — a leftover directory under ~/snap/<name>/common/browser-hub-donut
 // is orphaned junk, not a privacy leak (still gets a fresh uuid next launch),
 // so a failure here is logged, not surfaced to the user.
-function cleanupSnapDonutProfile(profileDir: string): void {
+async function cleanupSnapDonutProfile(profileDir: string): Promise<void> {
   try {
-    Gio.Subprocess.new(["rm", "-rf", profileDir], Gio.SubprocessFlags.NONE);
+    await deleteDirectoryAsync(Gio.File.new_for_path(profileDir));
   } catch (e: unknown) {
     logError(e as object, `[browser-hub] failed to clean up Donut profile ${profileDir}`);
   }
@@ -205,6 +205,6 @@ export async function launchDonutBrowser(
   // Only Snap's profile dir lives outside tmpfs (see donutProfilesRoot) and
   // so is the only one that needs an explicit delete once the browser exits.
   if (item.pkg.manager === PackageManager.Snap && subprocess) {
-    subprocess.wait_async(null, () => cleanupSnapDonutProfile(profileDir));
+    subprocess.wait_async(null, () => void cleanupSnapDonutProfile(profileDir));
   }
 }

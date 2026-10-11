@@ -10,6 +10,7 @@ import GioUnix from "gi://GioUnix";
 Gio._promisify(Gio.File.prototype, "load_contents_async", "load_contents_finish");
 Gio._promisify(Gio.File.prototype, "replace_contents_async", "replace_contents_finish");
 Gio._promisify(Gio.File.prototype, "enumerate_children_async", "enumerate_children_finish");
+Gio._promisify(Gio.File.prototype, "delete_async", "delete_finish");
 
 export const decoder = new TextDecoder();
 
@@ -218,6 +219,35 @@ export function findDesktopIdByExecutable(binary: string): string | null {
     return commandBinaryCandidates(info).some((token) => GLib.path_get_basename(token) === target);
   });
   return match?.get_id() ?? null;
+}
+
+/**
+ * Deletes `dir` and everything under it. Symlinks are deleted, never followed.
+ * Children are listed before any is deleted, since changing a directory while
+ * enumerating it is unspecified in GIO.
+ */
+export async function deleteDirectoryAsync(dir: Gio.File): Promise<void> {
+  const enumerator = await dir.enumerate_children_async(
+    "standard::name,standard::type",
+    Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+    GLib.PRIORITY_DEFAULT,
+    null,
+  );
+  const children: { file: Gio.File; isDir: boolean }[] = [];
+  let info: Gio.FileInfo | null;
+  while ((info = enumerator.next_file(null)) !== null) {
+    children.push({
+      file: enumerator.get_child(info),
+      isDir: info.get_file_type() === Gio.FileType.DIRECTORY,
+    });
+  }
+  enumerator.close(null);
+
+  for (const { file, isDir } of children) {
+    if (isDir) await deleteDirectoryAsync(file);
+    else await file.delete_async(GLib.PRIORITY_DEFAULT, null);
+  }
+  await dir.delete_async(GLib.PRIORITY_DEFAULT, null);
 }
 
 export type DirEntry = { name: string; type: Gio.FileType };
