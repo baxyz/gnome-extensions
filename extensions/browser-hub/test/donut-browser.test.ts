@@ -46,6 +46,10 @@ type FakeDir = { made: boolean };
 const dirs = new Map<string, FakeDir>();
 const written = new Map<string, Uint8Array>();
 const subprocessNew = vi.fn();
+// Fake directory tree for the Snap cleanup tests: dir path -> its entries.
+const tree = new Map<string, { name: string; isDir: boolean }[]>();
+const deleted: string[] = [];
+const FILE_TYPE = { REGULAR: 1, DIRECTORY: 2 };
 
 // donut-browser.ts imports internal/gio.ts, which calls
 // Gio._promisify(Gio.File.prototype, ...) at import time, patching this
@@ -73,6 +77,41 @@ class FakeGioFile {
   replace_contents_finish(_result: { path: string }) {
     return [true, ""];
   }
+
+  enumerate_children_async(
+    _attrs: string,
+    _flags: number,
+    _priority: number,
+    _cancel: null,
+    cb: (src: null, res: string) => void,
+  ) {
+    cb(null, this.path);
+  }
+
+  enumerate_children_finish(dirPath: string) {
+    const entries = [...(tree.get(dirPath) ?? [])];
+    return {
+      next_file: () => {
+        const e = entries.shift();
+        if (!e) return null;
+        return {
+          get_name: () => e.name,
+          get_file_type: () => (e.isDir ? FILE_TYPE.DIRECTORY : FILE_TYPE.REGULAR),
+        };
+      },
+      get_child: (info: { get_name(): string }) => new FakeGioFile(`${dirPath}/${info.get_name()}`),
+      close: () => true,
+    };
+  }
+
+  delete_async(_priority: number, _cancel: null, cb: (src: null, res: string) => void) {
+    cb(null, this.path);
+  }
+
+  delete_finish(path: string) {
+    deleted.push(path);
+    return true;
+  }
 }
 
 vi.mock("gi://Gio", () => ({
@@ -80,6 +119,8 @@ vi.mock("gi://Gio", () => ({
     File: Object.assign(FakeGioFile, { new_for_path: (path: string) => new FakeGioFile(path) }),
     _promisify: fakeGioPromisify,
     FileCreateFlags: { NONE: 0 },
+    FileQueryInfoFlags: { NONE: 0, NOFOLLOW_SYMLINKS: 1 },
+    FileType: FILE_TYPE,
     Subprocess: { new: subprocessNew },
     SubprocessFlags: { NONE: 0 },
   },
@@ -100,6 +141,8 @@ beforeEach(() => {
   dirs.clear();
   written.clear();
   subprocessNew.mockClear();
+  tree.clear();
+  deleted.length = 0;
   uuidCounter = 0;
 });
 
@@ -287,11 +330,24 @@ describe("launchDonutBrowser", () => {
     );
     expect(subprocessNew).toHaveBeenCalledTimes(1);
 
-    onExit?.();
-
     const profileDir = "/home/user/snap/firefox/common/browser-hub-donut/uuid-1";
-    expect(subprocessNew).toHaveBeenCalledTimes(2);
-    expect(subprocessNew).toHaveBeenLastCalledWith(["rm", "-rf", profileDir], 0);
+    tree.set(profileDir, [
+      { name: "user.js", isDir: false },
+      { name: "cache", isDir: true },
+    ]);
+    tree.set(`${profileDir}/cache`, [{ name: "entry", isDir: false }]);
+
+    onExit?.();
+    await vi.waitFor(() => expect(deleted).toContain(profileDir));
+
+    // Deleted through GIO, children before their parent — no extra process spawned.
+    expect(subprocessNew).toHaveBeenCalledTimes(1);
+    expect(deleted).toEqual([
+      `${profileDir}/user.js`,
+      `${profileDir}/cache/entry`,
+      `${profileDir}/cache`,
+      profileDir,
+    ]);
   });
 
   it("never waits for or cleans up a Native/Flatpak browser's tmpfs-backed profile", async () => {
