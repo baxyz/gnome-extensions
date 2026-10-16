@@ -5,6 +5,7 @@ import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { BrowserSettings, ProfileGroupsMode } from "./browser";
 import { clearDesktopIconCache, clearPathPresenceCache, clearPkgResolutionCache } from "./internal";
 import { clearDefaultBrowserCache } from "./default-browser";
+import { cancelDonutCleanups } from "./donut-browser";
 import { clearIconThemeCache } from "./icons";
 import { SpaceType } from "./taxonomy/space-type.enum";
 import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
@@ -96,6 +97,7 @@ export default class BrowserProfilesExtension extends Extension {
       this._indicator.destroy();
       this._indicator = null;
     }
+    cancelDonutCleanups();
     // GNOME Shell doesn't re-import this module on a plain disable→enable
     // (only on unload/update/Shell restart), so the module-level pkg/icon
     // caches would otherwise survive with pre-disable data — bust them so a
