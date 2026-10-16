@@ -116,7 +116,7 @@ describe("getDefaultBrowser", () => {
 
     expect(getDefaultBrowser()).toEqual({
       name: "Firefox",
-      command: ["firefox"],
+      appInfo: defaultAppInfo,
       pkg: { manager: PackageManager.Native, binary: "firefox", desktopId: "firefox.desktop" },
     });
   });
