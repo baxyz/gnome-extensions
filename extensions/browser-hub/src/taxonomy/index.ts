@@ -6,3 +6,4 @@ export type * from "./browser-package.types";
 export type * from "./firefox-options.types";
 export type * from "./resolved-browser.types";
 export type * from "./zen-space.types";
+export type * from "./launch-target.types";
