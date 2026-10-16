@@ -3,7 +3,6 @@ import { safeJsonParse } from "@helpers4/object";
 import { settle } from "@helpers4/promise";
 import type { ChromiumBrowserConfig, ColorPresentation, ResolvedBrowserEntry } from "../taxonomy";
 import {
-  buildBaseCommand,
   compareByDefault,
   errorMessage,
   filterPresent,
@@ -71,7 +70,7 @@ export async function resolveChromiumBrowsers(
         const items = profiles
           .map((profile) => ({
             label: profile.name,
-            command: [...buildBaseCommand(b.pkg), `--profile-directory=${profile.dir}`],
+            launch: { kind: "chromiumProfile", pkg: b.pkg, dir: profile.dir } as const,
             isDefault: profile.isDefault,
             color: toDotColor(profile.bgColor),
           }))

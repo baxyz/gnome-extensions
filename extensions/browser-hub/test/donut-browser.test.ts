@@ -168,6 +168,13 @@ const {
 } = await import("../src/donut-browser");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 
+// A plain "browser" launch target for fixtures that don't exercise it:
+// launchDonutBrowser() always builds its own "donut" target.
+const LAUNCH = {
+  kind: "browser",
+  pkg: { manager: PackageManager.Native, binary: "firefox" },
+} as const;
+
 beforeEach(() => {
   dirs.clear();
   written.clear();
@@ -184,10 +191,10 @@ const FIREFOX_SNAP = { manager: PackageManager.Snap, name: "firefox" } as const;
 describe("filterDonutEligible", () => {
   it("keeps DONUT_ELIGIBLE browsers with a resolved pkg, Snap included", () => {
     const browsers = [
-      { label: "Firefox", command: ["firefox"], pkg: FIREFOX_NATIVE },
-      { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
-      { label: "Tor Browser", command: ["tor"], pkg: FIREFOX_NATIVE },
-      { label: "Chromium", command: ["chromium"] }, // no pkg
+      { label: "Firefox", launch: LAUNCH, pkg: FIREFOX_NATIVE },
+      { label: "Firefox (snap)", launch: LAUNCH, pkg: FIREFOX_SNAP },
+      { label: "Tor Browser", launch: LAUNCH, pkg: FIREFOX_NATIVE },
+      { label: "Chromium", launch: LAUNCH }, // no pkg
     ];
 
     expect(filterDonutEligible(browsers).map((b) => b.label)).toEqual([
@@ -198,8 +205,8 @@ describe("filterDonutEligible", () => {
 
   it("is what findDonutBrowser's own eligibility narrows down from — used by the Donut picker page", () => {
     const browsers = [
-      { label: "Waterfox", command: ["waterfox"], pkg: FIREFOX_NATIVE },
-      { label: "Zen", command: ["zen"], pkg: ZEN_FLATPAK },
+      { label: "Waterfox", launch: LAUNCH, pkg: FIREFOX_NATIVE },
+      { label: "Zen", launch: LAUNCH, pkg: ZEN_FLATPAK },
     ];
 
     expect(filterDonutEligible(browsers)).toHaveLength(2);
@@ -209,23 +216,23 @@ describe("filterDonutEligible", () => {
 describe("findDonutBrowser", () => {
   it("picks the current default browser when it's itself eligible", () => {
     const browsers = [
-      { label: "Zen", command: ["zen"], pkg: ZEN_FLATPAK },
-      { label: "Firefox", command: ["firefox"], pkg: FIREFOX_NATIVE },
+      { label: "Zen", launch: LAUNCH, pkg: ZEN_FLATPAK },
+      { label: "Firefox", launch: LAUNCH, pkg: FIREFOX_NATIVE },
     ];
-    const defaultBrowser = { name: "Firefox", command: ["firefox"], pkg: FIREFOX_NATIVE };
+    const defaultBrowser = { name: "Firefox", launch: LAUNCH, pkg: FIREFOX_NATIVE };
 
     expect(findDonutBrowser(browsers, defaultBrowser)?.label).toBe("Firefox");
   });
 
   it("falls back to DONUT_PRIORITY order when the default isn't eligible (or there is none)", () => {
     const browsers = [
-      { label: "Waterfox", command: ["waterfox"], pkg: FIREFOX_NATIVE },
-      { label: "Zen", command: ["zen"], pkg: ZEN_FLATPAK },
+      { label: "Waterfox", launch: LAUNCH, pkg: FIREFOX_NATIVE },
+      { label: "Zen", launch: LAUNCH, pkg: ZEN_FLATPAK },
     ];
     // Default is Chromium-family — not in the eligible set at all.
     const defaultBrowser = {
       name: "Chromium",
-      command: ["chromium"],
+      launch: LAUNCH,
       pkg: { manager: PackageManager.Native, binary: "chromium" } as const,
     };
 
@@ -234,25 +241,25 @@ describe("findDonutBrowser", () => {
   });
 
   it("strips packaging-variant suffixes before matching against the priority list", () => {
-    const browsers = [{ label: "Firefox (flatpak)", command: ["flatpak"], pkg: ZEN_FLATPAK }];
+    const browsers = [{ label: "Firefox (flatpak)", launch: LAUNCH, pkg: ZEN_FLATPAK }];
     expect(findDonutBrowser(browsers, null)?.label).toBe("Firefox (flatpak)");
   });
 
   it("includes snap-packaged browsers when otherwise eligible", () => {
-    const browsers = [{ label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP }];
+    const browsers = [{ label: "Firefox (snap)", launch: LAUNCH, pkg: FIREFOX_SNAP }];
     expect(findDonutBrowser(browsers, null)?.label).toBe("Firefox (snap)");
   });
 
   it("excludes browsers not on the eligible list at all (e.g. Tor Browser, Basilisk)", () => {
     const browsers = [
-      { label: "Tor Browser", command: ["tor"], pkg: FIREFOX_NATIVE },
-      { label: "Basilisk", command: ["basilisk"], pkg: FIREFOX_NATIVE },
+      { label: "Tor Browser", launch: LAUNCH, pkg: FIREFOX_NATIVE },
+      { label: "Basilisk", launch: LAUNCH, pkg: FIREFOX_NATIVE },
     ];
     expect(findDonutBrowser(browsers, null)).toBeNull();
   });
 
   it("falls back to whatever eligible browser comes first when none match the priority list", () => {
-    const browsers = [{ label: "IceCat", command: ["icecat"], pkg: FIREFOX_NATIVE }];
+    const browsers = [{ label: "IceCat", launch: LAUNCH, pkg: FIREFOX_NATIVE }];
     expect(findDonutBrowser(browsers, null)?.label).toBe("IceCat");
   });
 
@@ -297,7 +304,7 @@ describe("createDonutProfile", () => {
 describe("launchDonutBrowser", () => {
   it("launches a Native browser with --profile pointed at the new directory", async () => {
     await launchDonutBrowser(
-      { label: "Firefox", command: ["firefox"], pkg: FIREFOX_NATIVE },
+      { label: "Firefox", launch: LAUNCH, pkg: FIREFOX_NATIVE },
       "Browser Hub",
       vi.fn(),
     );
@@ -310,7 +317,7 @@ describe("launchDonutBrowser", () => {
 
   it("launches a Flatpak browser with an ad-hoc --filesystem grant for the profile dir", async () => {
     await launchDonutBrowser(
-      { label: "Zen", command: ["flatpak", "run", "app.zen_browser.zen"], pkg: ZEN_FLATPAK },
+      { label: "Zen", launch: LAUNCH, pkg: ZEN_FLATPAK },
       "Browser Hub",
       vi.fn(),
     );
@@ -334,7 +341,7 @@ describe("launchDonutBrowser", () => {
     fakeSnapSubprocess();
 
     await launchDonutBrowser(
-      { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
+      { label: "Firefox (snap)", launch: LAUNCH, pkg: FIREFOX_SNAP },
       "Browser Hub",
       vi.fn(),
     );
@@ -350,7 +357,7 @@ describe("launchDonutBrowser", () => {
     const { exit } = fakeSnapSubprocess();
 
     await launchDonutBrowser(
-      { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
+      { label: "Firefox (snap)", launch: LAUNCH, pkg: FIREFOX_SNAP },
       "Browser Hub",
       vi.fn(),
     );
@@ -379,7 +386,7 @@ describe("launchDonutBrowser", () => {
   it("skips the cleanup when the extension was disabled before the browser exited", async () => {
     const { exit } = fakeSnapSubprocess();
     await launchDonutBrowser(
-      { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
+      { label: "Firefox (snap)", launch: LAUNCH, pkg: FIREFOX_SNAP },
       "Browser Hub",
       vi.fn(),
     );
@@ -393,7 +400,7 @@ describe("launchDonutBrowser", () => {
 
   it("never waits for or cleans up a Native/Flatpak browser's tmpfs-backed profile", async () => {
     await launchDonutBrowser(
-      { label: "Firefox", command: ["firefox"], pkg: FIREFOX_NATIVE },
+      { label: "Firefox", launch: LAUNCH, pkg: FIREFOX_NATIVE },
       "Browser Hub",
       vi.fn(),
     );

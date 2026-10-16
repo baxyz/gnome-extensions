@@ -1,5 +1,6 @@
 import type Gio from "gi://Gio";
 import type { ResolvedBrowserPkg } from "./browser-package.types";
+import type { LaunchTarget } from "./launch-target.types";
 
 /**
  * How a profile item's own color should be presented, if it has one at all —
@@ -27,14 +28,14 @@ export type BrowserSpace = {
   /** CSS background color string */
   bgColor?: string;
   name: string;
-  command: string[];
+  launch: LaunchTarget;
   isDefault?: boolean;
 };
 
 export type ResolvedBrowserItem = {
   label: string;
-  /** Fully built launch argv, ready to pass to Gio.Subprocess.new() */
-  command: string[];
+  /** What activating this item launches (see internal/launch.ts). */
+  launch: LaunchTarget;
   /**
    * In a family entry (Firefox/Chromium/Falkon): a GNOME/Adwaita icon name
    * for a per-profile identity (Firefox Profile Groups avatars — see

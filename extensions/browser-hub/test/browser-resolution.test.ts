@@ -250,7 +250,11 @@ describe("resolveFirefoxBrowsers", () => {
         items: [
           {
             label: "default",
-            command: ["firefox", "-P", "default", "-no-remote"],
+            launch: {
+              kind: "firefoxProfile",
+              pkg: expect.objectContaining({ binary: "firefox" }),
+              profile: "default",
+            },
             isDefault: true,
             icon: undefined,
           },
@@ -314,7 +318,12 @@ describe("resolveFirefoxBrowsers", () => {
         uuid: "u1",
         name: "Work",
         icon: expect.any(String), // resolveZenIcon's fallback (dot) since "briefcase" is unmapped
-        command: ["zen-browser", "-P", "default", "--zen-workspace", "Work", "-no-remote"],
+        launch: {
+          kind: "zenWorkspace",
+          pkg: expect.objectContaining({ binary: "zen-browser" }),
+          profile: "default",
+          workspace: "Work",
+        },
       },
     ]);
   });
@@ -712,7 +721,11 @@ describe("resolveFirefoxBrowsers", () => {
     expect(entries[0].items).toEqual([
       {
         label: "default",
-        command: ["firefox", "-P", "default", "-no-remote"],
+        launch: {
+          kind: "firefoxProfile",
+          pkg: expect.objectContaining({ binary: "firefox" }),
+          profile: "default",
+        },
         isDefault: true,
         icon: undefined,
       },

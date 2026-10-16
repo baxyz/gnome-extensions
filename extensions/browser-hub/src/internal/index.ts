@@ -18,7 +18,6 @@ export {
   resolveDesktopId,
 } from "./desktop-icon";
 export {
-  buildBaseCommand,
   clearPathPresenceCache,
   clearPkgResolutionCache,
   filterAvailable,
@@ -28,4 +27,4 @@ export {
   resolvePkg,
 } from "./pkg";
 export { compareByDefault } from "./sort";
-export { launchAppInfo, launchBrowser } from "./runner";
+export { buildArgv, launch, launchAppInfo } from "./launch";

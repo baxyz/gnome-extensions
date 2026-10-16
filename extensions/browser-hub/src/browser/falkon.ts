@@ -3,7 +3,6 @@ import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import type { FalkonBrowserConfig, ResolvedBrowserEntry } from "../taxonomy";
 import {
-  buildBaseCommand,
   errorMessage,
   filterPresent,
   listDirEntries,
@@ -31,7 +30,7 @@ export async function resolveFalkonBrowsers(
           label: b.label,
           items: (await listProfileDirs(b.path)).map((name) => ({
             label: name,
-            command: [...buildBaseCommand(b.pkg), "--profile", name],
+            launch: { kind: "falkonProfile", pkg: b.pkg, profile: name } as const,
           })),
           icon: resolveDesktopIcon(b.pkg),
         };

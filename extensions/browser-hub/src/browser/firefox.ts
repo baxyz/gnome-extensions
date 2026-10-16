@@ -2,6 +2,7 @@ import { settle } from "@helpers4/promise";
 import GLib from "gi://GLib";
 import type {
   ColorPresentation,
+  ResolvedBrowserPkg,
   FirefoxBrowserConfig,
   ProfileGroupsMode,
   ResolvedBrowserEntry,
@@ -10,7 +11,6 @@ import type {
 import type { FirefoxOptions } from "../taxonomy";
 import { SpaceType } from "../taxonomy/space-type.enum";
 import {
-  buildBaseCommand,
   compareByDefault,
   errorMessage,
   filterPresent,
@@ -120,11 +120,11 @@ function resolveProfileGroupsAsFlatItems(
   selectable: FirefoxSelectableProfile[],
   isDefault: boolean,
   folderBasename: string,
-  baseCommand: string[],
+  pkg: ResolvedBrowserPkg,
 ): ResolvedBrowserItem[] {
   return selectable.map((sp) => ({
     label: sp.name,
-    command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
+    launch: { kind: "firefoxProfileDir", pkg, dir: sp.dir },
     // Mark default only on the sp whose folder matches this toolkit profile
     isDefault: isDefault && GLib.path_get_basename(sp.dir) === folderBasename,
     ...spColors(sp, "profile"),
@@ -137,16 +137,16 @@ function resolveProfileGroupsAsSpaces(
   selectable: FirefoxSelectableProfile[],
   isDefault: boolean,
   folderBasename: string,
-  baseCommand: string[],
+  pkg: ResolvedBrowserPkg,
 ): ResolvedBrowserItem[] {
   return [
     {
       label: name,
-      command: [...baseCommand, "-P", name, "-no-remote"],
+      launch: { kind: "firefoxProfile", pkg, profile: name },
       isDefault,
       spaces: selectable.map((sp) => ({
         name: sp.name,
-        command: [...baseCommand, "--profile", sp.dir, "-no-remote"],
+        launch: { kind: "firefoxProfileDir", pkg, dir: sp.dir },
         // Mark default only on the sp whose folder matches this toolkit
         // profile — same comparison as resolveProfileGroupsAsFlatItems.
         isDefault: GLib.path_get_basename(sp.dir) === folderBasename,
@@ -161,17 +161,17 @@ async function resolveZenWorkspaceItem(
   name: string,
   dir: string,
   isDefault: boolean,
-  baseCommand: string[],
+  pkg: ResolvedBrowserPkg,
 ): Promise<ResolvedBrowserItem> {
   const spaces = (await readZenSpaces(dir)).map((space) => ({
     ...space,
     icon: resolveZenIcon(space.icon),
     bgColor: zenSpaceColor(space.theme),
-    command: [...baseCommand, "-P", name, "--zen-workspace", space.name, "-no-remote"],
+    launch: { kind: "zenWorkspace", pkg, profile: name, workspace: space.name } as const,
   }));
   return {
     label: name,
-    command: [...baseCommand, "-P", name, "-no-remote"],
+    launch: { kind: "firefoxProfile", pkg, profile: name },
     isDefault,
     ...(spaces.length > 0 && { spaces }),
   };
@@ -181,11 +181,11 @@ async function resolveZenWorkspaceItem(
 function resolvePlainProfileItem(
   name: string,
   isDefault: boolean,
-  baseCommand: string[],
+  pkg: ResolvedBrowserPkg,
 ): ResolvedBrowserItem {
   return {
     label: name,
-    command: [...baseCommand, "-P", name, "-no-remote"],
+    launch: { kind: "firefoxProfile", pkg, profile: name },
     isDefault,
   };
 }
@@ -203,7 +203,7 @@ async function resolveOneProfile(
   { name, dir, folderBasename, isDefault }: ProfileEntry,
   selectableMap: Map<string, FirefoxSelectableProfile[]>,
   profileGroupsMode: ProfileGroupsMode,
-  baseCommand: string[],
+  pkg: ResolvedBrowserPkg,
   spaceType: SpaceType | undefined,
   enabledSpaces: ReadonlySet<SpaceType>,
 ): Promise<ResolvedBrowserItem[]> {
@@ -219,13 +219,13 @@ async function resolveOneProfile(
       );
     }
     return profileGroupsMode === "profiles"
-      ? resolveProfileGroupsAsFlatItems(selectable, isDefault, folderBasename, baseCommand)
-      : resolveProfileGroupsAsSpaces(name, selectable, isDefault, folderBasename, baseCommand);
+      ? resolveProfileGroupsAsFlatItems(selectable, isDefault, folderBasename, pkg)
+      : resolveProfileGroupsAsSpaces(name, selectable, isDefault, folderBasename, pkg);
   }
 
   return hasZenWorkspaces
-    ? [await resolveZenWorkspaceItem(name, dir, isDefault, baseCommand)]
-    : [resolvePlainProfileItem(name, isDefault, baseCommand)];
+    ? [await resolveZenWorkspaceItem(name, dir, isDefault, pkg)]
+    : [resolvePlainProfileItem(name, isDefault, pkg)];
 }
 
 const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
@@ -254,7 +254,6 @@ export async function resolveFirefoxBrowsers(
   const { fulfilled, rejected } = await settle(
     filterPresent(browsers).map(async (b) => {
       try {
-        const baseCommand = buildBaseCommand(b.pkg);
         const browserIcon = resolveDesktopIcon(b.pkg);
         const profiles = await readProfiles(b.path);
         const firefoxRoot = GLib.path_get_dirname(b.path);
@@ -285,7 +284,7 @@ export async function resolveFirefoxBrowsers(
                 profile,
                 selectableMap,
                 profileGroupsMode,
-                baseCommand,
+                b.pkg,
                 b.spaceType,
                 enabledSpaces,
               );

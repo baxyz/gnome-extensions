@@ -2,7 +2,7 @@ import St from "gi://St";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { PopupMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import type { BrowserSpace, ResolvedBrowserItem } from "../taxonomy";
-import { launchBrowser } from "../internal";
+import { launch } from "../internal";
 import { chunk } from "@helpers4/array";
 import { delay } from "@helpers4/promise";
 import { iconProps, makeIconButton, makeIconRow, safeCssColor, tooltip } from "./shared";
@@ -34,9 +34,9 @@ function makeSpaceGroup(
       btn.set_style(parts.join("; "));
     }
     tooltip(btn, space.name);
-    const cmd = space.command;
+    const target = space.launch;
     btn.connect("clicked", () => {
-      launchBrowser({ command: cmd, title, notify });
+      launch(target, title, notify);
       closeMenu();
     });
     return btn;
@@ -109,15 +109,14 @@ export async function buildSimpleBrowserRow(
     if (index > 0) await delay(BROWSERS_ROW_LINE_DELAY_MS);
     const line = new St.BoxLayout({ style_class: "browser-hub-browsers-line" });
     for (const item of lineItems) {
-      const cmd = item.command;
-      const pkg = item.pkg;
+      const target = item.launch;
       line.add_child(
         makeIconButton(
           item.label,
           item.icon,
           24,
           () => {
-            launchBrowser({ command: cmd, title, notify, pkg });
+            launch(target, title, notify);
             closeMenu();
           },
           undefined,
@@ -199,8 +198,8 @@ export function buildProfileMenuItem({
   }
   menuItem.insert_child_below(iconSlot, menuItem.label);
 
-  const cmd = item.command;
-  menuItem.connect("activate", () => launchBrowser({ command: cmd, title, notify }));
+  const target = item.launch;
+  menuItem.connect("activate", () => launch(target, title, notify));
 
   if (item.spaces && item.spaces.length > 0) {
     menuItem.add_child(new St.Widget({ x_expand: true }));

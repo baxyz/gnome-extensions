@@ -31,7 +31,7 @@
  *   real system-installed Firefox/Zen/etc — Playwright can only drive its
  *   own patched Firefox build, not an arbitrary one, so this script
  *   launches the profile directly via Playwright's
- *   launchPersistentContext() instead of going through launchBrowser().
+ *   launchPersistentContext() instead of going through launch().
  *
  * Run with: pnpm test:e2e (needs `npx playwright install firefox` once).
  */

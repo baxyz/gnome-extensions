@@ -1,10 +1,11 @@
 import type Gio from "gi://Gio";
 import { getBrowserEntries } from "../src/browser";
 import { getDefaultBrowser } from "../src/default-browser";
+import { buildArgv } from "../src/internal";
 
 const defaultBrowser = getDefaultBrowser();
 if (defaultBrowser) {
-  console.log(`Default browser: ${defaultBrowser.name} (${defaultBrowser.command.join(" ")})`);
+  console.log(`Default browser: ${defaultBrowser.name} (${defaultBrowser.appInfo.get_id()})`);
 } else {
   console.log("Default browser: (none detected)");
 }
@@ -52,13 +53,13 @@ for (const entry of entries) {
     const itemIcon = iconDescriptor(item.icon);
     const itemFg = item.color?.mode === "badge" ? item.color.fgColor : undefined;
     console.log(`  - ${item.label}${def}${meta(itemIcon, itemFg, item.color?.bgColor)}`);
-    console.log(`    ${item.command.join(" ")}`);
+    console.log(`    ${buildArgv(item.launch)?.join(" ") ?? "(refused: unsafe value)"}`);
     for (const space of item.spaces ?? []) {
       const spaceDef = space.isDefault ? " *" : "";
       console.log(
         `    · ${space.name}${spaceDef}${meta(space.icon, space.fgColor, space.bgColor)}`,
       );
-      console.log(`      ${space.command.join(" ")}`);
+      console.log(`      ${buildArgv(space.launch)?.join(" ") ?? "(refused: unsafe value)"}`);
     }
   }
 }

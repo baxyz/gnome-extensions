@@ -9,13 +9,7 @@ import {
 import type { BrowserPkg, ResolvedBrowserEntry, ResolvedBrowserPkg } from "../taxonomy";
 import type { FirefoxOptions } from "../taxonomy";
 import { SpaceType } from "../taxonomy/space-type.enum";
-import {
-  buildBaseCommand,
-  errorMessage,
-  filterAvailable,
-  pkgKey,
-  resolveDesktopIcon,
-} from "../internal";
+import { errorMessage, filterAvailable, pkgKey, resolveDesktopIcon } from "../internal";
 import { resolveChromiumBrowsers } from "./chromium";
 import { resolveFalkonBrowsers } from "./falkon";
 import { resolveFirefoxBrowsers } from "./firefox";
@@ -112,9 +106,9 @@ function dedupeByPkg<T extends { pkg: ResolvedBrowserPkg }>(configs: readonly T[
 
 /**
  * Builds the "Browsers" quick-launch row: one icon per installed browser
- * identity, regardless of family or whether it has profiles — always its
- * base command (no profile arg, no profile-groups/spaces handling), sorted
- * alphabetically. Every family still gets its own detailed section too (see
+ * identity, regardless of family or whether it has profiles — always a
+ * plain "browser" launch target (no profile arg, no profile-groups/spaces
+ * handling), sorted alphabetically. Every family still gets its own detailed section too (see
  * getBrowserEntries) — this row is a flat, uniform "just launch it" list
  * alongside those, gated by the same family toggles plus showProfiledBrowsers.
  */
@@ -139,7 +133,7 @@ function resolveBrowsersRow(settings: BrowserSettings, errors: string[]): Resolv
         return [
           {
             label: b.label,
-            command: buildBaseCommand(b.pkg),
+            launch: { kind: "browser", pkg: b.pkg } as const,
             icon: resolveDesktopIcon(b.pkg),
             pkg: b.pkg,
           },
