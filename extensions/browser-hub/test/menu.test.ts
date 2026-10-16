@@ -244,9 +244,11 @@ function makeFakeMenu(): FakeMenu {
 }
 
 const notify = vi.fn();
+const defaultAppInfo = { launch: vi.fn(() => true) };
 
 beforeEach(() => {
   subprocessNew.mockClear();
+  defaultAppInfo.launch.mockClear();
   notify.mockClear();
   desktopAppInfoNew.mockClear();
   desktopAppInfoNew.mockReturnValue(null);
@@ -845,7 +847,11 @@ describe("fillMenu", () => {
       notify,
       onSettings: noop,
       onRefresh: noop,
-      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+      defaultBrowser: {
+        name: "Firefox",
+        appInfo: defaultAppInfo as unknown as Gio.AppInfo,
+        pkg: FAKE_DEFAULT_BROWSER_PKG,
+      },
       showDefaultBrowserEdit: true,
       onOpenDefaultBrowserPage,
     });
@@ -859,14 +865,10 @@ describe("fillMenu", () => {
 
     // The row itself still launches when clicked.
     row.emit("activate");
-    expect(subprocessNew).toHaveBeenCalledWith(["firefox"], 0);
+    expect(defaultAppInfo.launch).toHaveBeenCalledWith(null, null);
   });
 
-  it("launches the default-browser row via its resolved .desktop file when the guess resolves, not Gio.Subprocess", async () => {
-    const launch = vi.fn(() => true);
-    desktopAppInfoNew.mockImplementation((id: string) =>
-      id === "firefox.desktop" ? { launch, get_icon: () => null } : null,
-    );
+  it("launches the default-browser row through the default handler's own AppInfo, never Gio.Subprocess", async () => {
     const menu = makeFakeMenu();
     await fillMenu({
       title: "t",
@@ -875,7 +877,11 @@ describe("fillMenu", () => {
       notify,
       onSettings: noop,
       onRefresh: noop,
-      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+      defaultBrowser: {
+        name: "Firefox",
+        appInfo: defaultAppInfo as unknown as Gio.AppInfo,
+        pkg: FAKE_DEFAULT_BROWSER_PKG,
+      },
       showDefaultBrowserEdit: true,
       onOpenDefaultBrowserPage: noop,
     });
@@ -883,8 +889,34 @@ describe("fillMenu", () => {
 
     row.emit("activate");
 
-    expect(launch).toHaveBeenCalledWith(null, null);
+    expect(defaultAppInfo.launch).toHaveBeenCalledWith(null, null);
     expect(subprocessNew).not.toHaveBeenCalled();
+  });
+
+  it("notifies when the default browser fails to launch", async () => {
+    globalThis.logError = vi.fn();
+    defaultAppInfo.launch.mockImplementationOnce(() => {
+      throw new Error("boom");
+    });
+    const menu = makeFakeMenu();
+    await fillMenu({
+      title: "t",
+      menu,
+      entries: [],
+      notify,
+      onSettings: noop,
+      onRefresh: noop,
+      defaultBrowser: {
+        name: "Firefox",
+        appInfo: defaultAppInfo as unknown as Gio.AppInfo,
+        pkg: FAKE_DEFAULT_BROWSER_PKG,
+      },
+      showDefaultBrowserEdit: true,
+      onOpenDefaultBrowserPage: noop,
+    });
+    (menu.items[1] as FakePopupMenuItem).emit("activate");
+
+    expect(notify).toHaveBeenCalledWith("t", "Failed to launch browser.");
   });
 
   it("omits the whole default-browser row — not just its Edit button — when showDefaultBrowserEdit is false", async () => {
@@ -896,7 +928,11 @@ describe("fillMenu", () => {
       notify,
       onSettings: noop,
       onRefresh: noop,
-      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+      defaultBrowser: {
+        name: "Firefox",
+        appInfo: defaultAppInfo as unknown as Gio.AppInfo,
+        pkg: FAKE_DEFAULT_BROWSER_PKG,
+      },
       showDefaultBrowserEdit: false,
     });
     expect(
@@ -1125,7 +1161,11 @@ describe("fillMenu", () => {
       notify,
       onSettings: noop,
       onRefresh: noop,
-      defaultBrowser: { name: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+      defaultBrowser: {
+        name: "Firefox",
+        appInfo: defaultAppInfo as unknown as Gio.AppInfo,
+        pkg: FAKE_DEFAULT_BROWSER_PKG,
+      },
       showToolbar: false,
     });
 

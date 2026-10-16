@@ -55,3 +55,13 @@ export function launchBrowser({
     return null;
   }
 }
+
+/** Launches an already-resolved app through its .desktop entry, with no argv involved. */
+export function launchAppInfo(info: Gio.AppInfo, title: string, notify: typeof Main.notify): void {
+  try {
+    info.launch(null, null);
+  } catch (e: unknown) {
+    logError(e as object, `[${title}] Failed to launch browser.`);
+    notify(title, "Failed to launch browser.");
+  }
+}

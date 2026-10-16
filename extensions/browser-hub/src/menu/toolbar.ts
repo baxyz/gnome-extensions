@@ -7,7 +7,7 @@ import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "../taxonomy";
 import type { DefaultBrowserInfo } from "../default-browser";
 import {
   getDesktopAppInfo,
-  launchBrowser,
+  launchAppInfo,
   resolveDesktopIcon,
   resolveDesktopId,
 } from "../internal";
@@ -70,8 +70,6 @@ export function buildDefaultBrowserItem({
   closeMenu: () => void;
 }): PopupMenuItem {
   const icon = resolveDesktopIcon(defaultBrowser.pkg);
-  const cmd = defaultBrowser.command;
-  const pkg = defaultBrowser.pkg;
 
   const menuItem = new PopupMenuItem("Launch default browser");
   tooltip(menuItem, `Launch ${defaultBrowser.name}`);
@@ -81,7 +79,7 @@ export function buildDefaultBrowserItem({
   });
   menuItem.insert_child_below(iconWidget, menuItem.label);
   menuItem.connect("activate", () => {
-    launchBrowser({ command: cmd, title, notify, pkg });
+    launchAppInfo(defaultBrowser.appInfo, title, notify);
     closeMenu();
   });
 

@@ -2,16 +2,12 @@ import Gio from "gi://Gio";
 import { guard } from "@helpers4/promise";
 import { PackageManager } from "./taxonomy";
 import type { ResolvedBrowserPkg } from "./taxonomy";
-import {
-  buildBaseCommand,
-  getDesktopAppInfo,
-  resolveDesktopId,
-  type DesktopAppInfo,
-} from "./internal";
+import { getDesktopAppInfo, resolveDesktopId, type DesktopAppInfo } from "./internal";
 
 export type DefaultBrowserInfo = {
   name: string;
-  command: string[];
+  /** Launched as-is: the default handler's own .desktop entry, no argv rebuilt from Exec=. */
+  appInfo: Gio.AppInfo;
   pkg: ResolvedBrowserPkg;
 };
 
@@ -53,9 +49,8 @@ export function getDefaultBrowser(): DefaultBrowserInfo | null {
   const name = appInfo?.get_name();
   const desktopId = appInfo?.get_id();
   const executable = appInfo?.get_executable();
-  if (name && desktopId && executable) {
-    const pkg = detectPkg(desktopId, executable);
-    cachedDefaultBrowser = { name, command: buildBaseCommand(pkg), pkg };
+  if (appInfo && name && desktopId && executable) {
+    cachedDefaultBrowser = { name, appInfo, pkg: detectPkg(desktopId, executable) };
   } else {
     cachedDefaultBrowser = null;
   }

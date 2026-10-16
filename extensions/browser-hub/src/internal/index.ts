@@ -28,4 +28,4 @@ export {
   resolvePkg,
 } from "./pkg";
 export { compareByDefault } from "./sort";
-export { launchBrowser } from "./runner";
+export { launchAppInfo, launchBrowser } from "./runner";
