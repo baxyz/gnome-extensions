@@ -5,7 +5,7 @@ import { PackageManager } from "./taxonomy";
 import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "./taxonomy";
 import type { DefaultBrowserInfo } from "./default-browser";
 import { snapCommonDir } from "./constants/paths.constant";
-import { deleteDirectoryAsync, launchBrowser, pkgKey, writeTextFileAsync } from "./internal";
+import { deleteDirectoryAsync, launch, pkgKey, writeTextFileAsync } from "./internal";
 
 // Ordered by preference when the current default browser isn't itself
 // eligible (see findDonutBrowser). Real Mozilla Gecko builds only — deliberately
@@ -159,26 +159,6 @@ export async function createDonutProfile(pkg: ResolvedBrowserPkg): Promise<strin
   return dir;
 }
 
-function buildDonutCommand(pkg: ResolvedBrowserPkg, profileDir: string): string[] {
-  // -no-remote (not --no-remote): matches the dash style already used for
-  // this same flag elsewhere in this codebase (see browser/firefox.ts).
-  const profileArgs = ["--profile", profileDir, "-no-remote"];
-  switch (pkg.manager) {
-    case PackageManager.Native:
-      return [pkg.binary, ...profileArgs];
-    case PackageManager.Flatpak:
-      // profileDir lives under XDG_RUNTIME_DIR, outside the Flatpak sandbox's
-      // normal visibility — --filesystem grants access for this one launch
-      // only, no change to the browser's own installed manifest.
-      return ["flatpak", "run", `--filesystem=${profileDir}`, pkg.appId, ...profileArgs];
-    case PackageManager.Snap:
-      // profileDir is under this snap's own ~/snap/<name>/common (see
-      // donutProfilesRoot), already inside its confinement — no ad-hoc
-      // grant needed, unlike Flatpak above.
-      return ["snap", "run", pkg.name, ...profileArgs];
-  }
-}
-
 // Cancelled in disable() so no cleanup runs after the extension is gone; a
 // Snap Donut session still open at that point leaves its profile dir behind.
 let cleanupCancellable: Gio.Cancellable | null = null;
@@ -207,11 +187,7 @@ export async function launchDonutBrowser(
   notify: typeof Main.notify,
 ): Promise<void> {
   const profileDir = await createDonutProfile(item.pkg);
-  const subprocess = launchBrowser({
-    command: buildDonutCommand(item.pkg, profileDir),
-    title,
-    notify,
-  });
+  const subprocess = launch({ kind: "donut", pkg: item.pkg, dir: profileDir }, title, notify);
   // Only Snap's profile dir lives outside tmpfs (see donutProfilesRoot) and
   // so is the only one that needs an explicit delete once the browser exits.
   if (item.pkg.manager === PackageManager.Snap && subprocess) {

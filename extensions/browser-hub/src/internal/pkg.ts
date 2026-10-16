@@ -134,18 +134,6 @@ export function filterPresent<T extends { pkg: BrowserPkg; path: string }>(
   return filterAvailable(browsers).filter((b) => pathIsPresent(b.path, test));
 }
 
-/** Returns the base argv for launching this package — append extra args, never string-concatenate. */
-export function buildBaseCommand(pkg: ResolvedBrowserPkg): string[] {
-  switch (pkg.manager) {
-    case PackageManager.Native:
-      return [pkg.binary];
-    case PackageManager.Flatpak:
-      return ["flatpak", "run", pkg.appId];
-    case PackageManager.Snap:
-      return ["snap", "run", pkg.name];
-  }
-}
-
 /**
  * A string identity for a resolved package — equal for two ResolvedBrowserPkg
  * values that name the same actual install (e.g. "Firefox" and "Firefox

@@ -69,8 +69,6 @@ const { parseProfiles: parseFirefoxProfiles } = await import("../src/browser/fir
 const { parseProfiles: parseChromiumProfiles } = await import("../src/browser/chromium");
 const { zenSpaceColor } = await import("../src/browser/zen");
 const { argbToRgb } = await import("@helpers4/color");
-const { buildBaseCommand } = await import("../src/internal/pkg");
-const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 
 describe("firefox profiles.ini parsing", () => {
   it("marks the legacy Default=1 profile as default when there is no Install section", () => {
@@ -252,22 +250,6 @@ describe("chromium Local State parsing", () => {
     expect(() => parseChromiumProfiles(localState)).not.toThrow();
     expect(parseChromiumProfiles(localState)).toEqual([
       { dir: "Default", name: "Person 1", isDefault: false, bgColor: undefined },
-    ]);
-  });
-});
-
-describe("buildBaseCommand", () => {
-  it("returns argv arrays, never a pre-joined string", () => {
-    expect(buildBaseCommand({ manager: PackageManager.Native, binary: "firefox" })).toEqual([
-      "firefox",
-    ]);
-    expect(
-      buildBaseCommand({ manager: PackageManager.Flatpak, appId: "org.mozilla.firefox" }),
-    ).toEqual(["flatpak", "run", "org.mozilla.firefox"]);
-    expect(buildBaseCommand({ manager: PackageManager.Snap, name: "firefox" })).toEqual([
-      "snap",
-      "run",
-      "firefox",
     ]);
   });
 });

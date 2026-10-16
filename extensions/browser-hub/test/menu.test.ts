@@ -4,6 +4,8 @@ import { noop } from "@helpers4/function";
 import { PackageManager } from "../src/taxonomy";
 
 const FAKE_DEFAULT_BROWSER_PKG = { manager: PackageManager.Native, binary: "firefox" } as const;
+// A plain "browser" launch target for fixtures that don't exercise launching.
+const LAUNCH = { kind: "browser", pkg: FAKE_DEFAULT_BROWSER_PKG } as const;
 
 // menu/index.ts imports { launchBrowser } from "./internal", which loads
 // the whole internal/index.ts barrel — including pkg.ts, which imports
@@ -313,7 +315,7 @@ describe("fillMenu", () => {
     await fillMenu({
       title: "t",
       menu,
-      entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
+      entries: [{ label: "Falkon", items: [{ label: "default", launch: LAUNCH }] }],
       notify,
       onSettings: noop,
       onRefresh: noop,
@@ -335,8 +337,8 @@ describe("fillMenu", () => {
           label: "Browsers",
           group: "simple",
           items: [
-            { label: "GNOME Web", command: ["epiphany"] },
-            { label: "qutebrowser", command: ["qutebrowser"] },
+            { label: "GNOME Web", launch: LAUNCH },
+            { label: "qutebrowser", launch: LAUNCH },
           ],
         },
       ],
@@ -366,12 +368,12 @@ describe("fillMenu", () => {
           items: [
             {
               label: "Zen (flatpak)",
-              command: ["flatpak", "run", "app.zen_browser.zen"],
+              launch: LAUNCH,
               pkg: { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" },
             },
             {
               label: "Firefox",
-              command: ["firefox"],
+              launch: LAUNCH,
               pkg: { manager: PackageManager.Native, binary: "firefox" },
             },
           ],
@@ -397,7 +399,7 @@ describe("fillMenu", () => {
     const menu = makeFakeMenu();
     const items = Array.from({ length: 7 }, (_, i) => ({
       label: `Browser ${i}`,
-      command: [`browser${i}`],
+      launch: LAUNCH,
     }));
     await fillMenu({
       title: "t",
@@ -420,7 +422,7 @@ describe("fillMenu", () => {
     const menu = makeFakeMenu();
     const items = Array.from({ length: 55 }, (_, i) => ({
       label: `Browser ${i}`,
-      command: [`browser${i}`],
+      launch: LAUNCH,
     }));
     await fillMenu({
       title: "t",
@@ -444,12 +446,12 @@ describe("fillMenu", () => {
     const menu = makeFakeMenu();
     const simpleItems = Array.from({ length: 48 }, (_, i) => ({
       label: `Browser ${i}`,
-      command: [`browser${i}`],
+      launch: LAUNCH,
     }));
     const profileItems = [
-      { label: "Default", command: ["firefox", "-p", "default"] },
-      { label: "Work", command: ["firefox", "-p", "work"] },
-      { label: "Personal", command: ["firefox", "-p", "personal"] },
+      { label: "Default", launch: LAUNCH },
+      { label: "Work", launch: LAUNCH },
+      { label: "Personal", launch: LAUNCH },
     ];
     await fillMenu({
       title: "t",
@@ -473,7 +475,7 @@ describe("fillMenu", () => {
     const menu = makeFakeMenu();
     const items = Array.from({ length: 7 }, (_, i) => ({
       label: `Browser ${i}`,
-      command: [`browser${i}`],
+      launch: LAUNCH,
     }));
     let live = true;
     // fillMenu awaits a real (short) delay between the Browsers row's lines
@@ -506,7 +508,7 @@ describe("fillMenu", () => {
         {
           label: "Browsers",
           group: "simple",
-          items: [{ label: "Some Browser", command: ["some-browser"] }], // no icon
+          items: [{ label: "Some Browser", launch: LAUNCH }], // no icon
         },
       ],
       notify,
@@ -532,7 +534,7 @@ describe("fillMenu", () => {
     await fillMenu({
       title: "t",
       menu,
-      entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
+      entries: [{ label: "Falkon", items: [{ label: "default", launch: LAUNCH }] }],
       notify,
       onSettings: noop,
       onRefresh: noop,
@@ -547,7 +549,7 @@ describe("fillMenu", () => {
       title: "t",
       menu,
       entries: [
-        { label: "Browsers", group: "simple", items: [{ label: "Firefox", command: ["firefox"] }] },
+        { label: "Browsers", group: "simple", items: [{ label: "Firefox", launch: LAUNCH }] },
       ],
       notify,
       onSettings: noop,
@@ -568,7 +570,7 @@ describe("fillMenu", () => {
       entries: [
         {
           label: "Firefox (snap)",
-          items: [{ label: "default", command: ["firefox"] }],
+          items: [{ label: "default", launch: LAUNCH }],
           icon: fakeGicon,
         },
       ],
@@ -588,7 +590,7 @@ describe("fillMenu", () => {
     await fillMenu({
       title: "t",
       menu,
-      entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
+      entries: [{ label: "Falkon", items: [{ label: "default", launch: LAUNCH }] }],
       notify,
       onSettings: noop,
       onRefresh: noop,
@@ -606,7 +608,7 @@ describe("fillMenu", () => {
       entries: [
         {
           label: "Firefox",
-          items: [{ label: "default", command: ["firefox"], icon: "firefox-symbolic" }],
+          items: [{ label: "default", launch: LAUNCH, icon: "firefox-symbolic" }],
         },
       ],
       notify,
@@ -633,7 +635,7 @@ describe("fillMenu", () => {
           items: [
             {
               label: "Work",
-              command: ["firefox"],
+              launch: LAUNCH,
               icon: "starred-symbolic",
               color: { mode: "badge", fgColor: "#ffffff" },
             },
@@ -662,7 +664,7 @@ describe("fillMenu", () => {
           items: [
             {
               label: "Work",
-              command: ["firefox"],
+              launch: LAUNCH,
               icon: "starred-symbolic",
               color: { mode: "badge", fgColor: "#ffffff", bgColor: "#20123a" },
             },
@@ -694,7 +696,7 @@ describe("fillMenu", () => {
           items: [
             {
               label: "Default",
-              command: ["chromium"],
+              launch: LAUNCH,
               icon: "web-browser-symbolic",
               color: { mode: "dot", bgColor: "rgb(17,34,51)" },
             },
@@ -725,16 +727,16 @@ describe("fillMenu", () => {
           items: [
             {
               label: "default",
-              command: ["zen-browser"],
+              launch: LAUNCH,
               spaces: [
                 {
                   name: "Work",
-                  command: ["zen-browser", "--zen-workspace", "Work"],
+                  launch: LAUNCH,
                   icon: "briefcase-symbolic",
                 },
                 {
                   name: "Untitled",
-                  command: ["zen-browser", "--zen-workspace", "Untitled"],
+                  launch: LAUNCH,
                   icon: "media-record-symbolic",
                 },
               ],
@@ -754,13 +756,21 @@ describe("fillMenu", () => {
     expect((untitledBtn.children[0] as FakeIcon).props.icon_size).toBe(16);
   });
 
-  it("launches the item's command via Gio.Subprocess when a profile menu item is activated", async () => {
+  it("spawns a profile menu item's launch target when activated", async () => {
     const menu = makeFakeMenu();
     await fillMenu({
       title: "t",
       menu,
       entries: [
-        { label: "Firefox", items: [{ label: "default", command: ["firefox", "-P", "default"] }] },
+        {
+          label: "Firefox",
+          items: [
+            {
+              label: "default",
+              launch: { kind: "firefoxProfile", pkg: FAKE_DEFAULT_BROWSER_PKG, profile: "default" },
+            },
+          ],
+        },
       ],
       notify,
       onSettings: noop,
@@ -769,7 +779,7 @@ describe("fillMenu", () => {
 
     const profileItem = menu.items[2] as FakePopupMenuItem;
     profileItem.emit("activate");
-    expect(subprocessNew).toHaveBeenCalledWith(["firefox", "-P", "default"], 0);
+    expect(subprocessNew).toHaveBeenCalledWith(["firefox", "-P", "default", "-no-remote"], 0);
   });
 
   it("launches a 'Browsers' row item via its resolved .desktop file when the guess resolves, not Gio.Subprocess", async () => {
@@ -788,7 +798,7 @@ describe("fillMenu", () => {
           items: [
             {
               label: "Firefox",
-              command: ["firefox"],
+              launch: LAUNCH,
               pkg: { manager: PackageManager.Native, binary: "firefox" },
             },
           ],
@@ -819,7 +829,10 @@ describe("fillMenu", () => {
           items: [
             {
               label: "Epiphany",
-              command: ["epiphany"],
+              launch: {
+                kind: "browser",
+                pkg: { manager: PackageManager.Native, binary: "epiphany" },
+              },
               pkg: { manager: PackageManager.Native, binary: "epiphany" },
             },
           ],
@@ -948,8 +961,8 @@ describe("fillMenu", () => {
       label: "Browsers",
       group: "simple" as const,
       items: [
-        { label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
-        { label: "Chromium", command: ["chromium"] }, // no pkg — must be skipped
+        { label: "Firefox", launch: LAUNCH, pkg: FAKE_DEFAULT_BROWSER_PKG },
+        { label: "Chromium", launch: LAUNCH }, // no pkg — must be skipped
       ],
     };
     const onSetDefaultBrowser = vi.fn();
@@ -998,7 +1011,7 @@ describe("fillMenu", () => {
       {
         label: "Browsers",
         group: "simple" as const,
-        items: [{ label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG }],
+        items: [{ label: "Firefox", launch: LAUNCH, pkg: FAKE_DEFAULT_BROWSER_PKG }],
       },
     ];
     const hasDonutRow = (menu: FakeMenu) =>
@@ -1049,7 +1062,7 @@ describe("fillMenu", () => {
       {
         label: "Browsers",
         group: "simple" as const,
-        items: [{ label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG }],
+        items: [{ label: "Firefox", launch: LAUNCH, pkg: FAKE_DEFAULT_BROWSER_PKG }],
       },
     ];
     const onLaunchDonut = vi.fn();
@@ -1072,7 +1085,7 @@ describe("fillMenu", () => {
     donutRow.emit("activate");
     expect(onLaunchDonut).toHaveBeenCalledWith({
       label: "Firefox",
-      command: ["firefox"],
+      launch: LAUNCH,
       pkg: FAKE_DEFAULT_BROWSER_PKG,
     });
   });
@@ -1082,7 +1095,7 @@ describe("fillMenu", () => {
       {
         label: "Browsers",
         group: "simple" as const,
-        items: [{ label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG }],
+        items: [{ label: "Firefox", launch: LAUNCH, pkg: FAKE_DEFAULT_BROWSER_PKG }],
       },
     ];
 
@@ -1111,10 +1124,10 @@ describe("fillMenu", () => {
         label: "Browsers",
         group: "simple" as const,
         items: [
-          { label: "Firefox", command: ["firefox"], pkg: FAKE_DEFAULT_BROWSER_PKG },
+          { label: "Firefox", launch: LAUNCH, pkg: FAKE_DEFAULT_BROWSER_PKG },
           {
             label: "Zen (flatpak)",
-            command: ["flatpak", "run", "app.zen_browser.zen"],
+            launch: LAUNCH,
             pkg: { manager: PackageManager.Flatpak, appId: "app.zen_browser.zen" },
           },
         ],
@@ -1157,7 +1170,7 @@ describe("fillMenu", () => {
     await fillMenu({
       title: "t",
       menu,
-      entries: [{ label: "Falkon", items: [{ label: "default", command: ["falkon"] }] }],
+      entries: [{ label: "Falkon", items: [{ label: "default", launch: LAUNCH }] }],
       notify,
       onSettings: noop,
       onRefresh: noop,
@@ -1182,7 +1195,9 @@ describe("filterDefaultBrowserPickable", () => {
   it("includes a Snap browser once its guessed desktop ID actually resolves", () => {
     desktopAppInfoNew.mockReturnValue({});
 
-    const result = filterDefaultBrowserPickable([{ label: "Opera", command: [], pkg: SNAP_PKG }]);
+    const result = filterDefaultBrowserPickable([
+      { label: "Opera", launch: LAUNCH, pkg: SNAP_PKG },
+    ]);
 
     expect(result).toHaveLength(1);
     expect(desktopAppInfoNew).toHaveBeenCalledWith("opera_opera.desktop");
@@ -1191,7 +1206,9 @@ describe("filterDefaultBrowserPickable", () => {
   it("excludes a Snap browser whose guessed desktop ID doesn't resolve to anything", () => {
     desktopAppInfoNew.mockReturnValue(null);
 
-    const result = filterDefaultBrowserPickable([{ label: "Opera", command: [], pkg: SNAP_PKG }]);
+    const result = filterDefaultBrowserPickable([
+      { label: "Opera", launch: LAUNCH, pkg: SNAP_PKG },
+    ]);
 
     expect(result).toHaveLength(0);
   });
@@ -1200,7 +1217,7 @@ describe("filterDefaultBrowserPickable", () => {
     desktopAppInfoNew.mockReturnValue({});
 
     const result = filterDefaultBrowserPickable([
-      { label: "Firefox", command: [], pkg: FAKE_DEFAULT_BROWSER_PKG },
+      { label: "Firefox", launch: LAUNCH, pkg: FAKE_DEFAULT_BROWSER_PKG },
     ]);
 
     expect(result).toHaveLength(1);
@@ -1213,7 +1230,7 @@ describe("filterDefaultBrowserPickable", () => {
     const result = filterDefaultBrowserPickable([
       {
         label: "Epiphany",
-        command: [],
+        launch: LAUNCH,
         pkg: { manager: PackageManager.Native, binary: "epiphany" },
       },
     ]);
@@ -1239,7 +1256,7 @@ describe("filterDefaultBrowserPickable", () => {
       },
     ]);
 
-    const result = filterDefaultBrowserPickable([{ label: "Firefox", command: [], pkg }]);
+    const result = filterDefaultBrowserPickable([{ label: "Firefox", launch: LAUNCH, pkg }]);
 
     expect(result).toHaveLength(1);
     expect(desktopAppInfoNew).toHaveBeenCalledWith("rpm-firefox.desktop");
@@ -1247,7 +1264,9 @@ describe("filterDefaultBrowserPickable", () => {
   });
 
   it("never bothers checking a Flatpak's desktop ID — the spec guarantees it exists", () => {
-    const result = filterDefaultBrowserPickable([{ label: "Zen", command: [], pkg: FLATPAK_PKG }]);
+    const result = filterDefaultBrowserPickable([
+      { label: "Zen", launch: LAUNCH, pkg: FLATPAK_PKG },
+    ]);
 
     expect(result).toHaveLength(1);
     expect(desktopAppInfoNew).not.toHaveBeenCalled();
