@@ -179,6 +179,16 @@ function buildDonutCommand(pkg: ResolvedBrowserPkg, profileDir: string): string[
   }
 }
 
+// Cancelled in disable() so no cleanup runs after the extension is gone; a
+// Snap Donut session still open at that point leaves its profile dir behind.
+let cleanupCancellable: Gio.Cancellable | null = null;
+
+/** Cancels pending Snap profile cleanups. Called on extension disable. */
+export function cancelDonutCleanups(): void {
+  cleanupCancellable?.cancel();
+  cleanupCancellable = null;
+}
+
 // Best-effort — a leftover directory under ~/snap/<name>/common/browser-hub-donut
 // is orphaned junk, not a privacy leak (still gets a fresh uuid next launch),
 // so a failure here is logged, not surfaced to the user.
@@ -205,6 +215,14 @@ export async function launchDonutBrowser(
   // Only Snap's profile dir lives outside tmpfs (see donutProfilesRoot) and
   // so is the only one that needs an explicit delete once the browser exits.
   if (item.pkg.manager === PackageManager.Snap && subprocess) {
-    subprocess.wait_async(null, () => void cleanupSnapDonutProfile(profileDir));
+    cleanupCancellable ??= new Gio.Cancellable();
+    subprocess.wait_async(cleanupCancellable, (proc, res) => {
+      try {
+        proc!.wait_finish(res);
+      } catch {
+        return; // cancelled by disable()
+      }
+      void cleanupSnapDonutProfile(profileDir);
+    });
   }
 }

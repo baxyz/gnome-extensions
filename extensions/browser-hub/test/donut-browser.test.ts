@@ -114,6 +114,31 @@ class FakeGioFile {
   }
 }
 
+class FakeCancellable {
+  cancelled = false;
+  cancel() {
+    this.cancelled = true;
+  }
+}
+
+// A Snap Donut subprocess whose exit is triggered by hand via the returned
+// exit(); wait_finish() throws once the cancellable it was given is cancelled,
+// like the real Gio.Subprocess.
+function fakeSnapSubprocess() {
+  let onExit: (() => void) | undefined;
+  const proc = {
+    wait_async(cancellable: FakeCancellable, cb: (p: unknown, res: unknown) => void) {
+      onExit = () => cb(proc, cancellable);
+    },
+    wait_finish(cancellable: FakeCancellable) {
+      if (cancellable.cancelled) throw new Error("Operation was cancelled");
+      return true;
+    },
+  };
+  subprocessNew.mockReturnValueOnce(proc);
+  return { exit: () => onExit?.() };
+}
+
 vi.mock("gi://Gio", () => ({
   default: {
     File: Object.assign(FakeGioFile, { new_for_path: (path: string) => new FakeGioFile(path) }),
@@ -121,6 +146,7 @@ vi.mock("gi://Gio", () => ({
     FileCreateFlags: { NONE: 0 },
     FileQueryInfoFlags: { NONE: 0, NOFOLLOW_SYMLINKS: 1 },
     FileType: FILE_TYPE,
+    Cancellable: FakeCancellable,
     Subprocess: { new: subprocessNew },
     SubprocessFlags: { NONE: 0 },
   },
@@ -133,8 +159,13 @@ vi.mock("gi://GioUnix", () => ({
   default: { DesktopAppInfo: { new: () => null } },
 }));
 
-const { filterDonutEligible, findDonutBrowser, createDonutProfile, launchDonutBrowser } =
-  await import("../src/donut-browser");
+const {
+  filterDonutEligible,
+  findDonutBrowser,
+  createDonutProfile,
+  launchDonutBrowser,
+  cancelDonutCleanups,
+} = await import("../src/donut-browser");
 const { PackageManager } = await import("../src/taxonomy/package-manager.enum");
 
 beforeEach(() => {
@@ -300,7 +331,7 @@ describe("launchDonutBrowser", () => {
   });
 
   it("launches a Snap browser under its own confinement, with no ad-hoc grant needed", async () => {
-    subprocessNew.mockReturnValueOnce({ wait_async: vi.fn() });
+    fakeSnapSubprocess();
 
     await launchDonutBrowser(
       { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
@@ -316,12 +347,7 @@ describe("launchDonutBrowser", () => {
   });
 
   it("deletes a Snap browser's profile dir once the process exits, since it isn't tmpfs-backed", async () => {
-    let onExit: (() => void) | undefined;
-    subprocessNew.mockReturnValueOnce({
-      wait_async: (_cancellable: null, cb: () => void) => {
-        onExit = cb;
-      },
-    });
+    const { exit } = fakeSnapSubprocess();
 
     await launchDonutBrowser(
       { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
@@ -337,7 +363,7 @@ describe("launchDonutBrowser", () => {
     ]);
     tree.set(`${profileDir}/cache`, [{ name: "entry", isDir: false }]);
 
-    onExit?.();
+    exit();
     await vi.waitFor(() => expect(deleted).toContain(profileDir));
 
     // Deleted through GIO, children before their parent — no extra process spawned.
@@ -348,6 +374,21 @@ describe("launchDonutBrowser", () => {
       `${profileDir}/cache`,
       profileDir,
     ]);
+  });
+
+  it("skips the cleanup when the extension was disabled before the browser exited", async () => {
+    const { exit } = fakeSnapSubprocess();
+    await launchDonutBrowser(
+      { label: "Firefox (snap)", command: ["snap"], pkg: FIREFOX_SNAP },
+      "Browser Hub",
+      vi.fn(),
+    );
+
+    cancelDonutCleanups();
+    exit();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(deleted).toEqual([]);
   });
 
   it("never waits for or cleans up a Native/Flatpak browser's tmpfs-backed profile", async () => {
