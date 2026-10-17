@@ -167,7 +167,7 @@ async function resolveZenWorkspaceItem(
     ...space,
     icon: resolveZenIcon(space.icon),
     bgColor: zenSpaceColor(space.theme),
-    launch: { kind: "zenWorkspace", pkg, profile: name, workspace: space.name } as const,
+    launch: { kind: "zenWorkspace", pkg, profile: name, spaceUuid: space.uuid } as const,
   }));
   return {
     label: name,
