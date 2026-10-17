@@ -263,6 +263,12 @@ describe("findDonutBrowser", () => {
     expect(findDonutBrowser(browsers, null)?.label).toBe("IceCat");
   });
 
+  it("treats the Flatpak IceCat as eligible too", () => {
+    const pkg = { manager: PackageManager.Flatpak, appId: "org.gnu.icecat" } as const;
+    const browsers = [{ label: "IceCat (flatpak)", launch: LAUNCH, pkg }];
+    expect(findDonutBrowser(browsers, null)?.label).toBe("IceCat (flatpak)");
+  });
+
   it("returns null when no browser is present at all", () => {
     expect(findDonutBrowser([], null)).toBeNull();
   });

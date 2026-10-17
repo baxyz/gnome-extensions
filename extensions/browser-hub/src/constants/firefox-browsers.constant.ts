@@ -187,6 +187,13 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     path: HOME_DIR + "/.icecat/profiles.ini",
     pkg: { manager: PackageManager.Native, binary: "icecat" },
   },
+  // Fedora's flatpak remote ships it (not Flathub); same ~/.icecat layout, under the app's own ~/.var.
+  {
+    type: BrowserType.Firefox,
+    label: "IceCat (flatpak)",
+    path: HOME_DIR + "/.var/app/org.gnu.icecat/.icecat/profiles.ini",
+    pkg: { manager: PackageManager.Flatpak, appId: "org.gnu.icecat" },
+  },
 
   // Moonchild Productions, Goanna engine.
   {
