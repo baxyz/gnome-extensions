@@ -110,15 +110,20 @@ describe("buildArgv", () => {
       ["firefox", "--profile", "/home/u/.mozilla/firefox/x.work", "-no-remote"],
     ],
     [
-      { kind: "zenWorkspace", pkg: FLATPAK, profile: "Default", workspace: "Work" },
+      {
+        kind: "zenWorkspace",
+        pkg: FLATPAK,
+        profile: "Default",
+        spaceUuid: "{c2d1e574-3f04-4bd5-9721-2e6dd7f1adf9}",
+      },
       [
         "flatpak",
         "run",
         "org.mozilla.firefox",
         "-P",
         "Default",
-        "--zen-workspace",
-        "Work",
+        "--space",
+        "{c2d1e574-3f04-4bd5-9721-2e6dd7f1adf9}",
         "-no-remote",
       ],
     ],
@@ -149,7 +154,7 @@ describe("buildArgv", () => {
   it.each([
     { kind: "firefoxProfile", pkg: NATIVE, profile: "--headless" },
     { kind: "firefoxProfile", pkg: NATIVE, profile: "" },
-    { kind: "zenWorkspace", pkg: NATIVE, profile: "Default", workspace: "-url" },
+    { kind: "zenWorkspace", pkg: NATIVE, profile: "Default", spaceUuid: "-url" },
     { kind: "chromiumProfile", pkg: NATIVE, dir: "--user-data-dir=/tmp" },
     { kind: "falkonProfile", pkg: NATIVE, profile: "-x" },
     { kind: "firefoxProfileDir", pkg: NATIVE, dir: "relative/dir" },

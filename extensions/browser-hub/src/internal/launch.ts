@@ -9,7 +9,7 @@ import { resolveDesktopId } from "./desktop-icon";
 // array per (launch kind, package manager). The only variable parts are:
 // - the browser itself (binary, Flatpak app id, Snap name), always taken
 //   from the constants/*-browsers.constant.ts lists;
-// - profile names, profile paths and Zen workspace names, read from the
+// - profile names, profile paths and Zen workspace UUIDs, read from the
 //   browsers' own files and checked by hasSafeValues() before use.
 
 function browserArgv(pkg: ResolvedBrowserPkg): string[] {
@@ -45,23 +45,14 @@ function firefoxProfileDirArgv(pkg: ResolvedBrowserPkg, dir: string): string[] {
   }
 }
 
-function zenWorkspaceArgv(pkg: ResolvedBrowserPkg, profile: string, workspace: string): string[] {
+function zenWorkspaceArgv(pkg: ResolvedBrowserPkg, profile: string, spaceUuid: string): string[] {
   switch (pkg.manager) {
     case PackageManager.Native:
-      return [pkg.binary, "-P", profile, "--zen-workspace", workspace, "-no-remote"];
+      return [pkg.binary, "-P", profile, "--space", spaceUuid, "-no-remote"];
     case PackageManager.Flatpak:
-      return [
-        "flatpak",
-        "run",
-        pkg.appId,
-        "-P",
-        profile,
-        "--zen-workspace",
-        workspace,
-        "-no-remote",
-      ];
+      return ["flatpak", "run", pkg.appId, "-P", profile, "--space", spaceUuid, "-no-remote"];
     case PackageManager.Snap:
-      return ["snap", "run", pkg.name, "-P", profile, "--zen-workspace", workspace, "-no-remote"];
+      return ["snap", "run", pkg.name, "-P", profile, "--space", spaceUuid, "-no-remote"];
   }
 }
 
@@ -118,7 +109,7 @@ function hasSafeValues(target: LaunchTarget): boolean {
     case "falkonProfile":
       return isSafeName(target.profile);
     case "zenWorkspace":
-      return isSafeName(target.profile) && isSafeName(target.workspace);
+      return isSafeName(target.profile) && isSafeName(target.spaceUuid);
     case "chromiumProfile":
       return isSafeName(target.dir);
     case "firefoxProfileDir":
@@ -138,7 +129,7 @@ export function buildArgv(target: LaunchTarget): string[] | null {
     case "firefoxProfileDir":
       return firefoxProfileDirArgv(target.pkg, target.dir);
     case "zenWorkspace":
-      return zenWorkspaceArgv(target.pkg, target.profile, target.workspace);
+      return zenWorkspaceArgv(target.pkg, target.profile, target.spaceUuid);
     case "chromiumProfile":
       return chromiumProfileArgv(target.pkg, target.dir);
     case "falkonProfile":

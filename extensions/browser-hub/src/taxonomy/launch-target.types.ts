@@ -11,8 +11,8 @@ export type LaunchTarget =
   | { kind: "firefoxProfile"; pkg: ResolvedBrowserPkg; profile: string }
   /** A Firefox-family profile by absolute path (`--profile <dir>`). */
   | { kind: "firefoxProfileDir"; pkg: ResolvedBrowserPkg; dir: string }
-  /** A Zen workspace inside a profile (`-P <profile> --zen-workspace <workspace>`). */
-  | { kind: "zenWorkspace"; pkg: ResolvedBrowserPkg; profile: string; workspace: string }
+  /** A Zen workspace inside a profile, by its UUID (`-P <profile> --space <spaceUuid>`). */
+  | { kind: "zenWorkspace"; pkg: ResolvedBrowserPkg; profile: string; spaceUuid: string }
   /** A Chromium-family profile by its folder name under the user data dir. */
   | { kind: "chromiumProfile"; pkg: ResolvedBrowserPkg; dir: string }
   /** A Falkon profile by name. */

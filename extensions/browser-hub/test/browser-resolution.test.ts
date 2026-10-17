@@ -322,7 +322,7 @@ describe("resolveFirefoxBrowsers", () => {
           kind: "zenWorkspace",
           pkg: expect.objectContaining({ binary: "zen-browser" }),
           profile: "default",
-          workspace: "Work",
+          spaceUuid: "u1",
         },
       },
     ]);
