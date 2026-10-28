@@ -31,23 +31,23 @@ catalogs:
       specifier: npm:@girs/gnome-shell@^50.0.4
       version: 50.0.4
     '@helpers4/array':
-      specifier: ^3.1.7
-      version: 3.1.7
+      specifier: ^3.1.9
+      version: 3.1.9
     '@helpers4/color':
-      specifier: ^3.1.7
-      version: 3.1.7
+      specifier: ^3.1.9
+      version: 3.1.9
     '@helpers4/function':
-      specifier: ^3.1.7
-      version: 3.1.7
+      specifier: ^3.1.9
+      version: 3.1.9
     '@helpers4/guard':
-      specifier: ^3.1.7
-      version: 3.1.7
+      specifier: ^3.1.9
+      version: 3.1.9
     '@helpers4/object':
-      specifier: ^3.1.7
-      version: 3.1.7
+      specifier: ^3.1.9
+      version: 3.1.9
     '@helpers4/promise':
-      specifier: ^3.1.7
-      version: 3.1.7
+      specifier: ^3.1.9
+      version: 3.1.9
     '@types/node':
       specifier: ^26.6.5
       version: 26.6.5
@@ -84,22 +84,22 @@ importers:
     dependencies:
       '@helpers4/array':
         specifier: 'catalog:'
-        version: 3.1.7
+        version: 3.1.9
       '@helpers4/color':
         specifier: 'catalog:'
-        version: 3.1.7
+        version: 3.1.9
       '@helpers4/function':
         specifier: 'catalog:'
-        version: 3.1.7
+        version: 3.1.9
       '@helpers4/guard':
         specifier: 'catalog:'
-        version: 3.1.7
+        version: 3.1.9
       '@helpers4/object':
         specifier: 'catalog:'
-        version: 3.1.7
+        version: 3.1.9
       '@helpers4/promise':
         specifier: 'catalog:'
-        version: 3.1.7
+        version: 3.1.9
       mozlz4:
         specifier: ^0.2.4
         version: 0.2.4
@@ -1049,28 +1049,28 @@ packages:
   '@girs/xlib-2.0@4.1.0':
     resolution: {integrity: sha512-dLV0ObD16/+909MXi41ccYZqeh5G8uvi4uSzaX4H++kgOOA0D81PBacPjxLEEGizbLw/rzf46elwy6OHyjc/8Q==}
 
-  '@helpers4/array@3.1.7':
-    resolution: {integrity: sha512-3BdPg8By57mHsMxK24KaSFHKMbX3r2gvuPleOVOSXt6KjoKfBs3Br9q90uyFYRqu0aO6t/reOWdlMPk6IP/5hQ==}
+  '@helpers4/array@3.1.9':
+    resolution: {integrity: sha512-fv7IiDrBmZH+SthAPT1jCX4U/zF/FwbsQDtvwVh7eE30AunVecvCaZLiVjPsCX3fbcRO60PWs6JFCYwgioPfww==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/color@3.1.7':
-    resolution: {integrity: sha512-MCfTnQH8JfSQJRmCLT6SZwr5QIatKirCiXfdRhrXrh78nu4NeYK7ZJ8DhZQofdBQm5ApUnY/P9NknIbtzvKdOA==}
+  '@helpers4/color@3.1.9':
+    resolution: {integrity: sha512-+mqbKA5wfuwG37X7d6XZiMwarg4qspP4QhI8sr/KAJupbLb+Gn8Cw+odH1+p7ouDmjgw6b2AWz+5CEExSTwdTg==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/function@3.1.7':
-    resolution: {integrity: sha512-l+srU84WVEUYjQ8vlh8g8Bw7COYqrMctdfTjnRyssMhopI8gDuD9mrqP/rWR78UzFJ9obXLLE8ZGObhQhOFrCg==}
+  '@helpers4/function@3.1.9':
+    resolution: {integrity: sha512-kzJDRDG+3yB13CBdKQLCN4bzIVZjfO6HLyU7PEYnMpxICBgG1/ioYUHymQRglbQ91tYNAIkaRL8BO+V4dcS8Eg==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/guard@3.1.7':
-    resolution: {integrity: sha512-Wev1HJ2igWNo9HEmNI2Hx4FhJ7pt/qxWdL/CfIx2DMEGdeI24I1jXMpHiB934Mj4kKdGas9C8XVs5tbk+QFuSg==}
+  '@helpers4/guard@3.1.9':
+    resolution: {integrity: sha512-xC0+iLu+FkANapyjk7Iblfft5Qh3O+SmYXMvAQ8Y+yTHOrUI0xSmOsvHDn+78lN+0z7H51FBd65k0Xw1Fsmmtw==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/object@3.1.7':
-    resolution: {integrity: sha512-NkeMn9hiRgWDqBaDTGgZsF3YnpOZ6U96+WhQkCzkDJ0/O28Fh7JZDcpAG6tprBgE02+NDqvUXszdUEkSqFA2gw==}
+  '@helpers4/object@3.1.9':
+    resolution: {integrity: sha512-fiT16nzOwoha2LKE7e4W+ZbBh2Ky3eEuyu8SSI88x7PR/P11RiUnHeUN4TYhFSFdzUDjiM//iSXlE/yrqD+iAw==}
     engines: {node: '>=26.0.0'}
 
-  '@helpers4/promise@3.1.7':
-    resolution: {integrity: sha512-Q1q/Wnioon261m5BV8RyBr1q5FgawSbRTDn7E4r8JVpJl+2I5rIvLtIna7ecaCNn3pFjB2WNjD1o9iC8IyfdAA==}
+  '@helpers4/promise@3.1.9':
+    resolution: {integrity: sha512-xiJIXdBDnAwIyISdwtWzjeelayHB4FH8DqmDwRh4Df7YS8GMIvWfWrSlj9sxLgDiGcMfxwg+bekk4eM4JW1rGg==}
     engines: {node: '>=26.0.0'}
 
   '@jridgewell/resolve-uri@3.1.2':
@@ -4271,17 +4271,17 @@ snapshots:
       '@girs/gjs': 4.3.0
       '@girs/gobject-2.0': 4.3.0
 
-  '@helpers4/array@3.1.7': {}
+  '@helpers4/array@3.1.9': {}
 
-  '@helpers4/color@3.1.7': {}
+  '@helpers4/color@3.1.9': {}
 
-  '@helpers4/function@3.1.7': {}
+  '@helpers4/function@3.1.9': {}
 
-  '@helpers4/guard@3.1.7': {}
+  '@helpers4/guard@3.1.9': {}
 
-  '@helpers4/object@3.1.7': {}
+  '@helpers4/object@3.1.9': {}
 
-  '@helpers4/promise@3.1.7': {}
+  '@helpers4/promise@3.1.9': {}
 
   '@jridgewell/resolve-uri@3.1.2': {}
 

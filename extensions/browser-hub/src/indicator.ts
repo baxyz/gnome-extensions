@@ -10,8 +10,10 @@ import {
   clearDesktopIconCache,
   clearPathPresenceCache,
   clearPkgResolutionCache,
+  createCancellation,
   resolveDesktopIcon,
 } from "./internal";
+import type { CancellationHandle } from "./internal";
 import { clearDefaultBrowserCache, getDefaultBrowser, setDefaultBrowser } from "./default-browser";
 import type { DefaultBrowserInfo } from "./default-browser";
 import { launchDonutBrowser } from "./donut-browser";
@@ -54,6 +56,10 @@ export class BrowserProfilesIndicator extends Button {
   // superseded build detect that and stop touching a menu a newer _draw()
   // has already cleared and rebuilt.
   private _drawSeq = 0;
+  // Aborted when a newer _draw() supersedes the in-flight one, and on
+  // destroy(): clears fillMenu()'s pending stagger timer immediately rather
+  // than leaving it to run out after disable().
+  private _drawCancellation: CancellationHandle | null = null;
   // null: the browser scan hasn't resolved yet (menu shows a loading row).
   private _lastEntries: ResolvedBrowserEntry[] | null = null;
   // Short messages for whatever failed during the last scan (e.g. a specific
@@ -115,6 +121,8 @@ export class BrowserProfilesIndicator extends Button {
 
   override destroy(): void {
     this._alive = false;
+    this._drawCancellation?.abort();
+    this._drawCancellation = null;
     if (this._menuOpenStateId !== null) {
       this._menuSignals.disconnect(this._menuOpenStateId);
       this._menuOpenStateId = null;
@@ -154,8 +162,12 @@ export class BrowserProfilesIndicator extends Button {
     this._updatePanelIcon(showDefaultBrowserPanelIcon, defaultBrowser);
 
     const drawSeq = ++this._drawSeq;
+    this._drawCancellation?.abort();
+    const cancellation = createCancellation();
+    this._drawCancellation = cancellation;
     fillMenu({
       isLive: () => this._alive && drawSeq === this._drawSeq,
+      signal: cancellation.signal,
       title: this._title,
       menu: this.menu,
       entries: this._lastEntries,

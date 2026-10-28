@@ -2,9 +2,9 @@ import St from "gi://St";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { PopupMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import type { BrowserSpace, ResolvedBrowserItem } from "../taxonomy";
-import { launch } from "../internal";
+import { launch, pause } from "../internal";
+import type { Cancellation } from "../internal";
 import { chunk } from "@helpers4/array";
-import { delay } from "@helpers4/promise";
 import { iconProps, makeIconButton, makeIconRow, safeCssColor, tooltip } from "./shared";
 
 function makeSpaceGroup(
@@ -96,6 +96,7 @@ export async function buildSimpleBrowserRow(
     closeMenu: () => void;
   },
   isLive: () => boolean,
+  signal?: Cancellation,
 ): Promise<PopupMenuItem | null> {
   const row = makeIconRow();
   const container = new St.BoxLayout({
@@ -106,7 +107,7 @@ export async function buildSimpleBrowserRow(
   const lines = chunk(items, BROWSERS_ROW_ITEMS_PER_LINE);
   for (const [index, lineItems] of lines.entries()) {
     if (!isLive()) return null;
-    if (index > 0) await delay(BROWSERS_ROW_LINE_DELAY_MS);
+    if (index > 0 && !(await pause(BROWSERS_ROW_LINE_DELAY_MS, signal))) return null;
     const line = new St.BoxLayout({ style_class: "browser-hub-browsers-line" });
     for (const item of lineItems) {
       const target = item.launch;
