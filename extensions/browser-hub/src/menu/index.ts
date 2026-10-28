@@ -6,7 +6,8 @@ import type { DefaultBrowserInfo } from "../default-browser";
 import { findDonutBrowser, filterDonutEligible } from "../donut-browser";
 import { isEmpty } from "@helpers4/array";
 import { noop } from "@helpers4/function";
-import { delay } from "@helpers4/promise";
+import { pause } from "../internal";
+import type { Cancellation } from "../internal";
 import {
   buildCategorySeparator,
   buildErrorRow,
@@ -36,11 +37,11 @@ const PROFILE_ITEM_BATCH_SIZE = 6;
 const PROFILE_ITEM_BATCH_DELAY_MS = 30;
 
 /** Pauses every `batchSize`-th call — shared across every entry's items, not reset per entry. */
-function makePacer(batchSize: number, delayMs: number): () => Promise<void> {
+function makePacer(batchSize: number, delayMs: number, signal?: Cancellation): () => Promise<void> {
   let count = 0;
   return async () => {
     count++;
-    if (count % batchSize === 0) await delay(delayMs);
+    if (count % batchSize === 0) await pause(delayMs, signal);
   };
 }
 
@@ -89,6 +90,7 @@ export async function fillMenu({
   donutLaunching = false,
   onLaunchDonut = noop,
   isLive = () => true,
+  signal,
   page = "main",
   onOpenDefaultBrowserPage = noop,
   onOpenDonutPage = noop,
@@ -117,6 +119,11 @@ export async function fillMenu({
    * cleared and rebuilt `menu`, so this one must stop touching it.
    */
   isLive?: () => boolean;
+  /**
+   * Aborted when this build is superseded or the extension is disabled —
+   * clears the pending stagger timer instead of letting it run out.
+   */
+  signal?: Cancellation;
   /** "main" is today's whole menu; the other two are a picker sub-page (see menu/shared.ts). */
   page?: MenuPage;
   onOpenDefaultBrowserPage?: () => void;
@@ -231,7 +238,7 @@ export async function fillMenu({
   // profiled entry (only Firefox enabled, say) still gets its header: its
   // label names the family the profile rows below actually belong to.
   const soloSimpleRow = visibleEntries.length === 1 && visibleEntries[0].group === "simple";
-  const paceProfileItem = makePacer(PROFILE_ITEM_BATCH_SIZE, PROFILE_ITEM_BATCH_DELAY_MS);
+  const paceProfileItem = makePacer(PROFILE_ITEM_BATCH_SIZE, PROFILE_ITEM_BATCH_DELAY_MS, signal);
   for (const entry of visibleEntries) {
     // Each entry (and each profile item within one) renders in its own
     // try/catch: unexpected data reaching a widget constructor shouldn't
@@ -249,6 +256,7 @@ export async function fillMenu({
         const row = await buildSimpleBrowserRow(
           { title, items: entry.items, notify, closeMenu },
           isLive,
+          signal,
         );
         if (!isLive()) return;
         if (row) menu.addMenuItem(row);

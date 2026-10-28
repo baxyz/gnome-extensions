@@ -1,3 +1,5 @@
+export { createCancellation, pause } from "./abort";
+export type { Cancellation, CancellationHandle } from "./abort";
 export {
   decoder,
   deleteDirectoryAsync,
