@@ -54,3 +54,23 @@ describe("FIREFOX_BROWSERS snap variant", () => {
     expect(fileReadLink).not.toHaveBeenCalledWith("/snap/firefox/current");
   });
 });
+
+describe("LibreWolf and Tor Browser entries", () => {
+  it("finds LibreWolf's profiles.ini in the nested librewolf/librewolf dir, native and Flatpak", async () => {
+    const { FIREFOX_BROWSERS } = await import("../src/constants/firefox-browsers.constant");
+    const paths = FIREFOX_BROWSERS.filter((b) => b.label.startsWith("LibreWolf")).map(
+      (b) => b.path,
+    );
+    expect(paths).toContain("/home/user/.config/librewolf/librewolf/profiles.ini");
+    expect(paths).toContain(
+      "/home/user/.var/app/io.gitlab.librewolf-community/config/librewolf/librewolf/profiles.ini",
+    );
+  });
+
+  it("lists Tor Browser as a simple browser, never as a profile family", async () => {
+    const { FIREFOX_BROWSERS } = await import("../src/constants/firefox-browsers.constant");
+    const { SIMPLE_BROWSERS } = await import("../src/constants/simple-browsers.constant");
+    expect(FIREFOX_BROWSERS.some((b) => b.label.startsWith("Tor Browser"))).toBe(false);
+    expect(SIMPLE_BROWSERS.filter((b) => b.label.startsWith("Tor Browser"))).toHaveLength(2);
+  });
+});

@@ -258,4 +258,19 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
     label: "Orion Browser (GTK)",
     pkg: { manager: PackageManager.Flatpak, appId: "com.kagi.OrionGtk" },
   },
+
+  // === Tor Browser ===
+  // Installed via torbrowser-launcher. Simple on purpose: the launcher takes no
+  // -P/--profile arguments and the bundle manages its own single profile, so
+  // listing its profiles.ini entries produced launches that never worked.
+  {
+    type: BrowserType.Simple,
+    label: "Tor Browser",
+    pkg: { manager: PackageManager.Native, binary: "torbrowser-launcher" },
+  },
+  {
+    type: BrowserType.Simple,
+    label: "Tor Browser (flatpak)",
+    pkg: { manager: PackageManager.Flatpak, appId: "org.torproject.torbrowser-launcher" },
+  },
 ];

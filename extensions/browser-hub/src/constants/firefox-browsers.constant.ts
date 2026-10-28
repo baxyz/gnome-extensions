@@ -15,9 +15,8 @@ import { HOME_DIR, XDG_CONFIG_HOME, snapCommonDir, snapDataDir } from "./paths.c
  * The "(classic)" label suffix is only added when an XDG variant is ALSO
  * generated (otherwise it's just the plain label) — browsers with only one
  * native path don't need to disambiguate. A few real oddities don't fit this
- * shape at all (Tor Browser's deeply nested path, IceCat's "(classic)" label
- * despite having no XDG sibling yet) and are written out by hand below
- * instead of forced through this generator.
+ * shape at all (IceCat's "(classic)" label despite having no XDG sibling yet)
+ * and are written out by hand below instead of forced through this generator.
  */
 function expandFirefoxVariants(v: {
   label: string;
@@ -28,6 +27,13 @@ function expandFirefoxVariants(v: {
   /** Relative to HOME_DIR, e.g. ".librewolf/profiles.ini". Also used for the Flatpak path. */
   classic?: string;
   flatpakId?: string;
+  /**
+   * Relative to the Flatpak's own XDG config dir (`~/.var/app/<id>/config`),
+   * for apps that moved their profile there instead of the sandbox's home —
+   * added next to the `classic`-mirrored Flatpak path, since only the one that
+   * exists on disk is listed.
+   */
+  flatpakConfig?: string;
   /**
    * relativePath is relative to the snap's own per-user data dir. Set
    * `commonDir` when the snap persists its profile under $SNAP_USER_COMMON
@@ -69,6 +75,14 @@ function expandFirefoxVariants(v: {
       pkg: { manager: PackageManager.Flatpak, appId: v.flatpakId },
     });
   }
+  if (v.flatpakId && v.flatpakConfig) {
+    configs.push({
+      ...common,
+      label: `${v.label} (flatpak)`,
+      path: `${HOME_DIR}/.var/app/${v.flatpakId}/config/${v.flatpakConfig}`,
+      pkg: { manager: PackageManager.Flatpak, appId: v.flatpakId },
+    });
+  }
   if (v.snap) {
     const dataDir = v.snap.commonDir ? snapCommonDir(v.snap.name) : snapDataDir(v.snap.name);
     configs.push({
@@ -100,25 +114,6 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     binary: "firefox-esr",
   }),
 
-  // Tor Browser: installed via torbrowser-launcher. profiles.ini is buried inside the downloaded
-  // bundle, not in ~/.mozilla/ like standard Firefox — doesn't fit expandFirefoxVariants' shape.
-  {
-    type: BrowserType.Firefox,
-    label: "Tor Browser",
-    path:
-      HOME_DIR +
-      "/.local/share/torbrowser/tbb/x86_64/tor-browser/Browser/TorBrowser/Data/Browser/profiles.ini",
-    pkg: { manager: PackageManager.Native, binary: "torbrowser-launcher" },
-  },
-  {
-    type: BrowserType.Firefox,
-    label: "Tor Browser (flatpak)",
-    path:
-      HOME_DIR +
-      "/.var/app/org.torproject.torbrowser-launcher/data/torbrowser/tbb/x86_64/tor-browser/Browser/TorBrowser/Data/Browser/profiles.ini",
-    pkg: { manager: PackageManager.Flatpak, appId: "org.torproject.torbrowser-launcher" },
-  },
-
   ...expandFirefoxVariants({
     label: "Waterfox",
     xdg: "waterfox/profiles.ini",
@@ -129,9 +124,12 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
 
   ...expandFirefoxVariants({
     label: "LibreWolf",
-    xdg: "librewolf/profiles.ini",
+    // LibreWolf nests its profile one level down (librewolf/librewolf/), unlike
+    // Firefox's mozilla/firefox/ — vendor and application name are both "librewolf".
+    xdg: "librewolf/librewolf/profiles.ini",
     classic: ".librewolf/profiles.ini",
     flatpakId: "io.gitlab.librewolf-community",
+    flatpakConfig: "librewolf/librewolf/profiles.ini",
     binary: "librewolf",
   }),
 
