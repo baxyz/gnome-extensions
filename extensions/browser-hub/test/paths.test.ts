@@ -74,3 +74,11 @@ describe("LibreWolf and Tor Browser entries", () => {
     expect(SIMPLE_BROWSERS.filter((b) => b.label.startsWith("Tor Browser"))).toHaveLength(2);
   });
 });
+
+describe("IceCat Flatpak entry", () => {
+  it("reads the profile from ~/.mozilla/icecat, where the Fedora Flatpak keeps it", async () => {
+    const { FIREFOX_BROWSERS } = await import("../src/constants/firefox-browsers.constant");
+    const entry = FIREFOX_BROWSERS.find((b) => b.label === "IceCat (flatpak)");
+    expect(entry?.path).toBe("/home/user/.mozilla/icecat/profiles.ini");
+  });
+});
