@@ -18,7 +18,7 @@ async function listProfileDirs(dirPath: string): Promise<string[]> {
   return entries.filter((e) => e.type === Gio.FileType.DIRECTORY).map((e) => e.name);
 }
 
-/** `errors` collects a short message per failed browser — for a menu banner, not just the log. */
+/** `errors` gets one message per browser that failed. */
 export async function resolveFalkonBrowsers(
   browsers: FalkonBrowserConfig[],
   errors: string[] = [],

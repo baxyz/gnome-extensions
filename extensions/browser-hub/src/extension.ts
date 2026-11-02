@@ -12,8 +12,7 @@ import { ENTRY_AFFECTING_KEYS } from "./settings-keys";
 import { BrowserProfilesIndicator } from "./indicator";
 
 const SPACE_TYPE_VALUES = Object.values(SpaceType);
-// Debounce delay for settings changes (ms) — batch rapid setting changes to avoid
-// redundant menu rebuilds while the user is still adjusting preferences.
+// Groups quick successive settings changes into one menu rebuild.
 const SETTINGS_DEBOUNCE_MS = 50;
 
 export default class BrowserProfilesExtension extends Extension {
@@ -21,9 +20,7 @@ export default class BrowserProfilesExtension extends Extension {
   private _settings: Gio.Settings | null = null;
   private _settingsChangedId = 0;
   private _refreshDebounceId = 0;
-  // Accumulated (OR'd) across every "changed" event coalesced into the
-  // current debounce window, so an entry-affecting key isn't forgotten just
-  // because a later, cosmetic-only key change re-armed the timer after it.
+  // True if any change in the current debounce window needs a rescan.
   private _pendingNeedsRescan = false;
 
   enable() {
@@ -35,10 +32,7 @@ export default class BrowserProfilesExtension extends Extension {
       showChromeFamily: settings.get_boolean("show-chrome-family"),
       showSimpleBrowsers: settings.get_boolean("show-simple-browsers"),
       showProfiledBrowsers: settings.get_boolean("show-profiled-browsers"),
-      // Gschema key is the positive/"show" framing (consistent with every
-      // other switch, default off); BrowserSettings/resolve-all.ts keep the
-      // "collapse" framing since that's what the resolution logic actually
-      // does — inverted right here, at the one boundary between the two.
+      // The setting is "show", the code uses "collapse".
       collapseSingleProfileBrowsers: !settings.get_boolean("show-single-profile-detail"),
       enabledSpaces: new Set(SPACE_TYPE_VALUES.filter((key) => settings.get_boolean(key))),
       profileGroupsMode: settings.get_string("firefox-profile-groups-mode") as ProfileGroupsMode,
@@ -98,17 +92,11 @@ export default class BrowserProfilesExtension extends Extension {
       this._indicator = null;
     }
     cancelDonutCleanups();
-    // GNOME Shell doesn't re-import this module on a plain disable→enable
-    // (only on unload/update/Shell restart), so the module-level pkg/icon
-    // caches would otherwise survive with pre-disable data — bust them so a
-    // browser installed/removed while disabled is picked up on next enable().
+    // Module caches survive disable/enable, so clear them.
     clearPkgResolutionCache();
     clearPathPresenceCache();
     clearDesktopIconCache();
     clearDefaultBrowserCache();
-    // Same reasoning as the caches above: icons/resolve-icon.ts lazily
-    // constructs its own St.IconTheme instance and holds it at module scope
-    // — drop it too, instead of keeping a live GObject around after disable.
     clearIconThemeCache();
   }
 }

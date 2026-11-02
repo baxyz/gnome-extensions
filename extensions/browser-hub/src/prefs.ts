@@ -19,15 +19,12 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       return r;
     };
 
-    // A sub-setting row's "sensitive" is bound to its parent's own value (see
-    // SUB_SETTING_PARENTS in settings-keys.ts) — greyed out and inert
-    // whenever the parent switch is off, regardless of which group either
-    // row is displayed in.
+    // A sub-setting is greyed out while its parent is off.
     const bindToParent = (key: string, row: Adw.SwitchRow): void => {
       settings.bind(SUB_SETTING_PARENTS[key], row, "sensitive", Gio.SettingsBindFlags.GET);
     };
 
-    // -- Panel ------------------------------------------------------------------
+    // Panel
 
     const panelGroup = new Adw.PreferencesGroup({ title: "Panel" });
     panelGroup.add(
@@ -38,7 +35,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       ),
     );
 
-    // -- Toolbar --------------------------------------------------------------
+    // Toolbar
 
     const toolbarGroup = new Adw.PreferencesGroup({ title: "Toolbar" });
     toolbarGroup.add(
@@ -63,7 +60,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
     bindToParent("show-donut-browser", donutBtnRow);
     toolbarGroup.add(donutBtnRow);
 
-    // -- Profiles ---------------------------------------------------------------
+    // Profiles
 
     const profilesGroup = new Adw.PreferencesGroup({ title: "Profiles" });
     profilesGroup.add(
@@ -96,10 +93,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       const mode = PROFILE_GROUP_MODES[profileGroupsToggles.active] ?? "spaces";
       settings.set_string("firefox-profile-groups-mode", mode);
     });
-    // ExtensionPreferences.getSettings() returns a cached, extension-lifetime
-    // Gio.Settings instance shared across every time this window is opened —
-    // without an explicit disconnect, reopening Preferences repeatedly piles
-    // up listeners that each close over a since-disposed profileGroupsToggles.
+    // getSettings() returns the same object every time the window opens.
     const profileGroupsModeChangedId = settings.connect(
       "changed::firefox-profile-groups-mode",
       () => {
@@ -126,7 +120,7 @@ export default class BrowserHubPreferences extends ExtensionPreferences {
       ),
     );
 
-    // -- Browsers ---------------------------------------------------------------
+    // Browsers
 
     const browsersGroup = new Adw.PreferencesGroup({ title: "Browsers" });
     browsersGroup.add(

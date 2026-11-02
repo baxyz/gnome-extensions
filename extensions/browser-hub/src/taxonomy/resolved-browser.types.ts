@@ -2,30 +2,18 @@ import type Gio from "gi://Gio";
 import type { ResolvedBrowserPkg } from "./browser-package.types";
 import type { LaunchTarget } from "./launch-target.types";
 
-/**
- * How a profile item's own color should be presented, if it has one at all —
- * absent means no color data (Falkon, plain Firefox profiles).
- */
-// fgColor tints the icon glyph itself; bgColor (if known) adds a colored pill
-// behind it. bgColor alone (no fgColor) would tint an icon-shaped hole in the
-// pill using the pill's own color — illegible — so buildProfileMenuItem
-// (menu/browser-rows.ts) always renders fgColor as the tint and bgColor
-// only as the pill.
+/** How a profile's color is shown. Absent when it has none. */
+// fgColor tints the icon; bgColor is the pill behind it.
 export type ColorPresentation =
   | { mode: "badge"; fgColor?: string; bgColor?: string } // Firefox Profile Groups
   | { mode: "dot"; bgColor: string }; // rendered as a separate dot after the label (Chromium)
 
-/**
- * Space shown as an icon button nested under a profile item (Zen workspace or
- * Firefox Profile Groups member). Unlike ResolvedBrowserItem, icon is
- * required: the resolvers in src/icons/ always resolve a space's icon
- * to a real name or the neutral dot fallback, never leaving it unset.
- */
+/** A space button under a profile (Zen workspace or Profile Groups member). Always has an icon. */
 export type BrowserSpace = {
   icon: string;
-  /** CSS foreground color string */
+  /** CSS color */
   fgColor?: string;
-  /** CSS background color string */
+  /** CSS color */
   bgColor?: string;
   name: string;
   launch: LaunchTarget;
@@ -34,42 +22,26 @@ export type BrowserSpace = {
 
 export type ResolvedBrowserItem = {
   label: string;
-  /** What activating this item launches (see internal/launch.ts). */
   launch: LaunchTarget;
   /**
-   * In a family entry (Firefox/Chromium/Falkon): a GNOME/Adwaita icon name
-   * for a per-profile identity (Firefox Profile Groups avatars — see
-   * src/icons/), or undefined — the browser's own icon is never used as a
-   * per-item fallback here, it's shown once on the entry instead (see
-   * ResolvedBrowserEntry.icon below). In the "simple" row, each item IS a
-   * distinct browser, so it carries that browser's own real icon directly
-   * (a Gio.Icon fetched from its .desktop file).
+   * In a family: the profile's avatar icon, if any. In the "simple" row:
+   * the browser's own icon.
    */
   icon?: string | Gio.Icon;
   isDefault?: boolean;
-  /** Sub-entries shown as icon buttons: Zen workspaces or Firefox profile groups */
+  /** Zen workspaces or Firefox Profile Groups members */
   spaces?: BrowserSpace[];
   color?: ColorPresentation;
-  /**
-   * Only set on "simple" row items (see resolveBrowsersRow) — lets the
-   * default-browser picker call setDefaultBrowser(pkg) on the exact browser
-   * identity a row represents. Absent on family entries' profile items,
-   * where "default browser" isn't a meaningful per-profile concept.
-   */
+  /** Only on "simple" row items, for the default-browser picker. */
   pkg?: ResolvedBrowserPkg;
 };
 
 export type ResolvedBrowserEntry = {
-  /** Browser name, used as the menu section label */
+  /** Section label */
   label: string;
   items: ResolvedBrowserItem[];
-  /** "simple" groups all profile-less browsers into a single icon-button row */
+  /** "simple" is the Browsers row */
   group?: "simple";
-  /**
-   * The browser's own real icon (or a same-named symbolic fallback), fetched
-   * via src/internal/desktop-icon.ts — shown once next to the section label
-   * instead of being repeated on every profile item. Absent for the
-   * "simple" row, which aggregates many different browsers.
-   */
+  /** The browser's icon, shown next to the section label. Absent for the Browsers row. */
   icon?: string | Gio.Icon;
 };

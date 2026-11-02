@@ -6,12 +6,7 @@ import { decoder, logIfUnexpected, pathIsPresent, readFileAsync } from "../inter
 
 type ZenSessions = { spaces?: ZenSpaceData[] };
 
-/**
- * Zen's own workspace accent color — a "gradient" theme's colors, one of
- * which is flagged primary (falls back to the first if none is). Only
- * "gradient" is understood; any other/future theme type yields no color
- * rather than a guessed one.
- */
+/** The primary color of a "gradient" theme. Other theme types give no color. */
 export function zenSpaceColor(theme: ZenSpaceData["theme"]): string | undefined {
   if (theme?.type !== "gradient" || !theme.gradientColors?.length) return undefined;
   const primary = theme.gradientColors.find((g) => g.isPrimary) ?? theme.gradientColors[0];
@@ -24,10 +19,7 @@ function readArchive(archivePath: string): Promise<ZenSpaceData[]> {
     .then((contents) => {
       const json = decoder.decode(decodeMozLz4(contents));
       const data = safeJsonParse<ZenSessions>(json);
-      // A crash mid-save can leave valid JSON with the wrong shape for
-      // "spaces" (e.g. an object instead of an array) — Array.isArray guards
-      // against that propagating into an unguarded .map() downstream and
-      // crashing this Zen install's whole profile resolution.
+      // A file cut mid-write can still be valid JSON of the wrong shape.
       return Array.isArray(data?.spaces) ? data.spaces : [];
     })
     .catch((e: unknown) => {
@@ -36,7 +28,7 @@ function readArchive(archivePath: string): Promise<ZenSpaceData[]> {
     });
 }
 
-/** Reads the Zen spaces for a given profile directory. Returns [] if absent or unreadable. */
+/** The Zen workspaces of a profile, or [] if there are none. */
 export async function readZenSpaces(profileDir: string): Promise<ZenSpaceData[]> {
   const archivePath = `${profileDir}/zen-sessions.jsonlz4`;
   if (!pathIsPresent(archivePath, GLib.FileTest.EXISTS)) return [];

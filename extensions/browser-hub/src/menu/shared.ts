@@ -13,31 +13,14 @@ import { isCssColor } from "@helpers4/guard";
 import { PackageManager } from "../taxonomy";
 import type { ResolvedBrowserItem, ResolvedBrowserPkg } from "../taxonomy";
 
-// Delay before a hovered button's tooltip appears — long enough that
-// sweeping the cursor across several icon buttons in the "Browsers" row
-// doesn't flash a tooltip for each one on the way to the button actually
-// being aimed at.
+// Long enough not to flash a tooltip while the pointer crosses a row of icons.
 const TOOLTIP_HOVER_DELAY_MS = 400;
 // Gap between the actor's bottom edge and the tooltip label below it.
 const TOOLTIP_GAP_PX = 6;
 
 /**
- * St has no built-in tooltip support to hook into — confirmed against a
- * real St.Button's full GObject property list (89 properties, nothing
- * named "tooltip" or similar) and against GNOME Shell's own shipped
- * gresource bundle (no "tooltip" anywhere in its CSS or JS). The previous
- * version of this function set a `tooltip_text` property that doesn't
- * exist on any St type; GJS silently accepts an assignment to an unknown
- * property as an inert plain JS expando, so every tooltip in this
- * extension was a no-op with no error to notice.
- *
- * This hand-rolled version shows a small floating label after a hover
- * delay, styled with GNOME Shell's own "dash-label" class — the Dash's own
- * app-name tooltip, reused here for the same rounded dark pill in both
- * light/dark themes with no CSS of our own to maintain. Added to
- * Main.layoutManager.uiGroup, not as a child of `actor` itself: a popup
- * menu clips its own content to its bounds, which a child tooltip would be
- * clipped by too.
+ * St has no tooltips. This shows a "dash-label" (the Dash's own tooltip
+ * style) after a hover delay, added to uiGroup so the menu doesn't clip it.
  */
 export function tooltip(actor: St.Widget, text: string): void {
   let label: St.Label | undefined;
@@ -59,12 +42,7 @@ export function tooltip(actor: St.Widget, text: string): void {
     clearTimer();
     timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, TOOLTIP_HOVER_DELAY_MS, () => {
       timeoutId = 0;
-      // Guards against the row closing/being destroyed during the delay
-      // (e.g. clicking it fires closeMenu() before this timer runs) — an
-      // unmapped actor's transformed position/size both read as (0, 0),
-      // which used to plant the tooltip in the top-left corner with nothing
-      // left alive to ever hide it (leave-event never fires for an actor
-      // the pointer isn't over anymore).
+      // The row may have closed during the delay.
       if (!actor.mapped) return GLib.SOURCE_REMOVE;
       label = new St.Label({ style_class: "dash-label", text });
       Main.layoutManager.uiGroup.add_child(label);
@@ -75,61 +53,35 @@ export function tooltip(actor: St.Widget, text: string): void {
     });
   });
   actor.connect("leave-event", hide);
-  // Not "clicked": this runs on both St.Button rows and PopupMenuItem rows
-  // (see toolbar.ts), and PopupMenuItem has no "clicked" signal at all — only
-  // "activate", which St.Button doesn't have either. "button-press-event" is
-  // the one low-level Clutter event both reactive actors emit.
+  // Works on both St.Button and PopupMenuItem, unlike clicked/activate.
   actor.connect("button-press-event", hide);
   actor.connect("destroy", hide);
-  // Belt-and-suspenders alongside the mapped-check above: catches the row
-  // becoming unmapped *after* the label is already showing (e.g. the menu
-  // closes while a tooltip is up) — leave-event doesn't fire for an actor
-  // that's no longer part of the visible scene, so nothing else would.
+  // leave-event doesn't fire once the actor is unmapped.
   actor.connect("notify::mapped", () => {
     if (!actor.mapped) hide();
   });
 }
 
-// Firefox profile theme colors come straight from a SQLite column (see
-// firefox-spaces.ts) with no format guarantee — isCssColor() guards against a
-// crafted value smuggling extra declarations into set_style()'s CSS string.
+// Profile colors come from a SQLite file: never pass an unchecked value to set_style().
 export function safeCssColor(color: string | undefined): string | undefined {
   return isCssColor(color) ? color : undefined;
 }
 
-// Firefox Profile Groups avatars and Zen icons are GNOME/Adwaita icon names
-// (icon_name); a browser's own icon fetched from its .desktop file (see
-// internal/desktop-icon.ts) is a real Gio.Icon (gicon) instead.
 export function iconProps(icon: string | Gio.Icon): { icon_name: string } | { gicon: Gio.Icon } {
   return typeof icon === "string" ? { icon_name: icon } : { gicon: icon };
 }
 
-// resolveDesktopIcon() ends up undefined fairly often (a wrong desktopId
-// guess, or an Icon= name absent from the current theme) — same fallback
-// name the default-browser button and panel icon already use elsewhere.
 const GENERIC_BROWSER_ICON_NAME = "web-browser-symbolic";
 
-// Package-manager accent, keyed to the CSS classes in stylesheet.css. Native
-// has no accent — it's the unmarked default. An earlier version of this
-// indicator overlaid a small badge in the icon's corner (first as a
-// composited Gio.EmblemedIcon, later as a CSS background-image on a
-// BinLayout-positioned sibling widget) — both approaches turned out
-// unreliable in practice (invisible, mis-positioned, or hidden behind the
-// icon depending on GNOME version/theme). A border on the button itself
-// needs none of that overlay/alignment machinery, so it can't drift out of
-// position the same way.
+// Border accent per package manager (see stylesheet.css). Native has none.
 const MANAGER_BTN_CSS_CLASSES: Partial<Record<PackageManager, string>> = {
   [PackageManager.Flatpak]: "browser-hub-browser-btn--flatpak",
   [PackageManager.Snap]: "browser-hub-browser-btn--snap",
 };
 
 /**
- * `badgeManager` is only meaningful for the "Browsers" row: it's the only
- * place an icon is shown with no visible text label next to it (a tooltip
- * only, see `tooltip()` below) — everywhere else that shows a
- * package-manager-specific icon already has a "(flatpak)"/"(snap)" label
- * suffix doing the same disambiguation, so an accent there would be
- * redundant.
+ * `badgeManager` is for the Browsers row, where icons have no text label.
+ * Elsewhere the "(flatpak)"/"(snap)" suffix already says it.
  */
 export function makeIconButton(
   label: string,
@@ -155,14 +107,13 @@ export function makeIconButton(
   return btn;
 }
 
-/** Empty, non-reactive row used to host the toolbar and the "Browsers" quick-launch row. */
+/** Empty row that hosts a row of buttons. */
 export function makeIconRow(): PopupMenuItem {
   const row = new PopupMenuItem("", { reactive: false, can_focus: false });
   row.label.hide();
   return row;
 }
 
-/** Placeholder row shown while the browser scan is still running. */
 export function buildLoadingRow(): PopupMenuItem {
   const row = new PopupMenuItem("Loading browsers…", { reactive: false });
   const spinner = new Spinner(16, { animate: true, hideOnStop: false });
@@ -171,7 +122,6 @@ export function buildLoadingRow(): PopupMenuItem {
   return row;
 }
 
-/** Short, non-selectable banner for what failed during the last scan — see resolve-all.ts's `errors`. */
 export function buildErrorRow(errors: string[]): PopupMenuItem {
   const row = new PopupMenuItem(`Problem: couldn't list ${errors.join(", ")}`, { reactive: false });
   row.label.style_class = "browser-hub-error-label";
@@ -180,14 +130,12 @@ export function buildErrorRow(errors: string[]): PopupMenuItem {
   return row;
 }
 
-/** Shown when fillMenu() truncates rows/icons past MAX_ICONS_PER_PASS. */
 export function buildTruncatedRow(hiddenCount: number): PopupMenuItem {
   return new PopupMenuItem(`…and ${hiddenCount} more hidden (see Settings to narrow this down)`, {
     reactive: false,
   });
 }
 
-/** Builds a category separator, with the browser's own icon before the label when known. */
 export function buildCategorySeparator(
   label: string,
   icon: string | Gio.Icon | undefined,
@@ -204,16 +152,10 @@ export function buildCategorySeparator(
   return separator;
 }
 
-// -- Sub-pages (default-browser/Donut pickers) -------------------------------
-//
-// fillMenu()'s `page` param swaps the whole menu content for one of these
-// instead of expanding a PopupSubMenuMenuItem inline: the outer PopupMenu
-// has no scroll capability of its own (PopupMenuBase.box is a plain
-// St.BoxLayout), so an inline-expanded list can still push everything below
-// it off-screen even though GNOME's own PopupSubMenu.actor is itself an
-// St.ScrollView. A full swap has nothing below it to push.
+// Sub-pages replace the whole menu instead of expanding inline: the
+// popup menu doesn't scroll, so a long inline list would push the rest
+// off-screen.
 
-/** Back-chevron + title row — the only content above a sub-page's picker list. */
 export function buildSubPageHeader(title: string, onBack: () => void): PopupMenuItem {
   const row = makeIconRow();
   const content = new St.BoxLayout({ style_class: "browser-hub-subpage-header" });
@@ -221,8 +163,6 @@ export function buildSubPageHeader(title: string, onBack: () => void): PopupMenu
     can_focus: true,
     accessible_name: "Back",
     style_class: "button browser-hub-toolbar-btn",
-    // The button's own padding makes it taller than the label next to it —
-    // St.BoxLayout only centers a child when the child asks for it itself.
     y_align: Clutter.ActorAlign.CENTER,
   });
   backBtn.set_child(new St.Icon({ icon_name: "go-previous-symbolic", icon_size: 16 }));
@@ -236,12 +176,6 @@ export function buildSubPageHeader(title: string, onBack: () => void): PopupMenu
 
 const PICKER_ROW_ICON_SIZE = 16;
 
-/**
- * One row per pickable browser — icon + label, activating `onPick` with the
- * whole item (not just its pkg): the default-browser page only needs
- * item.pkg, but Donut's onLaunchDonut needs the whole item, so this shape
- * serves both.
- */
 export function buildPickerRow(
   item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg },
   onPick: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) => void,
@@ -255,13 +189,7 @@ export function buildPickerRow(
   return row;
 }
 
-/**
- * Wraps `rows` in a height-capped, scrollable section instead of letting
- * them grow the menu without bound — same idea as Clipboard Indicator's own
- * scrollable history list: St.ScrollView (overlay_scrollbars so the
- * scrollbar doesn't eat layout width) around a PopupMenuSection, with the
- * actual height cap set in stylesheet.css.
- */
+/** Scrollable list; its max height is set in stylesheet.css. */
 export function buildScrollablePickerList(rows: PopupMenuItem[]): PopupMenuItem {
   const row = makeIconRow();
   const section = new PopupMenuSection();

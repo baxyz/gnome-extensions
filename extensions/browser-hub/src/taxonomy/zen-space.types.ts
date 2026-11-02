@@ -1,16 +1,16 @@
-/** One entry of ZenSpaceData["theme"]["gradientColors"] — an RGB triple plus which one is primary. */
+/** One color of a Zen gradient theme. */
 export type ZenGradientColor = {
   c: [number, number, number];
   isPrimary?: boolean;
 };
 
-/** Raw space data as stored in zen-sessions.jsonlz4 */
+/** A workspace as stored in zen-sessions.jsonlz4 */
 export type ZenSpaceData = {
   uuid: string;
   name: string;
   /** chrome://browser/skin/zen-icons/selectable/<name>.svg */
   icon: string;
-  /** Zen's own workspace accent-color theme — only "gradient" is currently understood. */
+  /** Only "gradient" is supported. */
   theme?: {
     type?: string;
     gradientColors?: ZenGradientColor[];

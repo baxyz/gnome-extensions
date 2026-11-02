@@ -6,8 +6,7 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   {
     type: BrowserType.Simple,
     label: "GNOME Web",
-    // Desktop file is "org.gnome.Epiphany.desktop" (GNOME's reverse-DNS app
-    // id), not "epiphany.desktop" — the binary name doesn't match here.
+    // The desktop file doesn't follow the binary name.
     pkg: {
       manager: PackageManager.Native,
       binary: "epiphany",
@@ -150,8 +149,7 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   },
 
   // === Vieb (Vim-Inspired Electron Browser) ===
-  // Single userData folder (~/.config/Vieb), not Chrome's multi-profile
-  // Local State — doesn't fit BrowserType.Chromium's detection shape.
+  // One profile in ~/.config/Vieb, not Chromium's Local State.
   {
     type: BrowserType.Simple,
     label: "Vieb",
@@ -164,8 +162,7 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   },
 
   // === Flow Browser (Electron + Chromium, Arc/Zen-inspired) ===
-  // Same reasoning as Vieb above: own single userData folder, not Chrome's
-  // multi-profile Local State.
+  // Same as Vieb.
   {
     type: BrowserType.Simple,
     label: "Flow Browser",
@@ -207,8 +204,8 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
     pkg: { manager: PackageManager.Snap, name: "mosaic" },
   },
 
-  // === Chameleon (Zac Browser) — accessibility browser for autistic users ===
-  // ZAC Browser itself shut down 2026-04-02.
+  // === Chameleon (Zac Browser) ===
+  // ZAC Browser shut down 2026-04-02.
   {
     type: BrowserType.Simple,
     label: "Chameleon (Zac Browser)",
@@ -230,8 +227,8 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
     pkg: { manager: PackageManager.Snap, name: "beaker-browser" },
   },
 
-  // === Links (Twibright Labs' original hybrid text/graphics browser) ===
-  // Distinct upstream project from Links2/ELinks above.
+  // === Links (Twibright Labs) ===
+  // Not Links2 nor ELinks.
   {
     type: BrowserType.Simple,
     label: "Links (snap)",
@@ -239,15 +236,8 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   },
 
   // === Orion Browser (Kagi, WebKit) ===
-  // Not on Flathub — installed from Kagi's own remote
-  // (flatpak.orionbrowser.com/orion-beta.flatpakrepo). That repo currently
-  // serves two distinct, actively updated app ids side by side; both listed
-  // since it's unclear which (if either) is being phased out.
-  // Kagi's own docs describe a real Profiles feature, but every
-  // screenshot/instruction is macOS-specific (Dock icons, "File > Profiles"
-  // menu) and the Linux beta explicitly still lacks other desktop-parity
-  // features (extensions, Kagi Sync) — Simple until Linux profile storage is
-  // confirmed and documented somewhere.
+  // From Kagi's own flatpak remote, which ships both app ids. No profiles
+  // on Linux yet.
   {
     type: BrowserType.Simple,
     label: "Orion Browser",
@@ -260,9 +250,7 @@ export const SIMPLE_BROWSERS: SimpleBrowserConfig[] = [
   },
 
   // === Tor Browser ===
-  // Installed via torbrowser-launcher. Simple on purpose: the launcher takes no
-  // -P/--profile arguments and the bundle manages its own single profile, so
-  // listing its profiles.ini entries produced launches that never worked.
+  // torbrowser-launcher takes no profile argument.
   {
     type: BrowserType.Simple,
     label: "Tor Browser",

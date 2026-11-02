@@ -23,7 +23,6 @@ import { readFirefoxSelectableProfiles, type FirefoxSelectableProfile } from "./
 import { readZenSpaces, zenSpaceColor } from "./zen";
 import { resolveFirefoxIcon, resolveZenIcon, type IconContext } from "../icons";
 
-/** Represents a single profile from Firefox's profiles.ini file. */
 export type ProfileEntry = {
   name: string;
   dir: string;
@@ -31,19 +30,11 @@ export type ProfileEntry = {
   isDefault: boolean;
 };
 
-/**
- * Parses Firefox's profiles.ini content into ProfileEntry objects.
- * Handles both legacy Default=1 flags and modern [InstallXXXX] Default=path sections.
- * Modern sections take precedence as they track per-installation defaults.
- */
+/** Parses profiles.ini. An [InstallXXXX] Default= wins over the legacy Default=1. */
 export function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
   const sections = content.split(/^\[/m).slice(1);
 
-  // Firefox 67+ (profile-per-install) tracks each installation's default profile
-  // in a separate [InstallXXXXXXXX] section (Default=<relative path>), since
-  // several installs (release/beta/ESR) can share one profiles.ini. When present,
-  // this is the source of truth; the legacy per-profile Default=1 flag can be
-  // stale or absent on those installs.
+  // Firefox 67+ records each install's default in an [InstallXXXX] section.
   const installDefaultPaths = new Set(
     sections
       .filter((section) => section.startsWith("Install"))
@@ -68,10 +59,7 @@ export function parseProfiles(content: string, iniDir: string): ProfileEntry[] {
   });
 }
 
-/**
- * Reads and parses a profiles.ini file from disk.
- * Returns empty array on error (file not found, permission denied, etc.).
- */
+/** The profiles listed in a profiles.ini, or [] if it can't be read. */
 function readProfiles(path: string): Promise<ProfileEntry[]> {
   const iniDir = GLib.path_get_dirname(path);
   return readTextFileAsync(path)
@@ -82,14 +70,7 @@ function readProfiles(path: string): Promise<ProfileEntry[]> {
     });
 }
 
-/**
- * Firefox theme colors only ever render as an icon badge, never a dot (that's
- * Chromium-only). themeBg and themeFg are independently-optional SQLite
- * columns — pass both through as-is; buildProfileMenuItem (menu/browser-rows.ts)
- * always uses fgColor as the icon tint (bgColor alone would tint the icon
- * with what's meant to be a background hue, illegible on a dark popup) and
- * bgColor as the pill behind it, when present.
- */
+/** Firefox colors are shown as a badge: fg tints the icon, bg is the pill behind it. */
 function toBadgeColor(sp: FirefoxSelectableProfile): ColorPresentation | undefined {
   return sp.themeFg || sp.themeBg
     ? { mode: "badge", fgColor: sp.themeFg, bgColor: sp.themeBg }
@@ -115,7 +96,7 @@ function spColors(sp: FirefoxSelectableProfile, context: IconContext) {
   return { icon: resolveFirefoxIcon(sp.avatar, "profile"), color: toBadgeColor(sp) };
 }
 
-/** "profiles" mode: each selectable profile becomes its own top-level entry. */
+/** "profiles" mode: one entry per selectable profile. */
 function resolveProfileGroupsAsFlatItems(
   selectable: FirefoxSelectableProfile[],
   isDefault: boolean,
@@ -125,13 +106,13 @@ function resolveProfileGroupsAsFlatItems(
   return selectable.map((sp) => ({
     label: sp.name,
     launch: { kind: "firefoxProfileDir", pkg, dir: sp.dir },
-    // Mark default only on the sp whose folder matches this toolkit profile
+    // Default only for the profile whose folder matches the toolkit profile.
     isDefault: isDefault && GLib.path_get_basename(sp.dir) === folderBasename,
     ...spColors(sp, "profile"),
   }));
 }
 
-/** "spaces" mode: nest selectable profiles as space buttons under one item. */
+/** "spaces" mode: selectable profiles as space buttons under one entry. */
 function resolveProfileGroupsAsSpaces(
   name: string,
   selectable: FirefoxSelectableProfile[],
@@ -147,8 +128,7 @@ function resolveProfileGroupsAsSpaces(
       spaces: selectable.map((sp) => ({
         name: sp.name,
         launch: { kind: "firefoxProfileDir", pkg, dir: sp.dir },
-        // Mark default only on the sp whose folder matches this toolkit
-        // profile — same comparison as resolveProfileGroupsAsFlatItems.
+        // Same rule as in resolveProfileGroupsAsFlatItems.
         isDefault: GLib.path_get_basename(sp.dir) === folderBasename,
         ...spColors(sp, "space"),
       })),
@@ -156,7 +136,7 @@ function resolveProfileGroupsAsSpaces(
   ];
 }
 
-/** A profile with real Zen workspaces and no Profile Groups match — reads its zen-sessions.jsonlz4. */
+/** A profile with Zen workspaces, read from its zen-sessions.jsonlz4. */
 async function resolveZenWorkspaceItem(
   name: string,
   dir: string,
@@ -177,7 +157,6 @@ async function resolveZenWorkspaceItem(
   };
 }
 
-/** A profile with neither Profile Groups nor Zen workspaces. */
 function resolvePlainProfileItem(
   name: string,
   isDefault: boolean,
@@ -191,13 +170,8 @@ function resolvePlainProfileItem(
 }
 
 /**
- * Resolves a single toolkit profile to one or more menu items.
- *
- * Precedence when a profile has BOTH a Firefox Profile Groups match AND real
- * Zen workspaces: Profile Groups wins and the Zen workspaces are dropped —
- * the menu has one "spaces" slot per item, so the two can't both be shown.
- * This is a deliberate choice (not an accident of branch ordering), logged
- * so it's visible if it ever surprises someone.
+ * Menu items for one toolkit profile. With both Profile Groups and Zen
+ * workspaces, Profile Groups wins: an item has a single row of spaces.
  */
 async function resolveOneProfile(
   { name, dir, folderBasename, isDefault }: ProfileEntry,
@@ -234,18 +208,10 @@ const DEFAULT_FIREFOX_OPTIONS: FirefoxOptions = {
 };
 
 /**
- * Resolves Firefox-family browsers (Firefox, LibreWolf, Waterfox, Floorp, Zen, etc.)
- * and their profiles.
- *
- * Profile Groups (Firefox 128+) handling depends on profileGroupsMode:
- * - "profiles": Each selectable profile becomes its own top-level menu entry
- * - "spaces": Selectable profiles are nested as space buttons under the matched profile
- * - "off": Firefox Profile Groups are ignored entirely
- *
- * Zen Browser workspaces are included when enabledSpaces has ZenWorkspaces and
- * the browser config has spaceType === SpaceType.ZenWorkspaces.
+ * Firefox-family browsers and their profiles. `profileGroupsMode` decides
+ * how Profile Groups (Firefox 128+) are shown. `errors` gets one message
+ * per browser that failed.
  */
-/** `errors` collects a short message per failed browser — for a menu banner, not just the log. */
 export async function resolveFirefoxBrowsers(
   browsers: FirefoxBrowserConfig[],
   { enabledSpaces, profileGroupsMode }: FirefoxOptions = DEFAULT_FIREFOX_OPTIONS,
@@ -265,12 +231,7 @@ export async function resolveFirefoxBrowsers(
               )
             : new Map<string, FirefoxSelectableProfile[]>();
 
-        // A Profile Groups member can itself be independently listed in
-        // profiles.ini as its own toolkit profile. If so, selectableMap maps
-        // BOTH toolkit profiles to the exact same selectable array (see
-        // firefox-spaces.ts) — render that group once, from whichever toolkit
-        // profile is encountered first, not once per toolkit profile that
-        // happens to belong to it.
+        // Two toolkit profiles can share one Profile Group: show it once.
         const renderedGroups = new Set<FirefoxSelectableProfile[]>();
         const items = (
           await Promise.all(

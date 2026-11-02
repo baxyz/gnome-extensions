@@ -3,44 +3,23 @@ import type { FirefoxBrowserConfig } from "../taxonomy";
 import { HOME_DIR, XDG_CONFIG_HOME, snapCommonDir, snapDataDir } from "./paths.constant";
 
 /**
- * Most Firefox-family browsers follow the same packaging shapes: an XDG path
- * (`$XDG_CONFIG_HOME/<name>/profiles.ini`), a pre-XDG "classic" path
- * (`~/.<name>/profiles.ini`), a Flatpak path (the classic path mirrored under
- * the sandbox's own home), and sometimes a snap path. `classic` is the
- * relative suffix under HOME_DIR shared by the classic AND Flatpak forms
- * (they're usually identical, e.g. ".librewolf/profiles.ini" — Firefox itself
- * is the one exception, using ".mozilla/firefox/profiles.ini" instead of
- * ".firefox/profiles.ini").
- *
- * The "(classic)" label suffix is only added when an XDG variant is ALSO
- * generated (otherwise it's just the plain label) — browsers with only one
- * native path don't need to disambiguate. A few real oddities don't fit this
- * shape at all (IceCat's "(classic)" label despite having no XDG sibling yet)
- * and are written out by hand below instead of forced through this generator.
+ * The usual Firefox-family paths: XDG, classic (~/.<name>), Flatpak and
+ * Snap. "(classic)" is only added when there is also an XDG entry.
  */
 function expandFirefoxVariants(v: {
   label: string;
   spaceType?: SpaceType;
   binary?: string | string[];
-  /** Relative to XDG_CONFIG_HOME, e.g. "librewolf/profiles.ini". */
+  /** Relative to XDG_CONFIG_HOME. */
   xdg?: string;
-  /** Relative to HOME_DIR, e.g. ".librewolf/profiles.ini". Also used for the Flatpak path. */
+  /** Relative to HOME_DIR, and to the Flatpak's home. */
   classic?: string;
   flatpakId?: string;
-  /**
-   * Relative to the Flatpak's own XDG config dir (`~/.var/app/<id>/config`),
-   * for apps that moved their profile there instead of the sandbox's home —
-   * added next to the `classic`-mirrored Flatpak path, since only the one that
-   * exists on disk is listed.
-   */
+  /** Relative to the Flatpak's config dir (~/.var/app/<id>/config). */
   flatpakConfig?: string;
   /**
-   * relativePath is relative to the snap's own per-user data dir. Set
-   * `commonDir` when the snap persists its profile under $SNAP_USER_COMMON
-   * (a fixed, unversioned dir — see snapCommonDir()) instead of the default
-   * per-revision dir (see snapDataDir()) — confirmed necessary for Firefox,
-   * whose profiles.ini lives under ~/snap/firefox/common/, not
-   * ~/snap/firefox/<revision>/, so the latter goes stale after any update.
+   * Relative to the snap's data dir. `commonDir` uses ~/snap/<name>/common,
+   * which doesn't change between revisions (Firefox keeps its profile there).
    */
   snap?: { name: string; relativePath: string; commonDir?: boolean };
 }): FirefoxBrowserConfig[] {
@@ -106,8 +85,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     binary: "firefox",
   }),
 
-  // Firefox ESR: no XDG support (ESR lags stable). Profile dir is shared with regular Firefox
-  // on Debian/Ubuntu (both use ~/.mozilla/firefox/), but the binary differs: firefox-esr vs firefox.
+  // No XDG support. Same profile dir as Firefox, different binary.
   ...expandFirefoxVariants({
     label: "Firefox ESR",
     classic: ".mozilla/firefox/profiles.ini",
@@ -124,8 +102,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
 
   ...expandFirefoxVariants({
     label: "LibreWolf",
-    // LibreWolf nests its profile one level down (librewolf/librewolf/), unlike
-    // Firefox's mozilla/firefox/ — vendor and application name are both "librewolf".
+    // Nested librewolf/librewolf, unlike Firefox's mozilla/firefox.
     xdg: "librewolf/librewolf/profiles.ini",
     classic: ".librewolf/profiles.ini",
     flatpakId: "io.gitlab.librewolf-community",
@@ -163,8 +140,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     flatpakId: "app.zen_browser.zen",
     binary: "zen-browser",
     spaceType: SpaceType.ZenWorkspaces,
-    // Community-maintained (Zen itself only publishes Flathub/native); snap
-    // name is "zen-browser-snap", not "zen-browser".
+    // Community snap, named "zen-browser-snap".
     snap: { name: "zen-browser-snap", relativePath: ".zen/profiles.ini" },
   }),
 
@@ -177,16 +153,14 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     flatpakId: "org.garudalinux.firedragon",
   }),
 
-  // GNU IceCat, based on Firefox ESR 115; XDG landed upstream in Firefox 147, not yet inherited —
-  // hand-written since the "(classic)" label anticipates a future XDG sibling that doesn't exist yet.
+  // Based on Firefox ESR, no XDG support yet.
   {
     type: BrowserType.Firefox,
     label: "IceCat (classic)",
     path: HOME_DIR + "/.icecat/profiles.ini",
     pkg: { manager: PackageManager.Native, binary: "icecat" },
   },
-  // Fedora's flatpak remote ships it (not Flathub). Its profile lives in the real
-  // ~/.mozilla/icecat, not under the app's own ~/.var (confirmed on Fedora: nothing there).
+  // From Fedora's flatpak remote. Its profile is in the real ~/.mozilla/icecat.
   {
     type: BrowserType.Firefox,
     label: "IceCat (flatpak)",
@@ -202,7 +176,7 @@ export const FIREFOX_BROWSERS: FirefoxBrowserConfig[] = [
     pkg: { manager: PackageManager.Native, binary: "palemoon" },
   },
 
-  // Moonchild Productions, Goanna engine. No XDG support planned; uses non-standard .basilisk-dev directory.
+  // Moonchild Productions, Goanna engine. Uses ~/.basilisk-dev.
   {
     type: BrowserType.Firefox,
     label: "Basilisk",
