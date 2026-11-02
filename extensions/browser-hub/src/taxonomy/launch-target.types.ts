@@ -1,9 +1,6 @@
 import type { ResolvedBrowserPkg } from "./browser-package.types";
 
-/**
- * What a menu entry launches. Never an argv: internal/launch.ts is the only
- * place that turns one of these into a command.
- */
+/** What a menu entry launches. internal/launch.ts turns it into a command. */
 export type LaunchTarget =
   /** The browser itself, no arguments. */
   | { kind: "browser"; pkg: ResolvedBrowserPkg }
@@ -17,5 +14,5 @@ export type LaunchTarget =
   | { kind: "chromiumProfile"; pkg: ResolvedBrowserPkg; dir: string }
   /** A Falkon profile by name. */
   | { kind: "falkonProfile"; pkg: ResolvedBrowserPkg; profile: string }
-  /** A throwaway Firefox-family profile at an absolute path (see donut-browser.ts). */
+  /** A throwaway Firefox-family profile (see donut-browser.ts). */
   | { kind: "donut"; pkg: ResolvedBrowserPkg; dir: string };

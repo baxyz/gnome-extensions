@@ -1,30 +1,26 @@
-/* Default profile or space — shown in bold */
+/* Default profile or space */
 .browser-hub-default {
   font-weight: bold;
 }
 
-/* Fixed-size icon slot (an St.Bin, see menu/browser-rows.ts's
-   buildProfileMenuItem) left of profile label — keeps labels aligned across
-   entries. Matches PROFILE_ICON_SIZE exactly in px: an em-based size is
-   font-size-dependent and doesn't reliably equal the icon's actual
-   rendered size. */
+/* Icon slot left of a profile label, same size as the icon (px, not em). */
 .browser-hub-profile-icon {
   width: 16px;
   height: 16px;
   margin-right: 0.3em;
 }
 
-/* Browser icon shown once before a category separator's label */
+/* Browser icon before a section label */
 .browser-hub-category-icon {
   margin-right: 0.3em;
 }
 
-/* Banner for what failed during the last scan (see menu/shared.ts's buildErrorRow) */
+/* Scan error banner */
 .browser-hub-error-label {
   color: #f57900;
 }
 
-/* Profile color indicator dot (e.g. Chromium profile background color) */
+/* Profile color dot (Chromium) */
 .browser-hub-profile-dot {
   width: 10px;
   height: 10px;
@@ -32,15 +28,12 @@
   margin-left: 6px;
 }
 
-/* Square icon buttons for the "Browsers" quick-launch row */
+/* Browsers row buttons */
 .browser-hub-browser-btn {
   padding: 8px;
 }
 
-/* Package-manager accent border for a "Browsers" row button (see
-   menu/shared.ts's makeIconButton()) — brand colors matching Flathub's blue
-   and Canonical's Snap orange. Plain border-color on the button itself, not
-   an overlay on the icon: no alignment/z-order to get wrong. */
+/* Flatpak blue and Snap orange */
 .browser-hub-browser-btn--flatpak {
   border-bottom: 2px solid #3584e4;
 }
@@ -49,22 +42,22 @@
   border-bottom: 2px solid #e66100;
 }
 
-/* Vertical gap between wrapped lines of the "Browsers" row */
+/* Gap between Browsers row lines */
 .browser-hub-browsers-lines {
   spacing: 4px;
 }
 
-/* Horizontal gap between icon buttons on one line of the "Browsers" row */
+/* Gap between Browsers row buttons */
 .browser-hub-browsers-line {
   spacing: 4px;
 }
 
-/* Square icon buttons for toolbar (refresh & settings) */
+/* Toolbar buttons */
 .browser-hub-toolbar-btn {
   padding: 4px 6px;
 }
 
-/* Dot buttons (●) for browser spaces — used as a button group */
+/* Space buttons */
 .browser-hub-space-dot-btn {
   padding: 2px 6px;
 }
@@ -87,18 +80,13 @@
   margin-left: 1px;
 }
 
-/* Back button + title row at the top of a picker sub-page (see
-   menu/shared.ts's buildSubPageHeader()) */
+/* Sub-page header: back button and title */
 .browser-hub-subpage-header {
   spacing: 8px;
   padding: 4px 6px;
 }
 
-/* Height-capped scrollable region for a picker sub-page's browser list (see
-   menu/shared.ts's buildScrollablePickerList()) — same idea as Clipboard
-   Indicator's own scrollable history list: without a cap, a long list would
-   grow the popup with no ceiling, since the outer PopupMenu has no scroll
-   of its own. ~10 rows before scrolling kicks in. */
+/* About 10 rows before scrolling */
 .browser-hub-picker-scroll {
   max-height: 320px;
 }

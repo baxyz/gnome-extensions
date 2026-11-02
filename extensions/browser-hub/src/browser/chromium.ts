@@ -24,17 +24,13 @@ export function parseProfiles(content: string): ChromiumProfile[] {
   const json = safeJsonParse<LocalState>(content);
   const cache = json?.profile?.info_cache ?? {};
   const lastUsed = json?.profile?.last_used;
-  // flatMap + a shape guard, not map: a crash mid-write can leave a single
-  // info_cache entry null/malformed (valid JSON, wrong shape) — skip just
-  // that entry instead of throwing and losing every healthy profile too.
+  // Skip malformed entries instead of losing every profile.
   return Object.entries(cache).flatMap(([dir, info]) => {
     if (info == null || typeof info !== "object") return [];
     return [
       {
         dir,
-        // `||`, not `??`: Opera (unlike Chrome) can write an empty string for
-        // "name" rather than omitting the key entirely — `??` only catches
-        // null/undefined and would let that blank string through as a label.
+        // `||`: Opera can write an empty name.
         name: info.name || dir,
         isDefault: dir === lastUsed,
         bgColor: info.background_color != null ? argbToRgb(info.background_color) : undefined,
@@ -43,8 +39,7 @@ export function parseProfiles(content: string): ChromiumProfile[] {
   });
 }
 
-/** Chromium's account color always renders as-is — unlike Firefox's theme color
- * (see firefox.ts), it's not paired with an icon yet, so it can't be a badge. */
+/** Chromium colors are shown as a dot after the label. */
 function toDotColor(bgColor: string | undefined): ColorPresentation | undefined {
   return bgColor != null ? { mode: "dot", bgColor } : undefined;
 }
@@ -58,7 +53,7 @@ function readProfiles(path: string): Promise<ChromiumProfile[]> {
     });
 }
 
-/** `errors` collects a short message per failed browser — for a menu banner, not just the log. */
+/** `errors` gets one message per browser that failed. */
 export async function resolveChromiumBrowsers(
   browsers: ChromiumBrowserConfig[],
   errors: string[] = [],

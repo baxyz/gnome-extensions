@@ -5,12 +5,9 @@ import type { LaunchTarget, ResolvedBrowserPkg } from "../taxonomy";
 import { getDesktopAppInfo } from "./gio";
 import { resolveDesktopId } from "./desktop-icon";
 
-// Every command this extension can spawn is spelled out below, one literal
-// array per (launch kind, package manager). The only variable parts are:
-// - the browser itself (binary, Flatpak app id, Snap name), always taken
-//   from the constants/*-browsers.constant.ts lists;
-// - profile names, profile paths and Zen workspace UUIDs, read from the
-//   browsers' own files and checked by hasSafeValues() before use.
+// Every spawned command is a literal array below. Only the browser (from
+// constants/) and values read from its files (checked by hasSafeValues())
+// vary.
 
 function browserArgv(pkg: ResolvedBrowserPkg): string[] {
   switch (pkg.manager) {
@@ -83,11 +80,10 @@ function donutArgv(pkg: ResolvedBrowserPkg, dir: string): string[] {
     case PackageManager.Native:
       return [pkg.binary, "--profile", dir, "-no-remote"];
     case PackageManager.Flatpak:
-      // The profile lives under $XDG_RUNTIME_DIR, outside the sandbox:
-      // --filesystem grants access to that one directory for this launch only.
+      // The profile is outside the sandbox: grant access to it for this launch.
       return ["flatpak", "run", `--filesystem=${dir}`, pkg.appId, "--profile", dir, "-no-remote"];
     case PackageManager.Snap:
-      // Already inside the snap's own ~/snap/<name>/common, no grant needed.
+      // Already in the snap's own directory.
       return ["snap", "run", pkg.name, "--profile", dir, "-no-remote"];
   }
 }
@@ -118,7 +114,7 @@ function hasSafeValues(target: LaunchTarget): boolean {
   }
 }
 
-/** The argv `target` launches with, or null when one of its values is unsafe. */
+/** The argv for `target`, or null when one of its values is unsafe. */
 export function buildArgv(target: LaunchTarget): string[] | null {
   if (!hasSafeValues(target)) return null;
   switch (target.kind) {
@@ -139,12 +135,7 @@ export function buildArgv(target: LaunchTarget): string[] | null {
   }
 }
 
-/**
- * Launches `pkg` through its own .desktop file, which handles Flatpak
- * portals, DBus activation and startup notification. False (never throws)
- * when the desktop id doesn't resolve or launch() fails, so the caller can
- * fall back to the argv path.
- */
+/** Launches `pkg` through its .desktop file. False if that's not possible. */
 function launchViaDesktopAppInfo(pkg: ResolvedBrowserPkg): boolean {
   const info = getDesktopAppInfo(resolveDesktopId(pkg));
   if (info === null) return false;
@@ -160,10 +151,9 @@ function notifyFailure(title: string, notify: typeof Main.notify): void {
 }
 
 /**
- * Launches `target`. A plain "browser" target goes through its .desktop file
- * first; everything else needs arguments a .desktop launch can't carry, so it
- * is spawned from buildArgv(). Returns the spawned process, or null if
- * nothing was spawned (launched via .desktop, or failed).
+ * Launches `target`. A plain browser goes through its .desktop file first;
+ * other targets need arguments, so they are spawned from buildArgv().
+ * Returns the spawned process, if any.
  */
 export function launch(
   target: LaunchTarget,
@@ -179,7 +169,6 @@ export function launch(
     return null;
   }
   try {
-    // argv form: no shell is involved.
     return Gio.Subprocess.new(argv, Gio.SubprocessFlags.NONE);
   } catch (e: unknown) {
     logError(e as object, `[${title}] Failed to launch browser.`);
@@ -188,7 +177,7 @@ export function launch(
   }
 }
 
-/** Launches an already-resolved app through its .desktop entry, with no argv involved. */
+/** Launches an app through its .desktop entry. */
 export function launchAppInfo(info: Gio.AppInfo, title: string, notify: typeof Main.notify): void {
   try {
     info.launch(null, null);

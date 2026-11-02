@@ -3,11 +3,8 @@ import { SpaceType } from "./taxonomy/space-type.enum";
 const SPACE_TYPE_VALUES = Object.values(SpaceType);
 
 /**
- * Settings keys whose change requires a full browser/profile re-scan
- * (extension.ts routes these to refreshEntries(), everything else to the
- * cheaper redrawMenu()). Every key in the gschema must be listed here or in
- * COSMETIC_KEYS — see test/settings-keys.test.ts, which fails the build if
- * a new key is added to the schema without being classified here.
+ * Keys that need a rescan. The others only redraw the menu. Every schema
+ * key must be in this list or in COSMETIC_KEYS (checked by a test).
  */
 export const ENTRY_AFFECTING_KEYS = new Set<string>([
   "show-firefox-family",
@@ -19,7 +16,7 @@ export const ENTRY_AFFECTING_KEYS = new Set<string>([
   ...SPACE_TYPE_VALUES,
 ]);
 
-/** Settings keys that only affect how the menu is drawn, not what it contains. */
+/** Keys that only change how the menu looks. */
 export const COSMETIC_KEYS = new Set<string>([
   "show-toolbar",
   "show-default-browser-edit",
@@ -27,14 +24,7 @@ export const COSMETIC_KEYS = new Set<string>([
   "show-donut-browser",
 ]);
 
-/**
- * Sub-setting gschema key -> its parent key. A sub-setting only takes effect
- * when its parent is also on — bound as prefs.ts's UI sensitivity ("sensitive"
- * follows the parent's own value, greying the row out when the parent is off).
- * This table is the single place recording WHICH keys are paired this way,
- * so adding a new sub-setting means updating one place instead of hand-
- * duplicating the relationship elsewhere.
- */
+/** Sub-setting key -> parent key. A sub-setting only applies while its parent is on. */
 export const SUB_SETTING_PARENTS: Readonly<Record<string, string>> = {
   "show-default-browser-edit": "show-toolbar",
   "show-donut-browser": "show-toolbar",

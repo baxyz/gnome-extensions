@@ -6,22 +6,17 @@ import { listDirEntries, logIfUnexpected, readFileAsync } from "../internal";
 export interface FirefoxSelectableProfile {
   name: string;
   dir: string;
-  /** Profile avatar identifier (e.g. "book", "briefcase") */
+  /** Avatar name, e.g. "book" */
   avatar?: string;
-  /** CSS foreground color from the profile theme (e.g. "#ffffff") */
+  /** e.g. "#ffffff" */
   themeFg?: string;
-  /** CSS background color from the profile theme (e.g. "#20123a") */
+  /** e.g. "#20123a" */
   themeBg?: string;
 }
 
 const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
 
-// A stale .sqlite left behind by e.g. a profile migration is harmless on its
-// own, but nothing bounds how many could accumulate over years of use —
-// cap how many get read so a directory with hundreds of them can't turn a
-// menu-open into a long stall. Sorted first so which ones get kept is
-// deterministic (directory-listing order isn't guaranteed stable), not a
-// coin flip across runs.
+// Old databases can pile up; read at most this many, in sorted order.
 const MAX_SQLITE_FILES = 50;
 
 async function listSqliteFiles(dirPath: string): Promise<string[]> {
@@ -43,18 +38,13 @@ async function listSqliteFiles(dirPath: string): Promise<string[]> {
 
 type MatchedGroup = {
   dbPath: string;
-  /** Every toolkit basename in this group's own rows — not just the first found. */
   matchedBasenames: string[];
   selectable: FirefoxSelectableProfile[];
 };
 
 /**
- * For each Profile Groups SQLite that contains >1 selectable profile, find which
- * toolkit profile folder it belongs to (by matching one of its paths) and return
- * the full list of selectable profiles keyed by that folder basename.
- *
- * @param firefoxRoot  e.g. ~/.mozilla/firefox
- * @param toolkitBasenames  folder basenames from profiles.ini, e.g. ["abc1.default-release"]
+ * Maps each toolkit profile folder (basename) to the selectable profiles
+ * of the Profile Group it belongs to. Groups with one profile are skipped.
  */
 export async function readFirefoxSelectableProfiles(
   firefoxRoot: string,
@@ -64,12 +54,7 @@ export async function readFirefoxSelectableProfiles(
   const dbFiles = await listSqliteFiles(profileGroupsDir);
   const toolkitSet = new Set(toolkitBasenames);
 
-  // Read every db first, then combine in a stable (sorted by path) order —
-  // Promise.all settles in unspecified order, and if two db files somehow
-  // matched the same toolkit folder (e.g. a stale database left over from a
-  // profile migration), "whichever happens to finish reading first wins"
-  // would make the selectable-profile list for that folder a coin flip
-  // across runs instead of a function of the actual file contents.
+  // Merged in path order, so the result doesn't depend on read timing.
   const perFile = await Promise.all(
     dbFiles.map(async (dbPath): Promise<MatchedGroup> => {
       const empty: MatchedGroup = { dbPath, matchedBasenames: [], selectable: [] };
@@ -78,9 +63,7 @@ export async function readFirefoxSelectableProfiles(
         const rows = readTable(data, "Profiles");
         if (rows.length <= 1) return empty;
 
-        // Every toolkit profile that's actually part of this group, not just
-        // the first one found — a group can have more than one of its
-        // members independently listed in profiles.ini too.
+        // Several toolkit profiles can belong to the same group.
         const matchedBasenames = rows.flatMap((row) => {
           if (typeof row.path !== "string") return [];
           const rb = GLib.path_get_basename(row.path);

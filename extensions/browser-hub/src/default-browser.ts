@@ -6,7 +6,7 @@ import { getDesktopAppInfo, resolveDesktopId, type DesktopAppInfo } from "./inte
 
 export type DefaultBrowserInfo = {
   name: string;
-  /** Launched as-is: the default handler's own .desktop entry, no argv rebuilt from Exec=. */
+  /** Launched through its own .desktop entry. */
   appInfo: Gio.AppInfo;
   pkg: ResolvedBrowserPkg;
 };
@@ -23,22 +23,13 @@ function detectPkg(desktopId: string, executable: string): ResolvedBrowserPkg {
     const snapName = desktopField(info, "X-SnapInstanceName");
     if (snapName) return { manager: PackageManager.Snap, name: snapName };
   }
-  // desktopId is already known here (it's how `info` above was resolved) —
-  // carrying it through lets resolveDesktopIcon() use it directly instead of
-  // re-guessing `${executable}.desktop`, which fails for the many apps whose
-  // desktop file doesn't match their binary name (e.g. GNOME Web).
+  // Known desktop id, so the icon lookup doesn't have to guess it.
   return { manager: PackageManager.Native, binary: executable, desktopId };
 }
 
-// The OS default-browser association only changes via setDefaultBrowser()
-// below or real system config edits (gnome-control-center, xdg-settings) —
-// never as a side effect of any BrowserSettings change. Cache it like
-// pkg/icon resolution (see internal/pkg.ts, internal/desktop-icon.ts)
-// instead of re-running two syscalls on every redraw, including purely
-// cosmetic ones.
+// Cleared by setDefaultBrowser(), on manual refresh and on disable.
 let cachedDefaultBrowser: DefaultBrowserInfo | null | undefined;
 
-/** Clears the default browser cache. Called on extension disable and manual refresh. */
 export function clearDefaultBrowserCache(): void {
   cachedDefaultBrowser = undefined;
 }
@@ -57,16 +48,10 @@ export function getDefaultBrowser(): DefaultBrowserInfo | null {
   return cachedDefaultBrowser;
 }
 
-// The three content types GNOME/xdg-utils actually consult for "the default
-// browser" — matches totoshko88/browser-switcher's approach (Gio.AppInfo
-// directly, not shelling out to xdg-settings).
+// The content types GNOME uses for the default browser.
 const BROWSER_CONTENT_TYPES = ["x-scheme-handler/http", "x-scheme-handler/https", "text/html"];
 
-/**
- * Sets the system default browser to the given package. Returns false
- * (leaving the previous default untouched) when the package's .desktop file
- * can't be resolved or GIO refuses one of the content-type associations.
- */
+/** Makes `pkg` the default browser. False if its .desktop file or GIO fails. */
 export function setDefaultBrowser(pkg: ResolvedBrowserPkg): boolean {
   const info = getDesktopAppInfo(resolveDesktopId(pkg));
   if (!info) return false;
@@ -79,9 +64,7 @@ export function setDefaultBrowser(pkg: ResolvedBrowserPkg): boolean {
     logError(e as object, "[browser-hub] failed to set default browser");
     ok = false;
   }
-  // Bust the cache either way: a throw partway through the loop above can
-  // still have switched some content types before failing, so the
-  // pre-call cached value must not keep being served as "the" default.
+  // Clear in any case: a failure may come after some types were changed.
   clearDefaultBrowserCache();
   return ok;
 }

@@ -1,26 +1,11 @@
 /**
- * Maps known Firefox Profile Groups avatar ids and Zen Browser workspace
- * icon ids to real GNOME/Adwaita symbolic icon names, so they render as an
- * actual (recolorable) icon instead of literal text or a wrong glyph.
+ * Firefox avatar and Zen workspace icon ids mapped to Adwaita symbolic
+ * icons. Ids without an Adwaita equivalent are left out:
  *
- * Every entry below was checked against the real icon file list shipped in
- * Debian's `adwaita-icon-theme` 48.1-1 package (the base icon theme GNOME
- * Shell falls back to — gnome-shell itself bundles no icons of its own).
- * "Verified" means the icon file exists AND its SVG path data was inspected
- * to confirm it's a plausible visual match, not just a plausible-sounding
- * name. Entries with real ambiguity are marked "(approximate)".
- *
- * Names NOT in these tables have no adwaita-icon-theme equivalent at all —
- * verified absent, not just unresearched. See resolve-icon.ts for how the
- * fallback is chosen for these. If you confirm a real match for one of
- * these, move it into the table above this comment.
- *
- * Unmapped Firefox avatars (browser/components/profiles/SelectableProfile.sys.mjs):
- *   barbell, bike, briefcase, canvas, craft, diamond, flower, hammer,
+ * Firefox: barbell, bike, briefcase, canvas, craft, diamond, flower, hammer,
  *   heart-rate, lightbulb, makeup, paw-print, present, shopping, soccer
  *
- * Unmapped Zen workspace icons (zen-browser/desktop zen-icons/common/selectable):
- *   airplane, american-football, baseball, basket, bed, briefcase,
+ * Zen: airplane, american-football, baseball, basket, bed, briefcase,
  *   brush, bug, cafe, card, circle, cloud, coins, cutlery, egg,
  *   extension-puzzle, fast-food, fish, flag, flame, globe, globe-1,
  *   ice-cream, inbox, layers, logo-github, logo-usd, map, megaphone,
@@ -28,7 +13,7 @@
  *   skull, square, stats-chart, tada, ticket, triangle, wallet, water, weight
  */
 
-// Firefox's 28 standard avatars — see SelectableProfile.sys.mjs STANDARD_AVATARS.
+// Firefox: SelectableProfile.sys.mjs, STANDARD_AVATARS.
 export const FIREFOX_AVATAR_ICONS: Readonly<Record<string, string>> = {
   book: "accessories-dictionary-symbolic",
   folder: "folder-symbolic",
@@ -45,7 +30,7 @@ export const FIREFOX_AVATAR_ICONS: Readonly<Record<string, string>> = {
   "default-favicon": "avatar-default-symbolic",
 };
 
-// Zen workspace icons — see zen-browser/desktop's zen-icons/common/selectable/*.svg.
+// Zen: zen-icons/common/selectable/*.svg.
 export const ZEN_WORKSPACE_ICONS: Readonly<Record<string, string>> = {
   bell: "alarm-symbolic", // approximate
   book: "accessories-dictionary-symbolic",

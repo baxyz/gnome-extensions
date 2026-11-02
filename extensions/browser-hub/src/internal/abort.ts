@@ -1,9 +1,8 @@
 import { delay } from "@helpers4/promise";
 
 /**
- * The part of `AbortSignal` that @helpers4/promise reads. GJS has no global
- * AbortController, and `delay` only needs these four members, so a minimal
- * handle is enough to let teardown clear a pending timer.
+ * The part of AbortSignal that @helpers4/promise reads. GJS has no
+ * AbortController.
  */
 export interface Cancellation {
   readonly aborted: boolean;
@@ -46,11 +45,7 @@ export function createCancellation(): CancellationHandle {
   };
 }
 
-/**
- * Waits `ms`, clearing the timer as soon as `signal` aborts so nothing is
- * left pending after disable(). Resolves true once the wait is over, false
- * when it was cancelled — callers just stop, there is nothing to handle.
- */
+/** Waits `ms`. False if `signal` aborted first, in which case the timer is cleared. */
 export async function pause(ms: number, signal?: Cancellation): Promise<boolean> {
   try {
     await delay(ms, undefined, { signal });

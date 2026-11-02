@@ -7,13 +7,9 @@ import type { DefaultBrowserInfo } from "./default-browser";
 import { snapCommonDir } from "./constants/paths.constant";
 import { deleteDirectoryAsync, launch, pkgKey, writeTextFileAsync } from "./internal";
 
-// Ordered by preference when the current default browser isn't itself
-// eligible (see findDonutBrowser). Real Mozilla Gecko builds only — deliberately
-// excludes:
-// - Tor Browser: already routes through Tor with its own, much heavier
-//   anti-fingerprinting; launching it in "quick incognito" mode doesn't fit.
-// - Basilisk/Palemoon: run the Goanna engine, a pre-privacy.resistFingerprinting
-//   Gecko fork — offering them here would risk a false sense of protection.
+// Preferred browsers when the default one isn't eligible. Gecko only. Not
+// Tor Browser (it has its own protection), nor Basilisk/Palemoon (their
+// engine predates privacy.resistFingerprinting).
 export const DONUT_PRIORITY: readonly string[] = [
   "Firefox",
   "Zen",
@@ -24,16 +20,12 @@ export const DONUT_PRIORITY: readonly string[] = [
   "Firedragon",
 ];
 
-// Eligible, but not specifically prioritized — only reached as a last
-// resort, in whatever order they appear in the "Browsers" row.
+// Eligible, without priority.
 const DONUT_ALSO_ELIGIBLE: readonly string[] = ["Firefox ESR", "Ghostery Dawn", "IceCat"];
 
 const DONUT_ELIGIBLE = new Set([...DONUT_PRIORITY, ...DONUT_ALSO_ELIGIBLE]);
 
-// Strips the "Browsers" row's packaging-variant suffixes to get back the
-// underlying browser identity a label was generated from (see
-// expandFirefoxVariants in constants/firefox-browsers.constant.ts) —
-// "Firefox (flatpak)" and "Firefox (classic)" are both still just Firefox.
+// "Firefox (flatpak)" -> "Firefox"
 function baseLabel(label: string): string {
   return label.replace(/\s\((?:flatpak|snap|classic)\)$/, "");
 }
@@ -43,16 +35,9 @@ function samePkg(a: ResolvedBrowserPkg, b: ResolvedBrowserPkg): boolean {
 }
 
 /**
- * Browsers eligible for a Donut session, from the "Browsers" row's own
- * items. Snap-packaged browsers are included: strict confinement blocks a
- * Snap browser from opening a profile directory outside $HOME entirely
- * (confirmed — a snap can't see anything under $XDG_RUNTIME_DIR the way
- * every other Donut profile lives), so createDonutProfile() gives Snap
- * packages a profile dir under their own ~/snap/<name>/common instead —
- * always writable regardless of which interfaces are connected, since it's
- * the snap's own private data dir, not part of the confined "home" grant.
- * That dir isn't tmpfs-backed like the others, so launchDonutBrowser()
- * explicitly deletes it once the browser process exits.
+ * Browsers that can run a Donut session. Snap browsers can't read
+ * $XDG_RUNTIME_DIR, so they get a profile under ~/snap/<name>/common,
+ * deleted when the browser exits.
  */
 export function filterDonutEligible(
   browsers: readonly ResolvedBrowserItem[],
@@ -63,11 +48,7 @@ export function filterDonutEligible(
   );
 }
 
-/**
- * Picks which installed browser a Donut (burner, anti-fingerprint)
- * session should launch: the current default if it qualifies, else the
- * first `DONUT_PRIORITY` match, else whatever eligible browser comes first.
- */
+/** The default browser if eligible, else the first DONUT_PRIORITY match, else any eligible one. */
 export function findDonutBrowser(
   browsers: readonly ResolvedBrowserItem[],
   defaultBrowser: DefaultBrowserInfo | null,
@@ -88,35 +69,16 @@ export function findDonutBrowser(
   return eligible[0];
 }
 
-// Deleted along with the profile directory, so this only needs to cover one
-// burner session — not a full hardening profile. resistFingerprinting is
-// Mozilla's own fingerprint-resistance mechanism (also what Tor Browser
-// uses): it alone already covers canvas randomization, WebGL vendor/renderer
-// spoofing, timezone spoofing (as Atlantic/Reykjavik), and MediaDevices
-// spoofing — the letterboxing/spoof_english lines are companions arkenfox
-// recommends alongside it to avoid known side effects (window-size and
-// language-based fingerprinting RFP doesn't itself cover).
-// Reference: https://github.com/arkenfox/user.js (sections 4501/4504/4506)
-// A brand-new profile directory reads to Firefox as a genuine first launch,
-// so without these it greets a Donut session with the full about:welcome
-// tour, the "import from another browser" migration wizard, and the
-// set-as-default-browser prompt — the opposite of "burner and instant".
-// Internal prefs, not a documented stable API — Mozilla has renamed a couple
-// of these across major versions before, so a future Firefox update could
-// silently bring one of these screens back; confirmed current as of Firefox
-// ESR 128/stable 130-era. All Donut-eligible browsers are Firefox forks that
-// still read prefs.js/user.js the same way, so one shared list covers them,
-// though a hardened fork (e.g. LibreWolf) may already set some of these
-// itself — redundant, not conflicting.
+// resistFingerprinting with the companion prefs recommended by arkenfox
+// (https://github.com/arkenfox/user.js, 4501/4504/4506), plus prefs that
+// skip the first-run screens of a new profile.
 const DONUT_USER_JS = `// Generated by browser-hub's Donut profile feature.
 user_pref("privacy.resistFingerprinting", true);
 user_pref("privacy.resistFingerprinting.letterboxing", true);
 user_pref("privacy.spoof_english", 1);
-// Belt-and-suspenders alongside the profile itself being throwaway: nothing
-// persists to disk even during this session's own lifetime.
+// No history, even during the session.
 user_pref("browser.privatebrowsing.autostart", true);
-// Skip the first-run onboarding tour, the browser-migration import wizard,
-// and the "make default browser" prompt, so the profile opens ready to use.
+// Skip the welcome tour, the import wizard and the default browser prompt.
 user_pref("browser.aboutwelcome.enabled", false);
 user_pref("browser.startup.homepage_override.mstone", "ignore");
 user_pref("startup.homepage_welcome_url", "");
@@ -125,33 +87,21 @@ user_pref("browser.migration.version", 9999);
 user_pref("browser.shell.checkDefaultBrowser", false);
 user_pref("browser.uitour.enabled", false);
 user_pref("trailhead.firstrun.didSeeAboutWelcome", true);
-// Zen Browser (a Donut-eligible fork) has its own separate first-run
-// screen on top of Firefox's about:welcome, gated by this Zen-specific
-// pref — confirmed against zen-browser/desktop's own prefs/zen/welcome.yaml
-// and test fixtures, which set exactly this to suppress it in their CI.
-// No-op on every other Donut-eligible browser, same as the rest of this file.
+// Zen's own welcome screen.
 user_pref("zen.welcome-screen.seen", true);
 `;
 
 function donutProfilesRoot(pkg: ResolvedBrowserPkg): string {
-  // Snap: nothing under XDG_RUNTIME_DIR is visible inside strict confinement
-  // at all (confirmed — it's remapped to a private per-snap location), but
-  // the snap's own ~/snap/<name>/common always is, regardless of which
-  // interfaces are connected. Not tmpfs-backed, so this one *is* cleaned up
-  // explicitly — see launchDonutBrowser.
+  // Snap can't see XDG_RUNTIME_DIR. This dir is deleted after use (see launchDonutBrowser).
   if (pkg.manager === PackageManager.Snap) {
     return GLib.build_filenamev([snapCommonDir(pkg.name), "browser-hub-donut"]);
   }
-  // Falls back to the system tmp dir on the (very unlikely) chance
-  // XDG_RUNTIME_DIR is unset or empty — still cleaned up eventually, just not
-  // guaranteed to be gone by the next login the way /run/user/<uid> is.
-  // `||`, not `??`: some systems export XDG_RUNTIME_DIR as an empty string
-  // rather than leaving it unset, which `??` wouldn't catch.
+  // `||`: XDG_RUNTIME_DIR may be set but empty.
   const runtimeDir = GLib.getenv("XDG_RUNTIME_DIR") || GLib.get_tmp_dir();
   return GLib.build_filenamev([runtimeDir, "browser-hub", "donut"]);
 }
 
-/** Creates a fresh, empty profile directory with a minimal RFP user.js, and returns its path. */
+/** Creates an empty profile directory with the Donut user.js and returns its path. */
 export async function createDonutProfile(pkg: ResolvedBrowserPkg): Promise<string> {
   const dir = GLib.build_filenamev([donutProfilesRoot(pkg), GLib.uuid_string_random()]);
   Gio.File.new_for_path(dir).make_directory_with_parents(null);
@@ -159,19 +109,15 @@ export async function createDonutProfile(pkg: ResolvedBrowserPkg): Promise<strin
   return dir;
 }
 
-// Cancelled in disable() so no cleanup runs after the extension is gone; a
-// Snap Donut session still open at that point leaves its profile dir behind.
+// Cancelled on disable; a Snap session still open then leaves its profile behind.
 let cleanupCancellable: Gio.Cancellable | null = null;
 
-/** Cancels pending Snap profile cleanups. Called on extension disable. */
 export function cancelDonutCleanups(): void {
   cleanupCancellable?.cancel();
   cleanupCancellable = null;
 }
 
-// Best-effort — a leftover directory under ~/snap/<name>/common/browser-hub-donut
-// is orphaned junk, not a privacy leak (still gets a fresh uuid next launch),
-// so a failure here is logged, not surfaced to the user.
+// A failure only leaves an unused directory behind, so it is just logged.
 async function cleanupSnapDonutProfile(profileDir: string): Promise<void> {
   try {
     await deleteDirectoryAsync(Gio.File.new_for_path(profileDir));
@@ -180,7 +126,6 @@ async function cleanupSnapDonutProfile(profileDir: string): Promise<void> {
   }
 }
 
-/** Creates a fresh Donut profile and launches `item` with it. */
 export async function launchDonutBrowser(
   item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg },
   title: string,
@@ -188,8 +133,7 @@ export async function launchDonutBrowser(
 ): Promise<void> {
   const profileDir = await createDonutProfile(item.pkg);
   const subprocess = launch({ kind: "donut", pkg: item.pkg, dir: profileDir }, title, notify);
-  // Only Snap's profile dir lives outside tmpfs (see donutProfilesRoot) and
-  // so is the only one that needs an explicit delete once the browser exits.
+  // Only the Snap profile is outside tmpfs and needs deleting.
   if (item.pkg.manager === PackageManager.Snap && subprocess) {
     cleanupCancellable ??= new Gio.Cancellable();
     subprocess.wait_async(cleanupCancellable, (proc, res) => {

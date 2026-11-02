@@ -2,23 +2,18 @@ import { BrowserType, PackageManager } from "../taxonomy";
 import type { ChromiumBrowserConfig } from "../taxonomy";
 import { HOME_DIR, snapDataDir } from "./paths.constant";
 
-// Chromium-based browsers do not honor $XDG_CONFIG_HOME — they hardcode ~/.config.
+// Chromium browsers ignore $XDG_CONFIG_HOME.
 const CONFIG_DIR = HOME_DIR + "/.config";
 
 /**
- * Every Chromium-family browser follows the same three packaging shapes —
- * only the config dir name (under CONFIG_DIR / the Flatpak sandbox's mirrored
- * home / the snap's own home), binary, Flatpak app id, and snap name differ.
- * Native is always unsuffixed; flatpak/snap are always suffixed, whether or
- * not a native variant is also generated (see "Ungoogled Chromium", which has
- * no native entry of its own — its binary is indistinguishable from stock
- * Chromium's — but its flatpak entry still reads "(flatpak)").
+ * Native, Flatpak and Snap entries for one Chromium browser. Flatpak and
+ * Snap labels always get a suffix.
  */
 function expandChromiumVariants(v: {
   label: string;
-  /** Config dir name, e.g. "chromium" or "BraveSoftware/Brave-Browser". */
+  /** e.g. "chromium" or "BraveSoftware/Brave-Browser". */
   dirName: string;
-  /** Native binary name(s). Omit when this identity has no distinct native binary (e.g. Ungoogled Chromium). */
+  /** Omit when there's no distinct native binary (e.g. Ungoogled Chromium). */
   binary?: string | string[];
   flatpakId?: string;
   snap?: { name: string };
@@ -66,8 +61,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     flatpakId: "org.chromium.Chromium",
     snap: { name: "chromium" },
   }),
-  // Native binary is 'chromium', sharing ~/.config/chromium/ with stock Chromium — indistinguishable.
-  // Only the Flatpak ID reliably differentiates it.
+  // Same binary and config dir as Chromium: only the Flatpak can be told apart.
   ...expandChromiumVariants({
     label: "Ungoogled Chromium",
     dirName: "chromium",
@@ -158,8 +152,7 @@ export const CHROMIUM_BROWSERS: ChromiumBrowserConfig[] = [
     dirName: "JioSphere",
     flatpakId: "com.jiosphere.JioSphere",
   }),
-  // Opera's dev channel — no flatpak (only stable/GX are on Flathub), same
-  // channel-suffix convention as Opera/Opera GX above.
+  // No flatpak for the dev channel.
   ...expandChromiumVariants({
     label: "Opera Developer",
     dirName: "opera-developer",

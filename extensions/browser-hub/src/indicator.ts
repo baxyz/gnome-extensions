@@ -19,9 +19,7 @@ import type { DefaultBrowserInfo } from "./default-browser";
 import { launchDonutBrowser } from "./donut-browser";
 import type { ResolvedBrowserEntry, ResolvedBrowserItem, ResolvedBrowserPkg } from "./taxonomy";
 
-// this.menu is typed as PopupMenu | PopupDummyMenu — a union whose two
-// `connect`/`disconnect` overloads don't unify for an ad-hoc signal name, so
-// it's accessed through this minimal cast (same pattern as menu/shared.ts's tooltip()).
+// this.menu's union type has no usable connect() for this signal name.
 type MenuSignals = {
   connect(sig: "open-state-changed", cb: (menu: unknown, isOpen: boolean) => void): number;
   disconnect(id: number): void;
@@ -46,40 +44,22 @@ export class BrowserProfilesIndicator extends Button {
   private _onSettings: () => void;
   private _readSettings: () => BrowserSettings;
   private _readToolbarSettings: () => ToolbarSettings;
-  // Bumped on every refreshEntries() call so a slow, older scan can't clobber
-  // the menu after a newer one has already resolved (out-of-order settling).
+  // Lets an older scan that finishes late be ignored.
   private _refreshSeq = 0;
-  // Bumped on every _draw() call — fillMenu() builds the Browsers row in
-  // staggered batches (see buildSimpleBrowserRow), so a redraw can still be
-  // in flight when a newer one starts (two settings changes in quick
-  // succession, or a refresh landing mid-redraw). isLive() below lets a
-  // superseded build detect that and stop touching a menu a newer _draw()
-  // has already cleared and rebuilt.
+  // Lets a menu build still in progress notice a newer one has started.
   private _drawSeq = 0;
-  // Aborted when a newer _draw() supersedes the in-flight one, and on
-  // destroy(): clears fillMenu()'s pending stagger timer immediately rather
-  // than leaving it to run out after disable().
+  // Aborted by a newer _draw() and by destroy(), to clear pending timers.
   private _drawCancellation: CancellationHandle | null = null;
-  // null: the browser scan hasn't resolved yet (menu shows a loading row).
+  // null while the scan is running.
   private _lastEntries: ResolvedBrowserEntry[] | null = null;
-  // Short messages for whatever failed during the last scan (e.g. a specific
-  // family, or one browser within the Browsers row) — shown as a banner,
-  // not just logged, so a partial failure isn't invisible to the user.
+  // What failed during the last scan, shown as a banner.
   private _lastErrors: string[] = [];
   private _menuOpenStateId: number | null = null;
   private _menuSignals!: MenuSignals;
-  // "main" is the whole menu; the other two are a picker sub-page (see
-  // menu/index.ts's MenuPage). Reset to "main" only when the popup closes
-  // (see the open-state-changed listener below) — never on open, which
-  // would reintroduce the "rebuild the whole menu on every open" flicker
-  // removed earlier this session.
+  // Current sub-page, reset to "main" when the popup closes.
   private _page: MenuPage = "main";
   private _panelIcon: St.Icon;
-  // Guards against a second Donut launch starting while one is already in
-  // flight. Deliberately kept here rather than on the toolbar button itself —
-  // fillMenu() tears down and rebuilds the whole menu (including that
-  // button) on every redraw, so any state living on the button wouldn't
-  // survive the redraw() call this same launch triggers.
+  // Kept here, not on the button: the menu is rebuilt on every redraw.
   private _donutLaunching = false;
 
   constructor(
@@ -95,13 +75,7 @@ export class BrowserProfilesIndicator extends Button {
     this._readSettings = readSettings;
     this._readToolbarSettings = readToolbarSettings;
 
-    // Only resets _page — while the popup is hidden, so this costs nothing
-    // visually. Without it, closing the popup mid-navigation and reopening
-    // it later would show whatever picker page you'd last left it on.
-    // Disconnected in this.destroy() below, not via a "destroy" signal
-    // handler — that indirection isn't statically traceable back to
-    // disable() the way overriding destroy() directly is, which is what
-    // GNOME's extension review tooling actually checks for.
+    // Return to the main page once the popup is closed. Disconnected in destroy().
     this._menuSignals = this.menu as unknown as MenuSignals;
     this._menuOpenStateId = this._menuSignals.connect("open-state-changed", (_menu, isOpen) => {
       if (!isOpen && this._page !== "main") {
@@ -133,9 +107,7 @@ export class BrowserProfilesIndicator extends Button {
   refreshEntries(): void {
     if (!this._alive) return;
     const seq = ++this._refreshSeq;
-    // Shows the loading row immediately — matters both at construction (the
-    // menu must never be empty, or GNOME Shell refuses to open it at all)
-    // and on a manual refresh, while the new scan is still running.
+    // Show the loading row right away: GNOME Shell won't open an empty menu.
     this._lastEntries = null;
     this._lastErrors = [];
     this._draw();
@@ -149,7 +121,7 @@ export class BrowserProfilesIndicator extends Button {
       .catch((e: unknown) => logError(e as object, "[browser-hub] refreshEntries failed"));
   }
 
-  /** Redraws the menu from the last resolved entries — no filesystem re-scan. */
+  /** Redraws from the last scan, without rescanning. */
   redrawMenu(): void {
     if (!this._alive) return;
     this._draw();
@@ -188,8 +160,7 @@ export class BrowserProfilesIndicator extends Button {
         this.redrawMenu();
       },
       onRefresh: () => {
-        // Manual refresh is the user's explicit way to pick up a browser
-        // installed/removed since the last scan — bust the caches first.
+        // Clear the caches so a browser installed meanwhile shows up.
         clearPkgResolutionCache();
         clearPathPresenceCache();
         clearDesktopIconCache();
@@ -226,11 +197,6 @@ export class BrowserProfilesIndicator extends Button {
     }).catch((e: unknown) => logError(e as object, "[browser-hub] fillMenu failed"));
   }
 
-  // Falls back to the generic icon whenever the setting is off, no default
-  // browser is detected, or its .desktop file's icon can't be resolved —
-  // resolveDesktopIcon() itself already reflects that same tolerance (see
-  // internal/desktop-icon.ts), this just adds the setting as another reason
-  // to prefer the generic icon.
   private _updatePanelIcon(
     showDefaultBrowserPanelIcon: boolean,
     defaultBrowser: DefaultBrowserInfo | null,

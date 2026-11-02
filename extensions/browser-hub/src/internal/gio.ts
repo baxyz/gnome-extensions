@@ -2,11 +2,7 @@ import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import GioUnix from "gi://GioUnix";
 
-// GJS's own Promise wrapper for a Gio async/finish pair, stable since GJS
-// 1.54 — see https://gjs.guide/guides/gjs/asynchronous-programming.html#promisify-helper.
-// Strips the redundant leading boolean from an array-shaped finish() result
-// (failure is signaled by rejection instead) — load_contents_async below
-// resolves to [contents, etag], not [ok, contents, etag].
+// See https://gjs.guide/guides/gjs/asynchronous-programming.html#promisify-helper
 Gio._promisify(Gio.File.prototype, "load_contents_async", "load_contents_finish");
 Gio._promisify(Gio.File.prototype, "replace_contents_async", "replace_contents_finish");
 Gio._promisify(Gio.File.prototype, "enumerate_children_async", "enumerate_children_finish");
@@ -14,18 +10,11 @@ Gio._promisify(Gio.File.prototype, "delete_async", "delete_finish");
 
 export const decoder = new TextDecoder();
 
-/** `e.message` for a real Error, else its string form — for display or logging. */
 export function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-/**
- * Rethrows `e` with `label` prepended to its message and the original error
- * preserved as `.cause` — used to tag a per-browser resolution failure with
- * which browser it was before it reaches a settle()-based error log that
- * would otherwise report only "a Firefox-family browser failed to resolve"
- * with no way to tell which one.
- */
+/** Rethrows `e` prefixed with `label`, so the log says which browser failed. */
 export function tagError(label: string, e: unknown): never {
   throw new Error(`${label}: ${errorMessage(e)}`, { cause: e });
 }
@@ -40,13 +29,7 @@ function matchesIOError(e: unknown, code: number): boolean {
   );
 }
 
-/**
- * Logs `e` unless it's a "file doesn't exist" error — that's the expected,
- * silent case for browsers/profiles/session files that simply aren't there
- * yet. A permission error is distinguished from other unexpected failures
- * (corrupt/undecodable content, a bug) since it points at a specific,
- * actionable fix (file ownership/permissions) rather than a code issue.
- */
+/** Logs `e`, except for a missing file, which is the normal case. */
 export function logIfUnexpected(e: unknown, context: string): void {
   if (matchesIOError(e, Gio.IOErrorEnum.NOT_FOUND)) return;
   if (matchesIOError(e, Gio.IOErrorEnum.PERMISSION_DENIED)) {
@@ -56,11 +39,7 @@ export function logIfUnexpected(e: unknown, context: string): void {
   logError(e as object, context);
 }
 
-// profiles.ini / Local State / zen-sessions.jsonlz4 / a Profile Groups
-// .sqlite are all normally well under 1MB even with dozens of profiles —
-// this is generous enough to never trip on real data, but still stops a
-// corrupted or unexpectedly huge file from being read whole into memory
-// and stalling the menu.
+// Real files are far smaller; this only guards against a corrupted one.
 const MAX_READABLE_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export async function readFileAsync(path: string): Promise<Uint8Array> {
@@ -88,12 +67,8 @@ export async function writeTextFileAsync(path: string, contents: string): Promis
   );
 }
 
-// DesktopAppInfo actually belongs to gio-unix-2.0 (GioUnix), not Gio itself.
-// On at least one GJS build, reaching it off Gio returned null for every
-// desktop ID instead of a real lookup — no error, just broken icons and a
-// broken setDefaultBrowser() everywhere. @girs's own DesktopAppInfo type
-// claims .new() always returns an instance; this hand-written one reflects
-// what GJS actually does, which is return null for an unknown ID.
+// DesktopAppInfo lives in GioUnix. new() returns null for an unknown id,
+// which the @girs type doesn't say.
 export type DesktopAppInfo = {
   get_string(key: string): string | null;
   get_icon(): Gio.Icon | null;
@@ -105,12 +80,8 @@ export function getDesktopAppInfo(desktopId: string): DesktopAppInfo | null {
   return GioUnix.DesktopAppInfo.new(desktopId) as unknown as DesktopAppInfo | null;
 }
 
-// A GAppInfo shape that on Linux is really always a GDesktopAppInfo under
-// the hood (confirmed by getRegisteredBrowserAppInfos() below only ever
-// sourcing from desktop files) — get_string() isn't part of the generic
-// GAppInfo interface @girs types get_all_for_type() as returning, but the
-// concrete objects support it regardless, same reasoning as
-// getDesktopAppInfo()'s own cast above.
+// These come from .desktop files, so get_string() works even though the
+// generic GAppInfo type doesn't declare it.
 type RegisteredBrowserAppInfo = {
   get_id(): string;
   get_executable(): string | null;
@@ -119,37 +90,15 @@ type RegisteredBrowserAppInfo = {
   should_show(): boolean;
 };
 
-// The freedesktop content type every real browser registers as a handler
-// for — GNOME Settings' own "Web" default-app picker is built on exactly
-// this same query (as is this project's own getDefaultBrowser(), via
-// get_default_for_uri_scheme("http")). A far more targeted, GNOME-native
-// pool for the identity-based fallbacks below than "every installed app":
-// something that isn't a registered http handler isn't a browser as far as
-// the desktop itself is concerned, whatever its binary is named. Also
-// naturally excludes non-browser lookalikes for free — e.g. Fedora's
-// epiphany-runtime (a dependency-only package providing /usr/bin/epiphany
-// with no .desktop file at all) was already excluded by never resolving a
-// desktop id in the first place; this pool additionally excludes anything
-// that has a .desktop file but never registered as a browser.
+// Same query as GNOME Settings' default web browser picker.
 const BROWSER_CONTENT_TYPE = "x-scheme-handler/http";
 
-// Scanning + parsing every installed .desktop file (below) isn't free —
-// cached for the extension's lifetime, same rationale as pkg.ts's
-// resolution cache. Cleared by clearAppInfoListCache() (called from
-// desktop-icon.ts's clearDesktopIconCache(), itself called on manual
-// refresh) so a newly-installed browser is still picked up. Without this,
-// every distinct pkg needing an identity-based fallback below would trigger
-// its own full re-scan, even though they'd all see the exact same list.
+// Cleared on manual refresh and on disable.
 let cachedRegisteredBrowsers: RegisteredBrowserAppInfo[] | null = null;
 
 function getRegisteredBrowserAppInfos(): RegisteredBrowserAppInfo[] {
   if (cachedRegisteredBrowsers === null) {
-    // get_all_for_type() only excludes Hidden=true entries, not
-    // NoDisplay=true ones — should_show() is the one GAppInfo method that
-    // checks both (plus OnlyShowIn/NotShowIn), the same filter GNOME's own
-    // app-listing UIs apply. Without it, a NoDisplay helper/wrapper .desktop
-    // that happens to also declare this content type could shadow a real
-    // browser's identity match below.
+    // should_show() also drops NoDisplay entries, get_all_for_type() doesn't.
     cachedRegisteredBrowsers = (
       Gio.AppInfo.get_all_for_type(BROWSER_CONTENT_TYPE) as unknown as RegisteredBrowserAppInfo[]
     ).filter((info) => info.should_show());
@@ -157,20 +106,11 @@ function getRegisteredBrowserAppInfos(): RegisteredBrowserAppInfo[] {
   return cachedRegisteredBrowsers;
 }
 
-/** Clears the registered-browsers list cache. Called on extension disable and manual refresh. */
 export function clearAppInfoListCache(): void {
   cachedRegisteredBrowsers = null;
 }
 
-/**
- * Finds a registered browser's desktop ID by an exact desktop-file key
- * match — e.g. "X-SnapInstanceName", the field snapd itself injects to name
- * the snap instance a .desktop file belongs to. This is the authoritative
- * identity signal packaging tools use for exactly this purpose (the same
- * field default-browser.ts's detectPkg() already trusts, just in the
- * opposite direction: desktop id -> pkg instead of pkg -> desktop id),
- * rather than a guessed naming convention.
- */
+/** Desktop id of the registered browser whose .desktop file has `key=value`. */
 export function findDesktopIdByDesktopKey(key: string, value: string): string | null {
   return (
     getRegisteredBrowserAppInfos()
@@ -179,19 +119,10 @@ export function findDesktopIdByDesktopKey(key: string, value: string): string | 
   );
 }
 
-// A leading "VAR=value" environment assignment (e.g. Exec="env
-// MOZ_ENABLE_WAYLAND=1 firefox %u") — skipped when scanning an app's full
-// commandline for its real binary token, below.
+// e.g. "MOZ_ENABLE_WAYLAND=1" in Exec="env MOZ_ENABLE_WAYLAND=1 firefox %u"
 const ENV_ASSIGNMENT_RE = /^[A-Za-z_][A-Za-z0-9_]*=/;
 
-/**
- * Every plausible "this is the real binary" token from `info`'s commandline,
- * for the cases where get_executable() alone doesn't cut it — an
- * Exec="env FOO=1 firefox %u" line (seen on some distros' wrapper scripts)
- * makes get_executable() return "env", not "firefox". get_commandline()
- * gives the fuller picture; flags and env-assignment tokens are filtered out
- * so a basename match against them can't produce a false positive.
- */
+/** Commandline tokens that could be the binary, without env, VAR=value or flags. */
 function commandBinaryCandidates(info: RegisteredBrowserAppInfo): string[] {
   const commandline = info.get_commandline();
   if (!commandline) return [];
@@ -202,14 +133,8 @@ function commandBinaryCandidates(info: RegisteredBrowserAppInfo): string[] {
 }
 
 /**
- * Finds a registered browser's desktop ID by its real binary — the fallback
- * for Native packages, which (unlike Flatpak/Snap) have no packaging-tool-
- * injected identity field to match on instead: freedesktop has no standard
- * "which distro package provides this .desktop file" key. Used when
- * `${binary}.desktop` (desktop-icon.ts's desktopIdFor guess) is wrong.
- * Confirmed necessary on Fedora: its Firefox RPM ships
- * org.mozilla.firefox.desktop, not firefox.desktop like Debian/Ubuntu's
- * package, so the plain guess resolves to nothing there.
+ * Desktop id of the registered browser that runs `binary`. Needed when
+ * `<binary>.desktop` doesn't exist, e.g. Fedora's org.mozilla.firefox.desktop.
  */
 export function findDesktopIdByExecutable(binary: string): string | null {
   const target = GLib.path_get_basename(binary);
@@ -222,9 +147,8 @@ export function findDesktopIdByExecutable(binary: string): string | null {
 }
 
 /**
- * Deletes `dir` and everything under it. Symlinks are deleted, never followed.
- * Children are listed before any is deleted, since changing a directory while
- * enumerating it is unspecified in GIO.
+ * Deletes `dir` recursively without following symlinks. Children are listed
+ * first: changing a directory while enumerating it is unspecified in GIO.
  */
 export async function deleteDirectoryAsync(dir: Gio.File): Promise<void> {
   const enumerator = await dir.enumerate_children_async(
@@ -252,10 +176,7 @@ export async function deleteDirectoryAsync(dir: Gio.File): Promise<void> {
 
 export type DirEntry = { name: string; type: Gio.FileType };
 
-/**
- * Lists a directory's immediate entries (name + type), or [] if it doesn't
- * exist or can't be enumerated — callers apply their own name/type filter.
- */
+/** A directory's entries, or [] if it can't be read. */
 export async function listDirEntries(dirPath: string, logContext: string): Promise<DirEntry[]> {
   try {
     const dir = Gio.File.new_for_path(dirPath);
