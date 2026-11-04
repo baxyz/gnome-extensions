@@ -7,7 +7,6 @@ import { findDonutBrowser, filterDonutEligible } from "../donut-browser";
 import { isEmpty } from "@helpers4/array";
 import { noop } from "@helpers4/function";
 import { pause } from "../internal";
-import type { Cancellation } from "../internal";
 import {
   buildCategorySeparator,
   buildErrorRow,
@@ -33,11 +32,11 @@ const PROFILE_ITEM_BATCH_SIZE = 6;
 const PROFILE_ITEM_BATCH_DELAY_MS = 30;
 
 /** Waits every `batchSize`-th call. */
-function makePacer(batchSize: number, delayMs: number, signal?: Cancellation): () => Promise<void> {
+function makePacer(batchSize: number, delayMs: number): () => Promise<void> {
   let count = 0;
   return async () => {
     count++;
-    if (count % batchSize === 0) await pause(delayMs, signal);
+    if (count % batchSize === 0) await pause(delayMs);
   };
 }
 
@@ -79,7 +78,6 @@ export async function fillMenu({
   donutLaunching = false,
   onLaunchDonut = noop,
   isLive = () => true,
-  signal,
   page = "main",
   onOpenDefaultBrowserPage = noop,
   onOpenDonutPage = noop,
@@ -104,8 +102,6 @@ export async function fillMenu({
   onLaunchDonut?: (item: ResolvedBrowserItem & { pkg: ResolvedBrowserPkg }) => void;
   /** False once a newer fillMenu() call has rebuilt the menu. */
   isLive?: () => boolean;
-  /** Aborted when this build is replaced or the extension is disabled. */
-  signal?: Cancellation;
   page?: MenuPage;
   onOpenDefaultBrowserPage?: () => void;
   onOpenDonutPage?: () => void;
@@ -198,7 +194,7 @@ export async function fillMenu({
 
   // A lone Browsers row needs no section header.
   const soloSimpleRow = visibleEntries.length === 1 && visibleEntries[0].group === "simple";
-  const paceProfileItem = makePacer(PROFILE_ITEM_BATCH_SIZE, PROFILE_ITEM_BATCH_DELAY_MS, signal);
+  const paceProfileItem = makePacer(PROFILE_ITEM_BATCH_SIZE, PROFILE_ITEM_BATCH_DELAY_MS);
   for (const entry of visibleEntries) {
     // Each entry and item is rendered on its own, so bad data only hides that one.
     try {
@@ -211,7 +207,6 @@ export async function fillMenu({
         const row = await buildSimpleBrowserRow(
           { title, items: entry.items, notify, closeMenu },
           isLive,
-          signal,
         );
         if (!isLive()) return;
         if (row) menu.addMenuItem(row);
