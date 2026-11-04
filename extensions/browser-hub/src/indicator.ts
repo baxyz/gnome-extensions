@@ -9,11 +9,10 @@ import type { MenuPage } from "./menu";
 import {
   clearDesktopIconCache,
   clearPathPresenceCache,
+  cancelPauses,
   clearPkgResolutionCache,
-  createCancellation,
   resolveDesktopIcon,
 } from "./internal";
-import type { CancellationHandle } from "./internal";
 import { clearDefaultBrowserCache, getDefaultBrowser, setDefaultBrowser } from "./default-browser";
 import type { DefaultBrowserInfo } from "./default-browser";
 import { launchDonutBrowser } from "./donut-browser";
@@ -48,8 +47,6 @@ export class BrowserProfilesIndicator extends Button {
   private _refreshSeq = 0;
   // Lets a menu build still in progress notice a newer one has started.
   private _drawSeq = 0;
-  // Aborted by a newer _draw() and by destroy(), to clear pending timers.
-  private _drawCancellation: CancellationHandle | null = null;
   // null while the scan is running.
   private _lastEntries: ResolvedBrowserEntry[] | null = null;
   // What failed during the last scan, shown as a banner.
@@ -95,8 +92,6 @@ export class BrowserProfilesIndicator extends Button {
 
   override destroy(): void {
     this._alive = false;
-    this._drawCancellation?.abort();
-    this._drawCancellation = null;
     if (this._menuOpenStateId !== null) {
       this._menuSignals.disconnect(this._menuOpenStateId);
       this._menuOpenStateId = null;
@@ -134,12 +129,10 @@ export class BrowserProfilesIndicator extends Button {
     this._updatePanelIcon(showDefaultBrowserPanelIcon, defaultBrowser);
 
     const drawSeq = ++this._drawSeq;
-    this._drawCancellation?.abort();
-    const cancellation = createCancellation();
-    this._drawCancellation = cancellation;
+    // The previous build's pending pauses: it is being replaced.
+    cancelPauses();
     fillMenu({
       isLive: () => this._alive && drawSeq === this._drawSeq,
-      signal: cancellation.signal,
       title: this._title,
       menu: this.menu,
       entries: this._lastEntries,

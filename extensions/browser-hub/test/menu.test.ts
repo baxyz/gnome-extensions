@@ -16,11 +16,10 @@ vi.mock("gi://GLib", () => ({
     get_home_dir: () => "/home/user",
     getenv: () => null,
     find_program_in_path: () => null,
-    // menu/shared.ts's tooltip() uses these for its hover-delay timer — never
-    // actually fired in these tests (nothing simulates an "enter-event"), but
-    // the module import itself needs the mock shape to exist.
-    timeout_add: () => 0,
-    source_remove: () => {},
+    // Real timers: fillMenu's pause() between batches must elapse.
+    timeout_add: (_priority: number, ms: number, cb: () => boolean) =>
+      setTimeout(cb, ms) as unknown as number,
+    source_remove: (id: number) => clearTimeout(id),
     PRIORITY_DEFAULT: 0,
     SOURCE_REMOVE: false,
     // findDesktopIdByExecutable()'s fallback (internal/gio.ts), reached from

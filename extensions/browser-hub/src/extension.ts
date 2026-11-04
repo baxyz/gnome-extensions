@@ -3,7 +3,12 @@ import GLib from "gi://GLib";
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import type { BrowserSettings, ProfileGroupsMode } from "./browser";
-import { clearDesktopIconCache, clearPathPresenceCache, clearPkgResolutionCache } from "./internal";
+import {
+  cancelPauses,
+  clearDesktopIconCache,
+  clearPathPresenceCache,
+  clearPkgResolutionCache,
+} from "./internal";
 import { clearDefaultBrowserCache } from "./default-browser";
 import { cancelDonutCleanups } from "./donut-browser";
 import { clearIconThemeCache } from "./icons";
@@ -87,6 +92,7 @@ export default class BrowserProfilesExtension extends Extension {
       this._settingsChangedId = 0;
     }
     this._settings = null;
+    cancelPauses();
     if (this._indicator) {
       this._indicator.destroy();
       this._indicator = null;
