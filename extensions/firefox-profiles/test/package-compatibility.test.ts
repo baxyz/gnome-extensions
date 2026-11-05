@@ -42,7 +42,7 @@ describe("GNOME Shell Package Compatibility", () => {
 
   it("should verify GNOME Shell versions compatibility", () => {
     versions.forEach((version) => {
-      expect(version).toMatch(/^(4[6-9]|50)$/);
+      expect(version).toMatch(/^(4[6-9]|5[01])$/);
       expect(parseInt(version)).toBeGreaterThanOrEqual(minVersion);
       expect(parseInt(version)).toBeLessThanOrEqual(maxVersion);
     });
