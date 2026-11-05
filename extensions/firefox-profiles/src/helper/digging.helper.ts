@@ -18,12 +18,23 @@ export type BrowserProfiles = Pick<BrowserInfo, "label" | "command"> & {
  */
 export async function getFirefoxProfiles(): Promise<Array<BrowserProfiles>> {
   return Promise.all(
-    CONFIG_PATHS.filter((browser) => GLib.file_test(browser.path, GLib.FileTest.EXISTS)).map(
-      async (browser) => ({
-        ...browser,
-        profiles: await getProfilesFromConfigFile(browser.path),
-      }),
-    ),
+    CONFIG_PATHS.filter((browser) => isInstalled(browser)).map(async (browser) => ({
+      ...browser,
+      profiles: await getProfilesFromConfigFile(browser.path),
+    })),
+  );
+}
+
+/**
+ * The profiles file exists and the command's program is in PATH. Some
+ * browsers share a profiles file (Firefox and Firefox ESR): only the
+ * installed one is listed.
+ */
+function isInstalled(browser: BrowserInfo): boolean {
+  const program = browser.command.split(" ")[0];
+  return (
+    GLib.file_test(browser.path, GLib.FileTest.EXISTS) &&
+    GLib.find_program_in_path(program) !== null
   );
 }
 
