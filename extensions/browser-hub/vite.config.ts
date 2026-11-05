@@ -16,25 +16,22 @@ function gnomeSchemas(): Plugin {
   };
 }
 
-// preserveModules names a chunk after its module's path relative to
-// preserveModulesRoot — for our own src/ files that's already the clean
-// mirrored path we want (e.g. "browser/firefox"), but for a dependency
-// under node_modules it's the full on-disk path including pnpm's nested
-// store layout (e.g. "node_modules/.pnpm/@helpers4+object@3.0.7/node_modules
-// /@helpers4/object/lib/index") — collapse those down to a short, stable
-// "vendor-<package>" name instead of leaking pnpm's store structure into the
-// reviewed output. Derived structurally from the *last* "node_modules/"
-// segment (pnpm's own .pnpm/<encoded>/ nesting always has one more
-// "node_modules/" before the real package) rather than a hand-maintained
-// per-dependency list — the previous version of this function needed a new
-// regex/branch added every time a new runtime dependency showed up, quietly
-// falling back to the raw pnpm-store path (leaking it into dist/) for any
-// dependency someone forgot to add.
-function vendorChunkName(name: string): string | null {
-  const segments = name.split("node_modules/");
+// A dependency's module ids are pnpm store paths (e.g. "node_modules/.pnpm/
+// @helpers4+object@3.1.11/node_modules/@helpers4/object/lib/safeJsonParse.js").
+// Map every module of a package to one "vendor-<package>" chunk, taken from the
+// last "node_modules/" segment so no store path leaks into dist/.
+function vendorChunkName(id: string): string | null {
+  const segments = id.split("node_modules/");
   if (segments.length < 2) return null;
   const pkg = segments[segments.length - 1].match(/^(@[^/]+\/[^/]+|[^/]+)/)?.[1];
   return pkg ? `vendor-${pkg.replace(/^@/, "").replace(/\//g, "-")}` : null;
+}
+
+// One chunk per src/ module, at its path under src/ (dist/browser/firefox.js
+// for src/browser/firefox.ts). Entries are left out: they keep their own file.
+function srcChunkName(id: string): string | null {
+  if (/\/src\/(extension|prefs)\.ts$/.test(id)) return null;
+  return id.match(/\/src\/(.+)\.ts$/)?.[1] ?? null;
 }
 
 const base = createViteConfig();
@@ -54,26 +51,29 @@ export default defineConfig({
     },
     rollupOptions: {
       ...base.build?.rollupOptions,
+      // Required by includeDependenciesRecursively: false (Vite's lib mode
+      // defaults to "strict"). Entry exports are kept as they are.
+      preserveEntrySignatures: "allow-extension",
       output: {
         ...base.build?.rollupOptions?.output,
-        // GNOME extension submissions (EGO) are reviewed as the built dist/
-        // output, not the TypeScript source — rolldown's default cross-chunk
-        // export linking renames every export to a single letter (`export {
-        // resolveZenIcon as r }`) purely to shave bytes off inter-chunk glue,
-        // even with minify:false. Keep those names readable for review.
+        // EGO reviewers read dist/, not the TypeScript source: keep export
+        // names readable instead of single letters (`export { x as r }`).
         minifyInternalExports: false,
-        // One output file per source module, mirroring src/'s own directory
-        // layout under dist/ exactly (preserveModulesRoot strips the "src/"
-        // prefix so dist/browser/firefox.js, not dist/src/browser/firefox.js).
-        // A prior version of this config hand-grouped modules into ~20
-        // themed chunks via codeSplitting — EGO review feedback on the v1
-        // submission was that reviewers read dist/ file-for-file against the
-        // source and want that mapping literal, not thematically regrouped,
-        // so this is preserveModules doing that mapping structurally instead
-        // of via a hand-maintained (and easily stale) list of regexes.
-        preserveModules: true,
-        preserveModulesRoot: "src",
-        entryFileNames: (chunkInfo) => `${vendorChunkName(chunkInfo.name) ?? chunkInfo.name}.js`,
+        // EGO reviewers compare dist/ with src/ file by file (v1 review).
+        // preserveModules would do it too, but it also splits a dependency
+        // into one file per module (helpers4 ships one file per helper since
+        // 3.1.11), so modules are grouped by name instead: src/ modules one
+        // per file, each dependency in a single vendor-<package>.js.
+        codeSplitting: {
+          includeDependenciesRecursively: false,
+          groups: [
+            {
+              debugName: "src-and-vendor",
+              name: (id: string) => vendorChunkName(id) ?? srcChunkName(id),
+            },
+          ],
+        },
+        chunkFileNames: "[name].js",
       },
     },
   },
