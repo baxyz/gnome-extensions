@@ -19,10 +19,25 @@ fi
 # ourselves to actually enforce a clean result; the human-readable run right
 # after is just for a readable log (running it twice is simpler than
 # reformatting the JSON findings by hand).
-finding_count=$(shexli --format json "$uuid.zip" | jq -r '.summary.finding_count')
+#
+# shexli 0.2.1 (latest release, April 2026) hard-codes `major > 50` as an
+# "implausible future release", so a stable GNOME 51 entry trips EGO-M-004.
+# Skip that rule only when every shell-version entry is a plain major
+# version: then nothing else in the rule (invalid value, alpha/beta/rc) can
+# be what fired it.
+ignored_rule=""
+if jq -e '.["shell-version"] | length > 0 and all(type == "string" and test("^[0-9]+$"))' \
+  metadata.json >/dev/null; then
+  ignored_rule="EGO-M-004"
+fi
+finding_count=$(shexli --format json "$uuid.zip" |
+  jq --arg ignored "$ignored_rule" '[.findings[] | select(.rule_id != $ignored)] | length')
 
 shexli "$uuid.zip"
 rm -f "$uuid.zip"
+if [ -n "$ignored_rule" ]; then
+  echo "Note: $ignored_rule ignored (shexli 0.2.1 rejects any shell-version above 50)."
+fi
 
 if [ "$finding_count" -gt 0 ]; then
   echo "shexli found $finding_count issue(s) — see above."
