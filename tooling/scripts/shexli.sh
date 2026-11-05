@@ -30,12 +30,13 @@ if jq -e '.["shell-version"] | length > 0 and all(type == "string" and test("^[0
   metadata.json >/dev/null; then
   ignored_rule="EGO-M-004"
 fi
-finding_count=$(shexli --format json "$uuid.zip" |
-  jq --arg ignored "$ignored_rule" '[.findings[] | select(.rule_id != $ignored)] | length')
+report=$(shexli --format json "$uuid.zip")
+finding_count=$(jq --arg ignored "$ignored_rule" '[.findings[] | select(.rule_id != $ignored)] | length' <<<"$report")
+ignored_count=$(jq --arg ignored "$ignored_rule" '[.findings[] | select(.rule_id == $ignored)] | length' <<<"$report")
 
 shexli "$uuid.zip"
 rm -f "$uuid.zip"
-if [ -n "$ignored_rule" ]; then
+if [ "$ignored_count" -gt 0 ]; then
   echo "Note: $ignored_rule ignored (shexli 0.2.1 rejects any shell-version above 50)."
 fi
 
