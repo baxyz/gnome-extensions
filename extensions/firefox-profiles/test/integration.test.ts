@@ -18,7 +18,7 @@ describe("Firefox Profiles Extension Integration", () => {
     const versions = metadata["shell-version"];
 
     versions.forEach((version) => {
-      expect(version).toMatch(/^(4[6-9]|50)$/);
+      expect(version).toMatch(/^(4[6-9]|5[01])$/);
     });
   });
 
