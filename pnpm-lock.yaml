@@ -30,6 +30,9 @@ catalogs:
     '@girs/gnome-shell-50':
       specifier: npm:@girs/gnome-shell@^50.0.4
       version: 50.0.4
+    '@girs/gnome-shell-51':
+      specifier: npm:@girs/gnome-shell@^51.0.1
+      version: 51.0.1
     '@helpers4/array':
       specifier: ^3.1.11
       version: 3.1.11
@@ -119,6 +122,9 @@ importers:
       '@girs/gnome-shell-50':
         specifier: 'catalog:'
         version: '@girs/gnome-shell@50.0.4'
+      '@girs/gnome-shell-51':
+        specifier: 'catalog:'
+        version: '@girs/gnome-shell@51.0.1'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6

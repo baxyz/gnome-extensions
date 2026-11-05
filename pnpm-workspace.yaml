@@ -14,6 +14,7 @@ catalog:
   '@girs/gnome-shell-48': 'npm:@girs/gnome-shell@^48.0.4'
   '@girs/gnome-shell-49': 'npm:@girs/gnome-shell@^49.1.0'
   '@girs/gnome-shell-50': 'npm:@girs/gnome-shell@^50.0.4'
+  '@girs/gnome-shell-51': 'npm:@girs/gnome-shell@^51.0.1'
   '@types/node': '^26.6.6'
   '@vitest/ui': '^5.0.5'
   esbuild: '^0.28.2'
