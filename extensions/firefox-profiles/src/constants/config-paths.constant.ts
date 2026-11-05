@@ -65,13 +65,6 @@ export const CONFIG_PATHS: Array<BrowserInfo> = [
     command: "snap run firefox",
   },
 
-  // === Firefox ESR (same profile dir as Firefox, no XDG support) ===
-  {
-    label: "Firefox ESR",
-    path: HOME_DIR + "/.mozilla/firefox/profiles.ini",
-    command: "firefox-esr",
-  },
-
   // === Waterfox (Firefox fork) ===
   {
     label: "Waterfox",
