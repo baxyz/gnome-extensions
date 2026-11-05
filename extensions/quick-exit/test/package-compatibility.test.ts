@@ -29,7 +29,7 @@ describe("GNOME Shell Package Compatibility", () => {
 
   it("should list supported GNOME Shell versions in ascending order", () => {
     versions.forEach((version) => {
-      expect(version).toMatch(/^(4[6-9]|50)$/);
+      expect(version).toMatch(/^(4[6-9]|5[01])$/);
     });
     const numeric = versions.map((v) => parseInt(v));
     expect(numeric).toEqual([...numeric].sort((a, b) => a - b));
