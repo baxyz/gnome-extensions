@@ -46,6 +46,7 @@
     "@girs/gjs": "catalog:",
     "@girs/gnome-shell": "catalog:",
     "@girs/gnome-shell-50": "catalog:",
+    "@girs/gnome-shell-51": "catalog:",
     "@types/node": "catalog:",
     "@vitest/ui": "catalog:",
     "esbuild": "catalog:",

@@ -121,6 +121,7 @@ vi.mock("gi://St", () => ({
 vi.mock("gi://Clutter", () => ({
   default: {
     ActorAlign: { CENTER: "center" },
+    Orientation: { HORIZONTAL: 0, VERTICAL: 1 },
   },
 }));
 

@@ -10,7 +10,7 @@ describe("Browser Profiles Extension Integration", () => {
     const versions = metadata["shell-version"];
 
     versions.forEach((version) => {
-      expect(version).toMatch(/^50$/);
+      expect(version).toMatch(/^5[01]$/);
     });
   });
 

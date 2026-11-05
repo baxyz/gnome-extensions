@@ -1,3 +1,4 @@
+import Clutter from "gi://Clutter";
 import St from "gi://St";
 import type * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { PopupMenuItem } from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -74,7 +75,7 @@ export async function buildSimpleBrowserRow(
 ): Promise<PopupMenuItem | null> {
   const row = makeIconRow();
   const container = new St.BoxLayout({
-    vertical: true,
+    orientation: Clutter.Orientation.VERTICAL,
     x_expand: true,
     style_class: "browser-hub-browsers-lines",
   });
