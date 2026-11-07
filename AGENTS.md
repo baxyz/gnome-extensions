@@ -13,7 +13,7 @@ split described in the canonical AGENTS.md, since EGO extensions are GPL-family 
 
 ## Commit Scopes
 
-Defined in `scopes.json`. Root-level: `workspace`, `tooling`, `ci`, `docs`, `agents`, `deps`.
+Defined in `scopes.json`. Root-level: `workspace`, `tooling`, `ci`, `docs`, `ai`, `deps`.
 Per-extension: `browser-hub`, `firefox-profiles`, `quick-exit` — one scope per extension under
 `extensions/*`, no sub-scoping (a prior `browser-hub/<sub-area>` convention never caught on in
 practice and was dropped).
