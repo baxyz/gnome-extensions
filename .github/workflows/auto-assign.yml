@@ -1,0 +1,17 @@
+name: Auto Assign
+on:
+  issues:
+    types: [ opened ]
+  pull_request:
+    types: [ opened ]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  run:
+    uses: helpers4/.github/.github/workflows/reusable-auto-assign.yml@d99fec48e1ab97f964bd29c7a8ccf217f302b6d1
+    with:
+      assignees: baxyz
+      numOfAssignee: 1
